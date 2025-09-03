@@ -1,4 +1,4 @@
-# 🚀 Jabline Programming Language
+# <img src="assets/jabline.png" alt="Logo" width="30"> 🚀 Jabline Programming Language
 
 **A modern, powerful, and extensible interpreted programming language with a comprehensive standard library.**
 
@@ -319,10 +319,6 @@ let port = config?.port ?? 3000;
 ```jabline
 let avatar = user?.profile?.avatar ?? "default.jpg";
 ```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
