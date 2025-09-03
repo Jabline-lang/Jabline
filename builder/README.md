@@ -1,16 +1,10 @@
-# 🚀 Jabline Language Builder
+# 🔨 Jabline Builder
 
-Automated installation tool for the Jabline programming language that detects your operating system and installs the binary system-wide.
+The automated installation system for the Jabline Programming Language.
 
-## 📋 Prerequisites
+## 🚀 Quick Start
 
-- Go 1.21 or higher
-- Git (for cloning the repository)
-- Administrative privileges may be required for system-wide installation
-
-## 🛠️ Usage
-
-### Quick Installation
+The fastest way to install Jabline:
 
 ```bash
 # Clone the repository
@@ -20,130 +14,168 @@ git clone --depth 1 https://github.com/Jabline-lang/Jabline && cd Jabline
 cd builder && go run .
 ```
 
-### What it does
+## 📖 What This Does
 
 The builder automatically:
 
-1. **🔍 Detects your operating system** (Windows, macOS, Linux)
-2. **🏗️ Builds the Jabline binary** using the appropriate build script
-3. **📦 Installs the binary** to the system PATH
-4. **✅ Verifies the installation** 
+- ✅ **Detects your operating system** (Linux, macOS, Windows)
+- ✅ **Checks prerequisites** (Go, Git, internet connection)
+- ✅ **Clones the repository** with shallow clone for speed
+- ✅ **Builds optimized binary** with release flags (`-ldflags "-s -w"`)
+- ✅ **Installs to appropriate location** based on your system and permissions
+- ✅ **Handles permissions** automatically (uses sudo when needed on Unix)
+- ✅ **Verifies installation** to ensure everything works
+- ✅ **Provides beautiful output** with colors and progress indicators
 
-## 🖥️ Platform Support
+## 🖥️ Installation Paths
 
-| Platform | Script Used | Installation Path | Notes |
-|----------|-------------|-------------------|--------|
-| **Windows** | `build-release.bat` | `%USERPROFILE%\AppData\Local\Programs\Jabline` | May need to add to PATH manually |
-| **macOS** | `build-release.sh` | `/usr/local/bin` | May require `sudo` password |
-| **Linux** | `build-release.sh` | `/usr/local/bin` | May require `sudo` password |
+### Linux
+- **Root/Sudo**: `/usr/local/bin/jabline`
+- **User**: `~/.local/bin/jabline` (creates directory if needed)
 
-## 🚨 Troubleshooting
+### macOS
+- **Root/Sudo**: `/usr/local/bin/jabline`
+- **User**: `~/bin/jabline` (creates directory if needed)
 
-### Permission Issues (macOS/Linux)
+### Windows
+- **Administrator**: `C:\Program Files\Jabline\jabline.exe`
+- **User**: `%USERPROFILE%\AppData\Local\Programs\Jabline\jabline.exe`
 
-If you get permission errors, the builder will automatically attempt to use `sudo`:
+## 🔧 Prerequisites
 
-```bash
-⚠️ No write permissions to /usr/local/bin, attempting with sudo...
-[sudo] password for user: 
-✅ Binary installed to: /usr/local/bin/jabline (with sudo)
-```
+Before running the builder, ensure you have:
 
-### Go Not Found
+- **Go 1.21 or higher** - Download from [golang.org](https://golang.org/dl/)
+- **Git** - For cloning the repository
+- **Internet connection** - To download the source code
 
-```
-❌ Error: Environment validation failed: Go is not installed or not in PATH
-```
+The builder will check these automatically and provide helpful error messages if anything is missing.
 
-**Solution:** Install Go from https://golang.org/dl/
+## 🛠️ Advanced Usage
 
-### Build Script Not Found
+### Custom Installation Path
 
-```
-❌ Error: Build failed: build script not found: ../scripts/build-release.sh
-```
+You can override the default installation path by modifying the source or using environment variables (implementation dependent).
 
-**Solution:** Make sure you're running from the `builder` directory in a complete Jabline repository.
+### Building from Local Source
 
-## 🧪 Testing Installation
-
-After installation, test that Jabline is working:
+If you already have the source code:
 
 ```bash
-# Check version
-jabline --version
-
-# Run a sample program
-jabline run examples/basic/01_variables_operadores.jb
-
-# Get help
-jabline --help
+cd path/to/jabline/builder
+go run .
 ```
 
-## 📁 Directory Structure
+### Development Build
 
-```
-Jabline/
-├── builder/
-│   ├── main.go          # This automated installer
-│   ├── go.mod          # Module definition
-│   └── README.md       # This file
-├── scripts/
-│   ├── build-release.bat   # Windows build script
-│   ├── build-release.sh    # Unix build script
-│   ├── build-release.ps1   # PowerShell build script
-│   └── build-release.fish  # Fish shell build script
-├── dist/               # Built binaries (created during build)
-│   ├── windows/
-│   ├── linux/
-│   └── darwin/
-└── ...                # Other project files
+For development purposes, you can modify the build flags in `main.go`:
+
+```go
+// Change from:
+cmd := exec.Command("go", "build", "-ldflags", "-s -w", "-o", i.BinaryName, "main.go")
+
+// To (for debug builds):
+cmd := exec.Command("go", "build", "-race", "-o", i.BinaryName, "main.go")
 ```
 
-## 🎯 Features
+## 🎨 Features
 
-- **🤖 Automatic OS detection** - No need to specify your platform
-- **🔧 Smart permission handling** - Automatically uses `sudo` when needed
-- **🎨 Beautiful terminal output** - Colored progress indicators
-- **⚡ Fast installation** - Optimized build process
-- **🛡️ Error handling** - Clear error messages and troubleshooting tips
-- **✅ Installation verification** - Confirms everything works correctly
+### Beautiful Output
+- Color-coded messages for different types of information
+- Progress indicators for each installation step
+- Clear success/error messaging
+- System information display
 
-## 🔧 Advanced Usage
+### Smart Detection
+- Automatic OS and architecture detection
+- Permission level detection
+- PATH configuration recommendations
 
-### Building for a Specific Platform
+### Error Handling
+- Comprehensive prerequisite checking
+- Graceful failure with helpful error messages
+- Automatic cleanup of temporary files
+- Detailed error reporting
 
-The builder automatically detects your platform, but the underlying build scripts support cross-compilation:
+### Cross-Platform Support
+- Works on Linux, macOS, and Windows
+- Handles platform-specific installation paths
+- Manages permissions appropriately for each platform
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+#### "Go is not installed or not in PATH"
+**Solution:** Install Go from https://golang.org/dl/ and ensure it's in your PATH.
+
+#### "Git is not installed or not in PATH"
+**Solution:** Install Git and ensure it's accessible from the command line.
+
+#### "No internet connection"
+**Solution:** Check your internet connection and firewall settings.
+
+#### Permission Denied
+**Solution:** The installer will automatically use `sudo` on Unix systems when needed. On Windows, run as Administrator if installing system-wide.
+
+#### Binary exists but cannot be executed
+**Solution:** The installation directory may not be in your PATH. The installer will provide instructions for adding it.
+
+### Debugging
+
+To see more detailed output, you can modify the source to add debug logging or run with verbose Go output:
 
 ```bash
-# From the scripts directory
-./build-release.sh release linux
-./build-release.sh release darwin
-./build-release.sh release windows
+go run -x .  # Shows Go build commands
 ```
 
-### Development Mode
+## 🏗️ Architecture
 
-For development builds with debug symbols:
+The builder is structured as follows:
 
-```bash
-# From the scripts directory
-./build-release.sh debug
 ```
+builder/
+├── main.go          # Main installer logic
+├── go.mod           # Go module definition
+└── README.md        # This file
+```
+
+### Key Components
+
+- **Installer struct**: Holds system information and configuration
+- **System detection**: Automatically determines OS, architecture, and install paths
+- **Prerequisites checking**: Validates Go, Git, and internet connectivity
+- **Repository cloning**: Downloads source with shallow clone for efficiency
+- **Binary building**: Compiles optimized release binary
+- **Installation**: Copies binary to appropriate system location
+- **Verification**: Tests the installed binary
 
 ## 🤝 Contributing
 
-If you want to improve the builder:
+To improve the builder:
 
-1. Make your changes to `main.go`
-2. Test on different platforms
-3. Update this README if needed
+1. Fork the repository
+2. Make your changes to `builder/main.go`
+3. Test on multiple platforms if possible
 4. Submit a pull request
+
+### Development Guidelines
+
+- Maintain cross-platform compatibility
+- Provide clear error messages
+- Use appropriate colors for terminal output
+- Handle edge cases gracefully
+- Add comments for complex logic
 
 ## 📝 License
 
-This builder tool is part of the Jabline project and follows the same license terms.
+This builder is part of the Jabline Programming Language project and follows the same license terms.
 
----
+## 🔗 Related
 
-**Happy coding with Jabline! 🎉**
+- Main project: [Jabline Programming Language](../../README.md)
+- Installation guide: [INSTALL.md](../../INSTALL.md)
+- Alternative installers: 
+  - Unix shell script: [install.sh](../../install.sh)
+  - Windows batch: [install.bat](../../install.bat)
+  - PowerShell: [install.ps1](../../install.ps1)

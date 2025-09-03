@@ -34,19 +34,6 @@ git clone --depth 1 https://github.com/Jabline-lang/Jabline && cd Jabline
 cd builder && go run .
 ```
 
-**Alternative installation scripts:**
-
-```bash
-# Using the wrapper script (Unix/Linux/macOS)
-./install.sh
-
-# Using PowerShell (Windows)
-.\install.ps1
-
-# Using Command Prompt (Windows)
-.\install.bat
-```
-
 ### 🛠️ Manual Installation
 
 If you prefer to build manually:
@@ -193,7 +180,7 @@ describe("Math Operations", function() {
     it("should add numbers correctly", function() {
         assertEqual(2 + 3, 5, "Addition should work");
     });
-    
+
     it("should handle arrays", function() {
         assertTrue(len([1, 2, 3]) == 3, "Array length should be 3");
     });
@@ -254,7 +241,7 @@ import { stringify, parse } from "data/json";
 fn fetchUserData(userId) {
     let url = `https://api.example.com/users/${userId}`;
     let response = httpGet(url);
-    
+
     if (response["status"] == 200) {
         return parse(response["body"]);
     } else {
@@ -271,7 +258,7 @@ echo("User: " + user["name"]);
 ```jabline
 fn loadConfig() {
     let configFile = "app.json";
-    
+
     if (!fileExists(configFile)) {
         let defaultConfig = {
             "port": 8080,
@@ -281,7 +268,7 @@ fn loadConfig() {
         writeFile(configFile, stringify(defaultConfig));
         return defaultConfig;
     }
-    
+
     let content = readFile(configFile);
     return parse(content);
 }
