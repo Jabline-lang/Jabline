@@ -1,0 +1,23 @@
+// Ejemplo 1: Variables y Operadores Básicos
+
+// Variables de diferentes tipos
+let nombre = "María";
+let edad = 25;
+let activo = true;
+
+// Concatenación
+let mensaje = "Hola " + nombre + ", tienes " + edad + " años";
+echo(mensaje);
+
+// Operadores aritméticos
+let suma = 10 + 5;       // 15
+let modulo = 17 % 5;     // 2 (resto de división)
+
+echo("Suma: " + suma);
+echo("Módulo: " + modulo);
+
+// Operadores de comparación y lógicos
+let esMayor = edad >= 18;
+let activoYMayor = activo && edad >= 18;
+echo("¿Es mayor de edad? " + esMayor);
+echo("¿Activo y mayor? " + activoYMayor);

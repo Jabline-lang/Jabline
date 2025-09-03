@@ -1,0 +1,23 @@
+// Ejemplo 6: Hash Maps (Diccionarios)
+
+// Crear un hash map
+let persona = {
+    "nombre": "Ana García",
+    "edad": "28",
+    "ciudad": "Madrid"
+};
+
+// Acceder a valores
+echo("Nombre: " + persona["nombre"]);
+echo("Ciudad: " + persona["ciudad"]);
+
+// Modificar y agregar campos
+persona["edad"] = "29";
+persona["profesion"] = "Doctora";
+
+// Mostrar información completa sin iteración automática
+echo("Información completa:");
+echo("nombre: " + persona["nombre"]);
+echo("edad: " + persona["edad"]);
+echo("ciudad: " + persona["ciudad"]);
+echo("profesion: " + persona["profesion"]);

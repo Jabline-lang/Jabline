@@ -1,0 +1,23 @@
+// Ejemplo 13: Constantes
+
+// Declarar constantes básicas
+const PI = 3.14159;
+const MAX_SIZE = 100;
+const NOMBRE_PROGRAMA = "Jabline";
+
+echo("PI: " + PI);
+echo("Tamaño máximo: " + MAX_SIZE);
+echo("Programa: " + NOMBRE_PROGRAMA);
+
+// Constantes con expresiones
+const AREA_CIRCULO = PI * 2.5 * 2.5;
+const MENSAJE = "Bienvenido a " + NOMBRE_PROGRAMA;
+
+echo("Área del círculo: " + AREA_CIRCULO);
+echo("Mensaje: " + MENSAJE);
+
+// Función usando constantes
+fn mostrarVersion() {
+    const VERSION = "1.0.0";
+    echo("Versión: " + VERSION);
+}

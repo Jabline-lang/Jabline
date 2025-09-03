@@ -1,0 +1,219 @@
+// 🚀 Quickstart: Jabline Extended Standard Library
+// Este archivo muestra cómo usar rápidamente las funcionalidades principales
+
+// Importar módulos principales
+import { createDate, formatDate, addDays, isLeapYear } from "time/datetime"
+import { stringify, parse, prettify, isValid } from "data/json"
+import { assertEqual, assertTrue, describe, it, showFinalReport } from "testing/assert"
+
+echo("🎯 JABLINE STDLIB QUICKSTART");
+echo("============================");
+echo("");
+
+// ===== 1. DATETIME QUICKSTART =====
+echo("📅 1. DateTime Examples:");
+
+let hoy = createDate(15, 3, 2024);
+let enUnMes = addDays(hoy, 30);
+
+echo("   Fecha de hoy: " + formatDate(hoy));
+echo("   En 30 días: " + formatDate(enUnMes));
+echo("   ¿2024 es bisiesto?: " + isLeapYear(2024));
+echo("");
+
+// ===== 2. JSON QUICKSTART =====
+echo("📦 2. JSON Examples:");
+
+// Crear objeto
+let persona = {
+    "nombre": "María González",
+    "edad": 32,
+    "skills": ["JavaScript", "Jabline", "Python"],
+    "activo": true
+};
+
+// Serializar
+let jsonString = stringify(persona);
+echo("   JSON compacto: " + jsonString);
+
+// JSON formateado
+let jsonPretty = prettify(persona, 2);
+echo("   JSON formateado:");
+echo(jsonPretty);
+
+// Parsear
+let parsedData = parse(`{"mensaje": "Hola mundo", "numero": 42}`);
+echo("   Dato parseado - mensaje: " + parsedData["mensaje"]);
+echo("   Dato parseado - número: " + parsedData["numero"]);
+echo("");
+
+// ===== 3. TESTING QUICKSTART =====
+echo("🧪 3. Testing Examples:");
+
+describe("Quickstart Tests", () => {
+    it("DateTime should work correctly", () => {
+        let fecha = createDate(1, 1, 2024);
+        assertEqual(fecha["year"], 2024, "Year should be 2024");
+        assertTrue(isLeapYear(2024), "2024 should be leap year");
+    });
+
+    it("JSON should serialize and parse", () => {
+        let original = {"test": "value", "number": 123};
+        let json = stringify(original);
+        let parsed = parse(json);
+
+        assertEqual(parsed["test"], "value", "String should match");
+        assertEqual(parsed["number"], 123, "Number should match");
+    });
+
+    it("Array operations should work", () => {
+        let arr = [1, 2, 3, 4, 5];
+        assertEqual(len(arr), 5, "Array should have 5 elements");
+        assertTrue(arr[0] == 1, "First element should be 1");
+    });
+});
+
+echo("");
+
+// ===== 4. BUILT-IN FUNCTIONS DEMO =====
+echo("🔧 4. Built-in Functions (if available):");
+
+// Verificar si las funciones de I/O están disponibles
+try {
+    let timestamp = now();
+    echo("   Current timestamp: " + timestamp);
+
+    // Ejemplo con archivos (comentado para evitar errores si no están disponibles)
+    // let content = "Hello from Jabline!\nTimestamp: " + timestamp;
+    // writeFile("quickstart_test.txt", content);
+    // echo("   ✅ File written successfully");
+
+    echo("   ✅ I/O functions are available");
+} catch (error) {
+    echo("   ⚠️  I/O functions not available: " + error);
+    echo("   (This is normal if built-ins are not registered yet)");
+}
+
+echo("");
+
+// ===== 5. PRACTICAL EXAMPLE =====
+echo("💼 5. Practical Example - User Management:");
+
+// Simulación de base de datos de usuarios
+let users = [
+    {"id": 1, "name": "Ana", "email": "ana@example.com", "active": true},
+    {"id": 2, "name": "Carlos", "email": "carlos@example.com", "active": false},
+    {"id": 3, "name": "Elena", "email": "elena@example.com", "active": true}
+];
+
+// Función para filtrar usuarios activos
+fn getActiveUsers(userList) {
+    let active = [];
+    for (user in userList) {
+        if (user["active"]) {
+            active = push(active, user);
+        }
+    }
+    return active;
+}
+
+// Función para generar reporte
+fn generateReport(userList) {
+    let report = {
+        "timestamp": now(),
+        "total_users": len(userList),
+        "active_users": len(getActiveUsers(userList)),
+        "generated_by": "Jabline Stdlib Demo"
+    };
+
+    return report;
+}
+
+// Usar las funciones
+let activeUsers = getActiveUsers(users);
+let report = generateReport(users);
+
+echo("   Total users: " + len(users));
+echo("   Active users: " + len(activeUsers));
+echo("   Report:");
+echo(prettify(report, 2));
+
+echo("");
+
+// ===== 6. ERROR HANDLING EXAMPLE =====
+echo("🛡️ 6. Error Handling:");
+
+fn safeJSONParse(jsonStr) {
+    try {
+        if (!isValid(jsonStr)) {
+            throw "Invalid JSON format";
+        }
+        return parse(jsonStr);
+    } catch (error) {
+        echo("   ❌ JSON Parse Error: " + error);
+        return null;
+    }
+}
+
+// Test error handling
+let validJSON = `{"status": "ok"}`;
+let invalidJSON = `{invalid json}`;
+
+let result1 = safeJSONParse(validJSON);
+let result2 = safeJSONParse(invalidJSON);
+
+if (result1 != null) {
+    echo("   ✅ Valid JSON parsed: " + result1["status"]);
+}
+
+if (result2 == null) {
+    echo("   ✅ Invalid JSON handled gracefully");
+}
+
+echo("");
+
+// ===== 7. ADVANCED FEATURES =====
+echo("⚡ 7. Advanced Features:");
+
+// Arrow functions con stdlib
+let processUser = user => {
+    let processed = {
+        "id": user["id"],
+        "display_name": user["name"],
+        "contact": user["email"],
+        "status": user["active"] ? "ACTIVE" : "INACTIVE",
+        "processed_at": now()
+    };
+    return processed;
+};
+
+// Template literals con stdlib
+let formatUserInfo = (user) => {
+    let status = user["active"] ? "activo" : "inactivo";
+    return `Usuario ${user["name"]} (${user["email"]}) está ${status}`;
+};
+
+// Procesar usuarios con arrow functions
+echo("   Processing users with arrow functions:");
+for (user in users) {
+    let processed = processUser(user);
+    let info = formatUserInfo(user);
+    echo("   - " + info);
+}
+
+echo("");
+
+// Mostrar reporte final de tests
+showFinalReport();
+
+echo("");
+echo("🎉 QUICKSTART COMPLETED!");
+echo("======================");
+echo("");
+echo("Next Steps:");
+echo("1. Check STDLIB_GUIDE.md for complete documentation");
+echo("2. Run: ./jabline run examples/stdlib_demo.jb for full demo");
+echo("3. Create your own modules in modules/ directory");
+echo("4. Add built-in functions to pkg/evaluator/ for system access");
+echo("");
+echo("Happy coding with Jabline Extended Standard Library! 🚀");

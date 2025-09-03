@@ -1,0 +1,24 @@
+// Ejemplo 3: Funciones
+
+// Función simple
+fn saludar(nombre) {
+    return "¡Hola " + nombre + "!";
+}
+
+// Función con cálculo
+fn sumar(a, b) {
+    return a + b;
+}
+
+// Función recursiva
+fn factorial(n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// Usar las funciones
+echo(saludar("Ana"));
+echo("5 + 3 = " + sumar(5, 3));
+echo("4! = " + factorial(4));

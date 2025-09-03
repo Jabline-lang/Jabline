@@ -1,0 +1,54 @@
+// template_simple.jb - Template Literals simple test
+
+echo("=== TEMPLATE LITERALS SIMPLE ===");
+
+// 1. Básico
+let name = "World";
+let greeting = `Hello ${name}!`;
+echo(greeting);
+
+// 2. Múltiples variables
+let firstName = "John";
+let age = 25;
+let intro = `My name is ${firstName} and I am ${age} years old.`;
+echo(intro);
+
+// 3. Expresiones matemáticas
+let a = 10;
+let b = 5;
+let math = `${a} + ${b} = ${a + b}`;
+echo(math);
+
+// 4. Arrow functions
+let double = x => x * 2;
+let num = 7;
+let result = `Double of ${num} is ${double(num)}`;
+echo(result);
+
+// 5. Condicionales
+let score = 85;
+let grade = `Score: ${score} - ${score >= 90 ? "Excellent" : score >= 70 ? "Good" : "Needs improvement"}`;
+echo(grade);
+
+// 6. Objetos
+let person = {"name": "Alice", "age": 30};
+let info = `Person: ${person["name"]}, Age: ${person["age"]}`;
+echo(info);
+
+// 7. Arrays
+let colors = ["red", "green", "blue"];
+let palette = `Colors: ${colors[0]}, ${colors[1]}, ${colors[2]}`;
+echo(palette);
+
+// 8. Template multilínea
+let user = "Developer";
+let status = "Active";
+let card = `
+User Profile:
+  Name: ${user}
+  Status: ${status}
+  Logged in: ${status == "Active" ? "Yes" : "No"}
+`;
+echo(card);
+
+echo("=== TEMPLATE LITERALS TEST COMPLETED ===");

@@ -1,0 +1,334 @@
+// Módulo de utilidades de arrays para Jabline
+// Proporciona funciones avanzadas para manipulación de arrays
+
+// Función para encontrar el índice de un elemento
+export fn findIndex(inputArr, targetValue) {
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] == targetValue) {
+            return index;
+        }
+        index = index + 1;
+    }
+    return -1;
+}
+
+// Función para verificar si un array contiene un valor
+export fn contains(inputArr, targetValue) {
+    return findIndex(inputArr, targetValue) != -1;
+}
+
+// Función para remover un elemento por valor
+export fn remove(inputArr, targetValue) {
+    let resultArr = [];
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] != targetValue) {
+            resultArr = push(resultArr, inputArr[index]);
+        }
+        index = index + 1;
+    }
+    return resultArr;
+}
+
+// Función para remover elemento por índice
+export fn removeAt(inputArr, targetIndex) {
+    if (targetIndex < 0 || targetIndex >= len(inputArr)) {
+        return inputArr;
+    }
+
+    let resultArr = [];
+    let currentIndex = 0;
+    while (currentIndex < len(inputArr)) {
+        if (currentIndex != targetIndex) {
+            resultArr = push(resultArr, inputArr[currentIndex]);
+        }
+        currentIndex = currentIndex + 1;
+    }
+    return resultArr;
+}
+
+// Función para insertar elemento en posición específica
+export fn insertAt(inputArr, targetIndex, newValue) {
+    if (targetIndex < 0) {
+        targetIndex = 0;
+    }
+    if (targetIndex > len(inputArr)) {
+        targetIndex = len(inputArr);
+    }
+
+    let resultArr = [];
+    let currentIndex = 0;
+
+    // Copiar elementos antes del índice
+    while (currentIndex < targetIndex) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+
+    // Insertar el nuevo elemento
+    resultArr = push(resultArr, newValue);
+
+    // Copiar elementos después del índice
+    while (currentIndex < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+
+    return resultArr;
+}
+
+// Función para obtener una porción del array (slice)
+export fn slice(inputArr, startIndex, endIndex) {
+    let actualStart = 0;
+    if (startIndex > 0) {
+        actualStart = startIndex;
+    }
+
+    let actualEnd = len(inputArr);
+    if (endIndex < len(inputArr)) {
+        actualEnd = endIndex;
+    }
+
+    if (actualStart >= actualEnd) {
+        return [];
+    }
+
+    let resultArr = [];
+    let currentIndex = actualStart;
+    while (currentIndex < actualEnd) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+    return resultArr;
+}
+
+// Función para concatenar dos arrays
+export fn concat(firstArr, secondArr) {
+    let resultArr = [];
+    let index = 0;
+
+    // Copiar primer array
+    while (index < len(firstArr)) {
+        resultArr = push(resultArr, firstArr[index]);
+        index = index + 1;
+    }
+
+    // Copiar segundo array
+    index = 0;
+    while (index < len(secondArr)) {
+        resultArr = push(resultArr, secondArr[index]);
+        index = index + 1;
+    }
+
+    return resultArr;
+}
+
+// Función para reversar un array
+export fn reverseArray(inputArr) {
+    let resultArr = [];
+    let index = len(inputArr) - 1;
+    while (index >= 0) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index - 1;
+    }
+    return resultArr;
+}
+
+// Función para encontrar el máximo valor en un array de números
+export fn max(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+
+    let maximum = inputArr[0];
+    let index = 1;
+    while (index < len(inputArr)) {
+        if (inputArr[index] > maximum) {
+            maximum = inputArr[index];
+        }
+        index = index + 1;
+    }
+    return maximum;
+}
+
+// Función para encontrar el mínimo valor en un array de números
+export fn min(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+
+    let minimum = inputArr[0];
+    let index = 1;
+    while (index < len(inputArr)) {
+        if (inputArr[index] < minimum) {
+            minimum = inputArr[index];
+        }
+        index = index + 1;
+    }
+    return minimum;
+}
+
+// Función para sumar todos los elementos de un array
+export fn sum(inputArr) {
+    let total = 0;
+    let index = 0;
+    while (index < len(inputArr)) {
+        total = total + inputArr[index];
+        index = index + 1;
+    }
+    return total;
+}
+
+// Función para calcular el promedio de un array
+export fn average(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+    return sum(inputArr) / len(inputArr);
+}
+
+// Función para filtrar elementos únicos
+export fn unique(inputArr) {
+    let resultArr = [];
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (contains(resultArr, inputArr[index]) == false) {
+            resultArr = push(resultArr, inputArr[index]);
+        }
+        index = index + 1;
+    }
+    return resultArr;
+}
+
+// Función para ordenamiento burbuja (números)
+export fn sort(inputArr) {
+    let resultArr = [];
+    let index = 0;
+
+    // Copiar array original
+    while (index < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index + 1;
+    }
+
+    // Ordenamiento burbuja
+    let arraySize = len(resultArr);
+    let outerIndex = 0;
+    while (outerIndex < arraySize - 1) {
+        let innerIndex = 0;
+        while (innerIndex < arraySize - outerIndex - 1) {
+            if (resultArr[innerIndex] > resultArr[innerIndex + 1]) {
+                // Intercambiar elementos
+                let tempValue = resultArr[innerIndex];
+                resultArr[innerIndex] = resultArr[innerIndex + 1];
+                resultArr[innerIndex + 1] = tempValue;
+            }
+            innerIndex = innerIndex + 1;
+        }
+        outerIndex = outerIndex + 1;
+    }
+
+    return resultArr;
+}
+
+// Función para dividir array en chunks
+export fn chunk(inputArr, chunkSize) {
+    if (chunkSize <= 0) {
+        return [inputArr];
+    }
+
+    let resultArr = [];
+    let outerIndex = 0;
+
+    while (outerIndex < len(inputArr)) {
+        let currentChunk = [];
+        let innerIndex = 0;
+        while (innerIndex < chunkSize && (outerIndex + innerIndex) < len(inputArr)) {
+            currentChunk = push(currentChunk, inputArr[outerIndex + innerIndex]);
+            innerIndex = innerIndex + 1;
+        }
+        resultArr = push(resultArr, currentChunk);
+        outerIndex = outerIndex + chunkSize;
+    }
+
+    return resultArr;
+}
+
+// Función para aplanar un array de arrays
+export fn flatten(inputArr) {
+    let resultArr = [];
+    let outerIndex = 0;
+    while (outerIndex < len(inputArr)) {
+        let currentItem = inputArr[outerIndex];
+        if (type(currentItem) == "ARRAY") {
+            let innerIndex = 0;
+            while (innerIndex < len(currentItem)) {
+                resultArr = push(resultArr, currentItem[innerIndex]);
+                innerIndex = innerIndex + 1;
+            }
+        } else {
+            resultArr = push(resultArr, currentItem);
+        }
+        outerIndex = outerIndex + 1;
+    }
+    return resultArr;
+}
+
+// Función para shuffle (mezclar) array
+export fn shuffle(inputArr) {
+    let resultArr = [];
+    let index = 0;
+
+    // Copiar array original
+    while (index < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index + 1;
+    }
+
+    // Algoritmo de Fisher-Yates simplificado
+    index = len(resultArr) - 1;
+    while (index > 0) {
+        // Generar índice "aleatorio" simple
+        let randomIndex = ((index * 17 + 42) * 1103515245 + 12345) % (index + 1);
+
+        // Intercambiar elementos
+        let tempValue = resultArr[index];
+        resultArr[index] = resultArr[randomIndex];
+        resultArr[randomIndex] = tempValue;
+
+        index = index - 1;
+    }
+
+    return resultArr;
+}
+
+// Función para verificar si todos los elementos cumplen una condición simple
+export fn all(inputArr, targetValue) {
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] != targetValue) {
+            return false;
+        }
+        index = index + 1;
+    }
+    return true;
+}
+
+// Función para verificar si algún elemento cumple una condición simple
+export fn any(inputArr, targetValue) {
+    return contains(inputArr, targetValue);
+}
+
+// Función para contar elementos que cumplen una condición
+export fn countValue(inputArr, targetValue) {
+    let count = 0;
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] == targetValue) {
+            count = count + 1;
+        }
+        index = index + 1;
+    }
+    return count;
+}

@@ -1,0 +1,80 @@
+// Test básico del sistema de módulos
+// Importar y usar funciones del módulo de matemáticas
+
+// Importar todo el módulo de matemáticas
+import "math"
+
+echo("=== Pruebas del Sistema de Módulos ===")
+echo("")
+
+// Probar funciones del módulo math
+echo("Constantes matemáticas:")
+echo("PI = " + PI)
+echo("E = " + E)
+echo("")
+
+echo("Funciones básicas:")
+echo("abs(-5) = " + abs(-5))
+echo("max(10, 25) = " + max(10, 25))
+echo("min(10, 25) = " + min(10, 25))
+echo("")
+
+echo("Potencias y factoriales:")
+echo("pow(2, 8) = " + pow(2, 8))
+echo("factorial(5) = " + factorial(5))
+echo("sqrt(16) = " + sqrt(16))
+echo("")
+
+echo("Números pares e impares:")
+echo("isEven(4) = " + isEven(4))
+echo("isOdd(5) = " + isOdd(5))
+echo("")
+
+// Importar módulo de strings minimal
+import "strings_minimal"
+
+echo("=== Pruebas del Módulo Strings Minimal ===")
+echo("")
+
+let nombre = "juan";
+echo("Nombre original: '" + nombre + "'")
+echo("Capitalizado: '" + capitalize(nombre) + "'")
+echo("")
+
+let email = "usuario@ejemplo.com";
+echo("Email: " + email)
+echo("¿Es válido?: " + isValidEmail(email))
+echo("Dominio: " + extractDomain(email))
+echo("")
+
+echo("Formatear nombre completo:")
+echo("formatName('juan', 'pérez'): '" + formatName("juan", "pérez") + "'")
+echo("")
+
+echo("Otras funciones de strings:")
+echo("cleanSpaces('  Hola    mundo  '): '" + cleanSpaces("  Hola    mundo  ") + "'")
+echo("MESSAGE: " + MESSAGE)
+echo("")
+
+// Importar módulo de arrays
+import "arrays"
+
+echo("=== Pruebas del Módulo Arrays ===")
+echo("")
+
+let numeros = [5, 2, 8, 1, 9];
+echo("Array original: " + numeros)
+echo("Máximo: " + max(numeros))
+echo("Mínimo: " + min(numeros))
+echo("Suma: " + sum(numeros))
+echo("Promedio: " + average(numeros))
+echo("")
+
+let ordenados = sort(numeros);
+echo("Ordenados: " + ordenados)
+
+let reverso = reverseArray(numeros);
+echo("Reverso: " + reverso);
+
+echo("")
+echo("¡Sistema de módulos funcionando correctamente!")

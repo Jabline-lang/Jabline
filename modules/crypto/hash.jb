@@ -1,0 +1,472 @@
+// Módulo de Criptografía para Jabline
+// Proporciona funciones básicas de hashing y codificación
+
+// Constantes para algoritmos de hash
+export let SHA256_DIGEST_SIZE = 32;
+export let MD5_DIGEST_SIZE = 16;
+export let BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// ===========================================
+// FUNCIONES DE HASH BÁSICAS (simuladas)
+// ===========================================
+
+// Función simple de hash (32-bit FNV-1a aproximado)
+export fn simpleHash(input) {
+    if (input == null) {
+        return 0;
+    }
+
+    let hash = 2166136261; // FNV offset basis
+    let i = 0;
+
+    while (i < len(input)) {
+        let char = charAt(input, i);
+        let code = charCode(char);
+
+        hash = hash ^ code;
+        hash = hash * 16777619; // FNV prime
+
+        // Mantener en 32 bits (simulado)
+        if (hash > 4294967295) {
+            hash = hash % 4294967296;
+        }
+
+        i = i + 1;
+    }
+
+    return hash;
+}
+
+// Función para obtener código de carácter (simulada)
+fn charCode(char) {
+    // Mapeo básico de caracteres comunes a códigos ASCII
+    if (char == " ") return 32;
+    if (char == "!") return 33;
+    if (char == "\"") return 34;
+    if (char == "#") return 35;
+    if (char == "$") return 36;
+    if (char == "%") return 37;
+    if (char == "&") return 38;
+    if (char == "'") return 39;
+    if (char == "(") return 40;
+    if (char == ")") return 41;
+    if (char == "*") return 42;
+    if (char == "+") return 43;
+    if (char == ",") return 44;
+    if (char == "-") return 45;
+    if (char == ".") return 46;
+    if (char == "/") return 47;
+
+    // Números 0-9
+    if (char == "0") return 48;
+    if (char == "1") return 49;
+    if (char == "2") return 50;
+    if (char == "3") return 51;
+    if (char == "4") return 52;
+    if (char == "5") return 53;
+    if (char == "6") return 54;
+    if (char == "7") return 55;
+    if (char == "8") return 56;
+    if (char == "9") return 57;
+
+    // Letras A-Z
+    if (char == "A") return 65;
+    if (char == "B") return 66;
+    if (char == "C") return 67;
+    if (char == "D") return 68;
+    if (char == "E") return 69;
+    if (char == "F") return 70;
+    if (char == "G") return 71;
+    if (char == "H") return 72;
+    if (char == "I") return 73;
+    if (char == "J") return 74;
+    if (char == "K") return 75;
+    if (char == "L") return 76;
+    if (char == "M") return 77;
+    if (char == "N") return 78;
+    if (char == "O") return 79;
+    if (char == "P") return 80;
+    if (char == "Q") return 81;
+    if (char == "R") return 82;
+    if (char == "S") return 83;
+    if (char == "T") return 84;
+    if (char == "U") return 85;
+    if (char == "V") return 86;
+    if (char == "W") return 87;
+    if (char == "X") return 88;
+    if (char == "Y") return 89;
+    if (char == "Z") return 90;
+
+    // Letras a-z
+    if (char == "a") return 97;
+    if (char == "b") return 98;
+    if (char == "c") return 99;
+    if (char == "d") return 100;
+    if (char == "e") return 101;
+    if (char == "f") return 102;
+    if (char == "g") return 103;
+    if (char == "h") return 104;
+    if (char == "i") return 105;
+    if (char == "j") return 106;
+    if (char == "k") return 107;
+    if (char == "l") return 108;
+    if (char == "m") return 109;
+    if (char == "n") return 110;
+    if (char == "o") return 111;
+    if (char == "p") return 112;
+    if (char == "q") return 113;
+    if (char == "r") return 114;
+    if (char == "s") return 115;
+    if (char == "t") return 116;
+    if (char == "u") return 117;
+    if (char == "v") return 118;
+    if (char == "w") return 119;
+    if (char == "x") return 120;
+    if (char == "y") return 121;
+    if (char == "z") return 122;
+
+    // Default para caracteres no reconocidos
+    return 63; // '?'
+}
+
+// Hash MD5 simulado (no es MD5 real, solo para demostración)
+export fn md5(input) {
+    let hash = simpleHash(input);
+    return toHexString(hash, 32);
+}
+
+// Hash SHA256 simulado (no es SHA256 real, solo para demostración)
+export fn sha256(input) {
+    let hash1 = simpleHash(input);
+    let hash2 = simpleHash(input + "salt1");
+    let hash3 = simpleHash(input + "salt2");
+    let hash4 = simpleHash(input + "salt3");
+
+    let combined = toHexString(hash1, 16) + toHexString(hash2, 16) +
+                   toHexString(hash3, 16) + toHexString(hash4, 16);
+
+    return combined;
+}
+
+// Convertir número a hexadecimal
+fn toHexString(num, padding) {
+    let hex = "";
+    let digits = "0123456789abcdef";
+
+    if (num == 0) {
+        hex = "0";
+    } else {
+        while (num > 0) {
+            let remainder = num % 16;
+            hex = charAt(digits, remainder) + hex;
+            num = num / 16;
+        }
+    }
+
+    // Agregar padding con ceros
+    while (len(hex) < padding) {
+        hex = "0" + hex;
+    }
+
+    return hex;
+}
+
+// ===========================================
+// CODIFICACIÓN BASE64
+// ===========================================
+
+// Codificar string a Base64 (implementación simplificada)
+export fn base64Encode(input) {
+    if (input == null || len(input) == 0) {
+        return "";
+    }
+
+    let result = "";
+    let i = 0;
+
+    // Procesar grupos de 3 caracteres
+    while (i < len(input)) {
+        let char1 = charAt(input, i);
+        let char2 = "";
+        let char3 = "";
+
+        if (i + 1 < len(input)) {
+            char2 = charAt(input, i + 1);
+        }
+        if (i + 2 < len(input)) {
+            char3 = charAt(input, i + 2);
+        }
+
+        // Obtener códigos de caracteres
+        let code1 = charCode(char1);
+        let code2 = 0;
+        let code3 = 0;
+
+        if (char2 != "") {
+            code2 = charCode(char2);
+        }
+        if (char3 != "") {
+            code3 = charCode(char3);
+        }
+
+        // Combinar en 24 bits
+        let combined = (code1 * 65536) + (code2 * 256) + code3;
+
+        // Extraer 4 grupos de 6 bits cada uno
+        let b1 = (combined / 262144) % 64;
+        let b2 = (combined / 4096) % 64;
+        let b3 = (combined / 64) % 64;
+        let b4 = combined % 64;
+
+        // Convertir a caracteres Base64
+        result = result + charAt(BASE64_CHARS, b1);
+        result = result + charAt(BASE64_CHARS, b2);
+
+        if (char2 != "") {
+            result = result + charAt(BASE64_CHARS, b3);
+        } else {
+            result = result + "=";
+        }
+
+        if (char3 != "") {
+            result = result + charAt(BASE64_CHARS, b4);
+        } else {
+            result = result + "=";
+        }
+
+        i = i + 3;
+    }
+
+    return result;
+}
+
+// Decodificar Base64 a string (implementación simplificada)
+export fn base64Decode(input) {
+    if (input == null || len(input) == 0) {
+        return "";
+    }
+
+    // Remover padding
+    let cleanInput = input;
+    while (len(cleanInput) > 0 && charAt(cleanInput, len(cleanInput) - 1) == "=") {
+        cleanInput = substring(cleanInput, 0, len(cleanInput) - 1);
+    }
+
+    let result = "";
+    let i = 0;
+
+    // Procesar grupos de 4 caracteres
+    while (i + 3 < len(cleanInput)) {
+        let char1 = charAt(cleanInput, i);
+        let char2 = charAt(cleanInput, i + 1);
+        let char3 = charAt(cleanInput, i + 2);
+        let char4 = charAt(cleanInput, i + 3);
+
+        // Obtener índices en BASE64_CHARS
+        let idx1 = indexOf(BASE64_CHARS, char1);
+        let idx2 = indexOf(BASE64_CHARS, char2);
+        let idx3 = indexOf(BASE64_CHARS, char3);
+        let idx4 = indexOf(BASE64_CHARS, char4);
+
+        // Combinar en 24 bits
+        let combined = (idx1 * 262144) + (idx2 * 4096) + (idx3 * 64) + idx4;
+
+        // Extraer 3 bytes
+        let byte1 = (combined / 65536) % 256;
+        let byte2 = (combined / 256) % 256;
+        let byte3 = combined % 256;
+
+        // Convertir bytes a caracteres (simplificado)
+        result = result + charFromCode(byte1);
+        result = result + charFromCode(byte2);
+        result = result + charFromCode(byte3);
+
+        i = i + 4;
+    }
+
+    return result;
+}
+
+// Convertir código a carácter (función inversa de charCode)
+fn charFromCode(code) {
+    // Mapeo básico de códigos ASCII a caracteres
+    if (code == 32) return " ";
+    if (code == 33) return "!";
+    if (code == 34) return "\"";
+    if (code == 35) return "#";
+    if (code == 36) return "$";
+    if (code == 37) return "%";
+    if (code == 38) return "&";
+    if (code == 39) return "'";
+    if (code == 40) return "(";
+    if (code == 41) return ")";
+    if (code == 42) return "*";
+    if (code == 43) return "+";
+    if (code == 44) return ",";
+    if (code == 45) return "-";
+    if (code == 46) return ".";
+    if (code == 47) return "/";
+
+    // Números 0-9
+    if (code >= 48 && code <= 57) {
+        return "" + (code - 48);
+    }
+
+    // Letras A-Z
+    if (code >= 65 && code <= 90) {
+        let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        return charAt(letters, code - 65);
+    }
+
+    // Letras a-z
+    if (code >= 97 && code <= 122) {
+        let letters = "abcdefghijklmnopqrstuvwxyz";
+        return charAt(letters, code - 97);
+    }
+
+    return "?"; // Carácter no reconocido
+}
+
+// ===========================================
+// UTILIDADES DE VALIDACIÓN
+// ===========================================
+
+// Verificar si un string es Base64 válido
+export fn isValidBase64(input) {
+    if (input == null || len(input) == 0) {
+        return false;
+    }
+
+    // La longitud debe ser múltiplo de 4
+    if (len(input) % 4 != 0) {
+        return false;
+    }
+
+    let i = 0;
+    while (i < len(input)) {
+        let char = charAt(input, i);
+
+        // Verificar si es carácter Base64 válido
+        if (indexOf(BASE64_CHARS, char) == -1 && char != "=") {
+            return false;
+        }
+
+        i = i + 1;
+    }
+
+    return true;
+}
+
+// ===========================================
+// FUNCIONES DE COMPARACIÓN SEGURA
+// ===========================================
+
+// Comparación segura de strings (timing-safe)
+export fn safeCompare(str1, str2) {
+    if (str1 == null || str2 == null) {
+        return false;
+    }
+
+    // Si las longitudes son diferentes, definitivamente no son iguales
+    if (len(str1) != len(str2)) {
+        return false;
+    }
+
+    let result = 0;
+    let i = 0;
+
+    // Comparar todos los caracteres para evitar timing attacks
+    while (i < len(str1)) {
+        let char1 = charAt(str1, i);
+        let char2 = charAt(str2, i);
+
+        if (char1 != char2) {
+            result = 1;
+        }
+
+        i = i + 1;
+    }
+
+    return result == 0;
+}
+
+// ===========================================
+// GENERACIÓN DE TOKENS SIMPLES
+// ===========================================
+
+// Generar token aleatorio simple (no criptográficamente seguro)
+export fn generateToken(length) {
+    if (length <= 0) {
+        length = 16;
+    }
+
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
+    let i = 0;
+
+    while (i < length) {
+        // Generar índice "aleatorio" usando hash
+        let seed = simpleHash("" + i + now()) % len(chars);
+        if (seed < 0) {
+            seed = -seed;
+        }
+
+        token = token + charAt(chars, seed);
+        i = i + 1;
+    }
+
+    return token;
+}
+
+// Generar UUID simple (versión 4 simulada)
+export fn generateUUID() {
+    let chars = "0123456789abcdef";
+    let uuid = "";
+    let i = 0;
+
+    while (i < 36) {
+        if (i == 8 || i == 13 || i == 18 || i == 23) {
+            uuid = uuid + "-";
+        } else if (i == 14) {
+            uuid = uuid + "4"; // Versión 4
+        } else if (i == 19) {
+            uuid = uuid + "a"; // Variante fija
+        } else {
+            let seed = simpleHash("uuid" + i + now()) % 16;
+            if (seed < 0) {
+                seed = -seed;
+            }
+            uuid = uuid + charAt(chars, seed);
+        }
+        i = i + 1;
+    }
+
+    return uuid;
+}
+
+// ===========================================
+// FUNCIONES DE CHECKSUM
+// ===========================================
+
+// Calcular checksum simple
+export fn checksum(input) {
+    if (input == null) {
+        return 0;
+    }
+
+    let sum = 0;
+    let i = 0;
+
+    while (i < len(input)) {
+        sum = sum + charCode(charAt(input, i));
+        i = i + 1;
+    }
+
+    return sum % 65536; // Checksum de 16 bits
+}
+
+// Verificar integridad con checksum
+export fn verifyChecksum(input, expectedChecksum) {
+    let actualChecksum = checksum(input);
+    return actualChecksum == expectedChecksum;
+}

@@ -1,0 +1,24 @@
+// Ejemplo 14: Manejo de Excepciones
+
+// Try/catch básico
+try {
+    echo("Ejecutando código...");
+    throw "Algo salió mal";
+    echo("Esta línea no se ejecuta");
+} catch (error) {
+    echo("Error capturado: " + error);
+}
+
+// Excepciones en funciones
+fn dividir(a, b) {
+    if (b == 0) {
+        throw "No se puede dividir por cero";
+    }
+    return a / b;
+}
+
+try {
+    let resultado = dividir(10, 0);
+} catch (e) {
+    echo("Error: " + e);
+}
