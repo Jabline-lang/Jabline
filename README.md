@@ -2,7 +2,7 @@
 
 **A modern, powerful, and extensible interpreted programming language with a comprehensive standard library.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/user/jabline)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Jabline-lang/Jabline)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/go-1.24.6-00ADD8.svg)](https://golang.org/)
 
