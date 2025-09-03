@@ -46,7 +46,7 @@ echo(`Welcome to ${name} programming!`);
 ### Run Your First Program
 
 ```bash
-./jabline run examples/basic/01_variables_operadores.jb
+jabline run examples/hello_world.jb
 ```
 
 ## 📖 Language Features
@@ -190,34 +190,9 @@ let timestamp = now();
 let formatted = formatTime(timestamp, "YYYY-MM-DD HH:mm:ss");
 ```
 
-## 📁 Project Structure
-
-```
-jabline/
-├── cmd/                    # CLI command handlers
-├── pkg/                    # Core language implementation
-│   ├── ast/               # Abstract Syntax Tree
-│   ├── evaluator/         # Expression evaluator
-│   ├── lexer/             # Tokenizer
-│   ├── object/            # Object system
-│   ├── parser/            # Parser
-│   └── token/             # Token definitions
-├── modules/               # Standard library modules
-│   ├── time/              # Date and time utilities
-│   ├── data/              # JSON and data processing
-│   ├── testing/           # Testing framework
-│   ├── crypto/            # Cryptographic functions
-│   └── os/                # OS and environment utilities
-├── examples/              # Example programs
-│   ├── basic/             # Basic language features
-│   ├── modules/           # Module usage examples
-│   └── stdlib_*.jb        # Standard library demos
-└── main.go               # Entry point
-```
-
 ## 📚 Documentation
 
-- [Standard Library Guide](STDLIB_GUIDE.md) - Complete API reference
+- [Standard Library Guide](STDLIB_REFERENCE.md) - Complete API reference
 - [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
 - [Examples](examples/) - Working code examples
 
