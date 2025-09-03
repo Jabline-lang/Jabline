@@ -2,9 +2,9 @@
 
 **A modern, powerful, and extensible interpreted programming language with a comprehensive standard library.**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/user/jabline)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/user/jabline)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/go-1.19+-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/go-1.24.6-00ADD8.svg)](https://golang.org/)
 
 ## 🌟 Overview
 
@@ -263,21 +263,6 @@ let analysis = analyzeData(sales);
 echo("Analysis: " + stringify(analysis));
 ```
 
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-# Test I/O built-ins
-./jabline run examples/stdlib_io_demo.jb
-
-# Test complete standard library
-./jabline run examples/stdlib_complete_demo.jb
-
-# Test basic module system
-./jabline run examples/modules/01_basic_modules.jb
-```
-
 ## 🔧 Built-in Functions
 
 ### I/O Operations
@@ -343,31 +328,8 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
 
-## 🎉 Getting Started
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/user/jabline
-   cd jabline
-   ```
-
-2. **Build the interpreter**
-   ```bash
-   go build -o jabline main.go
-   ```
-
-3. **Run examples**
-   ```bash
-   ./jabline run examples/stdlib_quickstart.jb
-   ```
-
-4. **Start coding!**
-   ```jabline
-   echo("Welcome to Jabline! 🚀");
-   ```
-
 ---
 
-**Jabline v2.0.0** - *From prototype to production-ready programming language*
+**Jabline v1.0.0** - *From prototype to production-ready programming language*
 
 *Built with ❤️ for modern development*
