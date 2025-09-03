@@ -34,16 +34,6 @@ git clone --depth 1 https://github.com/Jabline-lang/Jabline && cd Jabline
 cd builder && go run .
 ```
 
-### 🛠️ Manual Installation
-
-If you prefer to build manually:
-
-```bash
-git clone https://github.com/Jabline-lang/Jabline
-cd Jabline
-go build -o jabline main.go
-```
-
 ### Hello World
 
 ```jabline
