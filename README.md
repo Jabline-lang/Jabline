@@ -1,4 +1,8 @@
-# <img src="assets/jabline.png" alt="Logo" width="30"> 🚀 Jabline Programming Language
+<p align="center">
+  <img src="assets/jabline.png" alt="Jabline Logo" width="200">
+</p>
+
+<h1 align="center">🚀 Jabline Programming Language</h1>
 
 **A modern, powerful, and extensible interpreted programming language with a comprehensive standard library.**
 
