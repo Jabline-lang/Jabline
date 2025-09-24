@@ -78,3 +78,20 @@ func (e *Environment) IsConstant(name string) bool {
 func (e *Environment) GetStore() map[string]Object {
 	return e.store
 }
+
+// GetAll devuelve todas las variables y constantes del entorno actual
+func (e *Environment) GetAll() map[string]Object {
+	result := make(map[string]Object)
+
+	// Agregar variables
+	for name, obj := range e.store {
+		result[name] = obj
+	}
+
+	// Agregar constantes
+	for name, obj := range e.constants {
+		result[name] = obj
+	}
+
+	return result
+}

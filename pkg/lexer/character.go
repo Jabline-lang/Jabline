@@ -7,6 +7,15 @@ func (l *Lexer) readChar() {
 	} else {
 		l.ch = l.input[l.readPosition]
 	}
+
+	// Track line and column position
+	if l.ch == '\n' {
+		l.line++
+		l.column = 0
+	} else {
+		l.column++
+	}
+
 	l.position = l.readPosition
 	l.readPosition++
 }

@@ -1,0 +1,31 @@
+// Ejemplo simple de Expresiones Regulares
+
+echo("=== Regex Simple ===");
+
+// Test basico - verificar patron
+let texto = "Hola mundo 123";
+let tieneNumeros = test(texto, "\\d+");
+echo("Tiene numeros: " + tieneNumeros);
+
+// Extraer numeros
+let frase = "Tengo 25 anos y peso 70 kg";
+let numeros = extractNumbers(frase);
+echo("Numeros encontrados: " + stringify(numeros));
+
+// Validar email
+let email = "usuario@dominio.com";
+let emailValido = isEmail(email);
+echo("Email valido: " + emailValido);
+
+// Reemplazar texto
+let oracion = "Me gusta el gato negro";
+let nueva = replace(oracion, "gato", "perro");
+echo("Original: " + oracion);
+echo("Nueva: " + nueva);
+
+// Dividir texto
+let lista = "uno,dos,tres,cuatro";
+let elementos = split(lista, ",");
+echo("Lista dividida: " + stringify(elementos));
+
+echo("=== Regex Complete ===");

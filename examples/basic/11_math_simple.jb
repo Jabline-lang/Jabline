@@ -1,0 +1,37 @@
+// Ejemplo simple de Funciones Matematicas
+
+echo("=== Math Simple ===");
+
+// Funciones basicas
+echo("abs(-10) = " + abs(-10));
+echo("sqrt(25) = " + sqrt(25));
+echo("pow(3, 2) = " + pow(3, 2));
+
+// Trigonometria
+let pi = PI();
+echo("PI = " + pi);
+echo("sin(0) = " + sin(0));
+echo("cos(0) = " + cos(0));
+
+// Min y Max
+echo("min(5, 3, 8) = " + min(5, 3, 8));
+echo("max(5, 3, 8) = " + max(5, 3, 8));
+
+// Redondeo
+echo("floor(4.7) = " + floor(4.7));
+echo("ceil(4.2) = " + ceil(4.2));
+echo("round(4.5) = " + round(4.5));
+
+// Aleatorios y factorial
+echo("random(1, 10) = " + random(1, 10));
+echo("factorial(4) = " + factorial(4));
+
+// Ejemplo practico - distancia entre puntos
+let x1 = 0;
+let y1 = 0;
+let x2 = 3;
+let y2 = 4;
+let distancia = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+echo("Distancia entre (0,0) y (3,4): " + distancia);
+
+echo("=== Math Complete ===");

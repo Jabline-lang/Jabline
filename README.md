@@ -1,335 +1,250 @@
-<p align="center">
-  <img src="assets/jabline.png" alt="Jabline Logo" width="200">
-</p>
+<div align="center">
+  <img src="assets/jabline.png" alt="Jabline Logo" width="120">
 
-<h1 align="center">🚀 Jabline Programming Language</h1>
+  # Jabline Programming Language
 
-**A modern, powerful, and extensible interpreted programming language with a comprehensive standard library.**
+  *A modern, feature-rich interpreted programming language*
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Jabline-lang/Jabline)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Go](https://img.shields.io/badge/go-1.24.6-00ADD8.svg)](https://golang.org/)
-
-## 🌟 Overview
-
-Jabline is a production-ready interpreted programming language that combines modern syntax with powerful built-in capabilities. Designed for rapid development, system integration, and real-world applications.
-
-### ✨ Key Features
-
-- **🎯 Modern Syntax**: Clean, expressive syntax inspired by JavaScript and Python
-- **⚡ Fast Execution**: Optimized interpreter with efficient object system
-- **📚 Rich Standard Library**: 60+ built-in functions for I/O, networking, data processing
-- **🔧 System Integration**: File operations, HTTP client, environment variables
-- **🧪 Built-in Testing**: Complete testing framework with assertions
-- **📦 Module System**: Import/export with selective imports
-- **🔒 Production Ready**: Error handling, type safety, professional features
-
-## 🚀 Quick Start
-
-### 🔧 Automated Installation (Recommended)
-
-The easiest way to install Jabline with automatic system integration:
-
-```bash
-# Clone the repository
-git clone --depth 1 https://github.com/Jabline-lang/Jabline && cd Jabline
-
-# Run the automated installer
-cd builder && go run .
-```
-
-### Hello World
-
-```jabline
-echo("Hello, World!");
-
-let name = "Jabline";
-echo(`Welcome to ${name} programming!`);
-```
-
-### Run Your First Program
-
-```bash
-jabline run examples/hello_world.jb
-```
-
-## 📖 Language Features
-
-### Variables and Types
-
-```jabline
-let name = "Alice";
-let age = 30;
-let active = true;
-let numbers = [1, 2, 3, 4, 5];
-let config = {"debug": true, "port": 8080};
-```
-
-### Functions and Arrow Functions
-
-```jabline
-// Traditional function
-fn greet(name) {
-    return "Hello, " + name + "!";
-}
-
-// Arrow function
-let double = x => x * 2;
-let add = (a, b) => a + b;
-```
-
-### Control Flow
-
-```jabline
-// Conditionals
-if (age >= 18) {
-    echo("Adult");
-} else {
-    echo("Minor");
-}
-
-// Loops
-for (let i = 0; i < 5; i++) {
-    echo("Count: " + i);
-}
-
-// For-each
-for (item in collection) {
-    echo(item);
-}
-```
-
-### Error Handling
-
-```jabline
-try {
-    let data = readFile("config.json");
-    let config = parse(data);
-} catch (error) {
-    echo("Error: " + error);
-}
-```
-
-## 🛠️ Standard Library
-
-### File System Operations
-
-```jabline
-// File operations
-let content = readFile("document.txt");
-writeFile("output.txt", "Hello World!");
-let exists = fileExists("config.json");
-
-// Directory operations
-createDir("project");
-let files = listDir(".");
-let currentDir = getWorkingDir();
-```
-
-### HTTP Client
-
-```jabline
-// GET request
-let response = httpGet("https://api.example.com/users");
-if (response["status"] == 200) {
-    let users = parse(response["body"]);
-    echo("Found " + len(users) + " users");
-}
-
-// POST request
-let data = stringify({"name": "John", "email": "john@example.com"});
-let result = httpPost("https://api.example.com/users", data);
-```
-
-### Data Processing
-
-```jabline
-import { sum, sort, findIndex } from "arrays";
-import { capitalize, isValidEmail } from "strings_minimal";
-import { abs, max, pow } from "math";
-
-let numbers = [15, 8, 42, 3, 20];
-let total = sum(numbers);           // 88
-let sorted = sort(numbers);         // [3, 8, 15, 20, 42]
-let power = pow(2, 8);             // 256
-```
-
-### JSON Processing
-
-```jabline
-import { stringify, parse, isValid } from "data/json";
-
-let data = {"name": "Alice", "age": 30, "skills": ["Go", "JavaScript"]};
-let json = stringify(data);
-let parsed = parse(json);
-let valid = isValid(json);
-```
-
-### Testing Framework
-
-```jabline
-import { describe, it, assertEqual, assertTrue } from "testing/assert";
-
-describe("Math Operations", function() {
-    it("should add numbers correctly", function() {
-        assertEqual(2 + 3, 5, "Addition should work");
-    });
-
-    it("should handle arrays", function() {
-        assertTrue(len([1, 2, 3]) == 3, "Array length should be 3");
-    });
-});
-```
-
-### Date and Time
-
-```jabline
-import { createDate, formatDate, isLeapYear } from "time/datetime";
-
-let today = createDate(15, 3, 2024);
-echo("Today: " + formatDate(today));          // "15/03/2024"
-echo("Is leap year: " + isLeapYear(2024));    // true
-
-let timestamp = now();
-let formatted = formatTime(timestamp, "YYYY-MM-DD HH:mm:ss");
-```
-
-## 📚 Documentation
-
-- [Standard Library Guide](STDLIB_REFERENCE.md) - Complete API reference
-- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
-- [Examples](examples/) - Working code examples
-
-## 🎯 Use Cases
-
-### Web API Client
-
-```jabline
-import { stringify, parse } from "data/json";
-
-fn fetchUserData(userId) {
-    let url = `https://api.example.com/users/${userId}`;
-    let response = httpGet(url);
-
-    if (response["status"] == 200) {
-        return parse(response["body"]);
-    } else {
-        throw "Failed to fetch user data";
-    }
-}
-
-let user = fetchUserData(123);
-echo("User: " + user["name"]);
-```
-
-### Configuration Management
-
-```jabline
-fn loadConfig() {
-    let configFile = "app.json";
-
-    if (!fileExists(configFile)) {
-        let defaultConfig = {
-            "port": 8080,
-            "debug": false,
-            "database_url": getEnv("DATABASE_URL") ?? "sqlite://app.db"
-        };
-        writeFile(configFile, stringify(defaultConfig));
-        return defaultConfig;
-    }
-
-    let content = readFile(configFile);
-    return parse(content);
-}
-
-let config = loadConfig();
-echo("Starting server on port " + config["port"]);
-```
-
-### Data Analysis
-
-```jabline
-import { sum, sort, max, min } from "arrays";
-
-fn analyzeData(dataset) {
-    return {
-        "count": len(dataset),
-        "sum": sum(dataset),
-        "average": sum(dataset) / len(dataset),
-        "max": max(dataset),
-        "min": min(dataset),
-        "sorted": sort(dataset)
-    };
-}
-
-let sales = [250, 180, 420, 90, 350];
-let analysis = analyzeData(sales);
-echo("Analysis: " + stringify(analysis));
-```
-
-## 🔧 Built-in Functions
-
-### I/O Operations
-- `readFile(filename)` - Read file contents
-- `writeFile(filename, content)` - Write to file
-- `fileExists(filename)` - Check file existence
-- `createDir(dirname)` - Create directory
-- `listDir(dirname)` - List directory contents
-
-### Network Operations
-- `httpGet(url)` - HTTP GET request
-- `httpPost(url, data)` - HTTP POST request
-
-### System Integration
-- `getEnv(key)` - Get environment variable
-- `setEnv(key, value)` - Set environment variable
-- `getWorkingDir()` - Get current directory
-- `now()` - Current timestamp
-- `sleep(milliseconds)` - Pause execution
-
-### Path Utilities
-- `pathJoin(...)` - Join path segments
-- `pathBase(path)` - Extract filename
-- `pathDir(path)` - Extract directory
-
-## 🌐 Standard Library Modules
-
-- **math** - Mathematical operations and constants
-- **strings_minimal** - String processing and validation
-- **arrays** - Array manipulation and utilities
-- **time/datetime** - Date and time operations
-- **data/json** - JSON serialization and parsing
-- **data/collections** - Functional programming utilities
-- **testing/assert** - Testing framework with assertions
-- **crypto/hash** - Hashing and security functions
-- **os/env** - Environment and system utilities
-
-## 🎨 Modern Features
-
-### Template Literals
-```jabline
-let name = "World";
-let greeting = `Hello ${name}!`;
-let calculation = `Result: ${2 + 3}`;
-```
-
-### Nullish Coalescing
-```jabline
-let user = getEnv("USER") ?? "guest";
-let port = config?.port ?? 3000;
-```
-
-### Optional Chaining
-```jabline
-let avatar = user?.profile?.avatar ?? "default.jpg";
-```
-
-## 📄 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
+  [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+  [![Go Version](https://img.shields.io/badge/go-1.24.6-00ADD8.svg)](https://golang.org/)
+</div>
 
 ---
 
-**Jabline v1.0.0** - *From prototype to production-ready programming language*
+## 🚀 **Quick Start**
 
-*Built with ❤️ for modern development*
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/Jabline-lang/Jabline.git
+cd Jabline
+
+# Build using the automated builder
+cd builder && go run .
+
+# Run your first program
+jabline run hello.jb
+```
+
+### Basic Usage
+
+```bash
+# Execute a .jb file
+jabline run program.jb
+
+# Show version
+jabline --version
+
+# Show help
+jabline --help
+```
+
+---
+
+## 📝 **Language Overview**
+
+Jabline is a modern interpreted programming language designed for rapid development and system integration. It combines familiar syntax with powerful built-in capabilities, making it ideal for scripting, data processing, and application development.
+
+### Core Features
+
+- **🔧 Rich Built-in Library** - JSON, mathematics, regex, HTTP, file operations
+- **🐛 Advanced Error Handling** - Colored output, stack traces, intelligent suggestions
+- **📊 Native JSON Support** - Built-in parsing and serialization
+- **🧮 Scientific Computing** - Complete mathematical function library
+- **🌐 HTTP Client** - Integrated web request capabilities
+- **📁 File System Operations** - Comprehensive file and directory management
+- **⚡ Performance** - Optimized Go-based interpreter
+
+### Syntax Highlights
+
+```jabline
+// Variables and constants
+let name = "Jabline";
+const VERSION = "1.0.0";
+
+// Functions
+fn calculate(x, y) {
+    return sqrt(pow(x, 2) + pow(y, 2));
+}
+
+// Data structures
+let user = {"name": "Alice", "age": 30};
+let numbers = [1, 2, 3, 4, 5];
+
+// Control flow
+if (user["age"] >= 18) {
+    echo("Adult user");
+} else {
+    echo("Minor user");
+}
+
+// JSON operations
+let json = stringify(user);
+let parsed = parse(json);
+
+// Mathematical operations
+let result = abs(-15) + sqrt(25) + pow(2, 8);
+```
+
+---
+
+## 🔧 **Built-in Capabilities**
+
+### Data Operations
+- **JSON Processing** - `stringify()`, `parse()` for seamless data conversion
+- **String Manipulation** - Case conversion, splitting, joining, pattern matching
+- **Array Operations** - Push, pop, sorting, filtering, transformation
+- **Hash Operations** - Key-value manipulation, merging, iteration
+
+### Mathematical Computing
+- **Basic Math** - `abs()`, `sqrt()`, `pow()`, `min()`, `max()`
+- **Trigonometry** - `sin()`, `cos()`, `tan()`, `asin()`, `acos()`, `atan()`
+- **Logarithms** - `log()`, `log10()`, `log2()`, `exp()`
+- **Utilities** - `floor()`, `ceil()`, `round()`, `factorial()`, `random()`
+- **Constants** - `PI()`, `E()` for mathematical precision
+
+### Pattern Matching
+- **Email Validation** - `isEmail()` for RFC-compliant email checking
+- **URL Validation** - `isURL()` for web address verification  
+- **Phone Validation** - `isPhone()` for telephone number formats
+- **Custom Patterns** - `test()`, `match()`, `replace()` for regex operations
+
+### System Integration
+- **File Operations** - Read, write, create, delete files and directories
+- **HTTP Requests** - GET and POST operations with automatic response parsing
+- **Environment** - Access and modify environment variables
+- **Input/Output** - Console interaction and formatted output
+
+### Development Tools
+- **Debug Output** - `debug()` with colored, formatted messages
+- **Assertions** - `assert()` with visual feedback for testing
+- **Execution Tracing** - `trace()` for code flow analysis
+- **Stack Inspection** - `stackTrace()` for error diagnosis
+
+---
+
+## 🏗️ **Architecture**
+
+Jabline is built with a modular, extensible architecture:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Source      │───▶│     Parser      │───▶│   Evaluator     │
+│     Code        │    │      AST        │    │    Runtime      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Lexer       │    │   Syntax Tree   │    │    Built-ins    │
+│    Tokens       │    │   Generation    │    │   Functions     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Key Components
+- **Lexical Analysis** - Token generation and preprocessing
+- **Syntax Parsing** - AST construction with error recovery
+- **Runtime Evaluation** - Expression evaluation and execution
+- **Object System** - Dynamic typing with primitive and composite types
+- **Built-in Functions** - Extensive standard library integration
+
+---
+
+## 💼 **Use Cases**
+
+### Data Processing
+```jabline
+// Process JSON data from APIs
+let response = httpGet("https://api.example.com/users");
+let users = parse(response["body"]);
+
+for (user in users) {
+    if (isEmail(user["email"])) {
+        echo("Valid user: " + user["name"]);
+    }
+}
+```
+
+### Mathematical Computing
+```jabline
+// Scientific calculations
+fn calculateDistance(x1, y1, x2, y2) {
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    return sqrt(pow(dx, 2) + pow(dy, 2));
+}
+
+let distance = calculateDistance(0, 0, 3, 4); // 5.0
+```
+
+### System Automation
+```jabline
+// File processing with validation
+let files = listDir("./data");
+for (file in files) {
+    if (fileExists(file) && endsWith(file, ".json")) {
+        let content = readFile(file);
+        let data = parse(content);
+        debug("Processed file:", file);
+    }
+}
+```
+
+---
+
+## 📊 **Performance & Reliability**
+
+- **Optimized Runtime** - Built on Go for high performance and memory efficiency
+- **Error Recovery** - Graceful handling of syntax and runtime errors
+- **Memory Management** - Automatic garbage collection with minimal overhead
+- **Cross Platform** - Runs on Windows, macOS, and Linux
+- **Production Ready** - Comprehensive error reporting and debugging tools
+
+---
+
+## 🤝 **Contributing**
+
+We welcome contributions to make Jabline better:
+
+1. **Fork** the repository
+2. **Create** a feature branch
+3. **Add** your improvements with tests
+4. **Submit** a pull request
+
+### Development Setup
+```bash
+# Install Go 1.24.6 or later
+# Clone and build
+go build -o jabline main.go
+
+# Run tests
+go test ./...
+```
+
+---
+
+## 📚 **Documentation**
+
+- **[Language Reference](examples/)** - Complete syntax and feature guide
+- **[API Documentation](pkg/)** - Built-in function reference
+- **[Examples](examples/)** - Code samples and tutorials
+- **[Contributing Guide](.github/CONTRIBUTING.md)** - Development guidelines
+
+---
+
+## 📄 **License**
+
+Jabline is released under the [MIT License](LICENSE).
+
+---
+
+<div align="center">
+
+**Jabline v1.0.0** - *Modern Programming Made Simple*
+
+Built with ❤️ using Go
+
+[Get Started](https://github.com/Jabline-lang/Jabline#quick-start) • [Documentation](examples/) • [Community](https://github.com/Jabline-lang/Jabline/discussions)
+
+</div>

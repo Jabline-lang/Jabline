@@ -397,7 +397,7 @@ func getCurrentValue(expr ast.Expression, env *object.Environment) object.Object
 	case *ast.Identifier:
 		val, ok := env.Get(target.Value)
 		if !ok {
-			return newError("identifier not found: " + target.Value)
+			return newError("identifier not found: %s", target.Value)
 		}
 		return val
 

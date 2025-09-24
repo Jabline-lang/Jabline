@@ -2,7 +2,7 @@
 
 // Estructura para libros
 struct Libro {
-    titulo: "Sin título",
+    titulo: string,
     disponible: true
 }
 

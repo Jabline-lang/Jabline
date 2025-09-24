@@ -55,7 +55,7 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 
 	value, err := strconv.ParseInt(p.curTok.Literal, 0, 64)
 	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.curTok.Literal)
+		msg := fmt.Sprintf("line %d, column %d: could not parse %q as integer", p.curTok.Line, p.curTok.Column, p.curTok.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}
@@ -70,7 +70,7 @@ func (p *Parser) parseFloatLiteral() ast.Expression {
 
 	value, err := strconv.ParseFloat(p.curTok.Literal, 64)
 	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as float", p.curTok.Literal)
+		msg := fmt.Sprintf("line %d, column %d: could not parse %q as float", p.curTok.Line, p.curTok.Column, p.curTok.Literal)
 		p.errors = append(p.errors, msg)
 		return nil
 	}

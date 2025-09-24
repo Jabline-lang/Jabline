@@ -268,7 +268,7 @@ func evalPostfixExpression(node *ast.PostfixExpression, env *object.Environment)
 func evalIdentifierPostfix(identifier *ast.Identifier, operator string, env *object.Environment) object.Object {
 	obj, ok := env.Get(identifier.Value)
 	if !ok {
-		return newError("identifier not found: " + identifier.Value)
+		return newError("identifier not found: %s", identifier.Value)
 	}
 
 	switch obj.Type() {

@@ -763,6 +763,31 @@ func getBuiltin(name string) *object.Builtin {
 		return builtin
 	}
 
+	// Check JSON builtins
+	if builtin, exists := JSONBuiltins[name]; exists {
+		return builtin
+	}
+
+	// Check regex builtins
+	if builtin, exists := RegexBuiltins[name]; exists {
+		return builtin
+	}
+
+	// Check common regex builtins
+	if builtin, exists := CommonRegexBuiltins[name]; exists {
+		return builtin
+	}
+
+	// Check math builtins
+	if builtin, exists := MathBuiltins[name]; exists {
+		return builtin
+	}
+
+	// Check debug builtins
+	if builtin, exists := DebugBuiltins[name]; exists {
+		return builtin
+	}
+
 	// Check async builtins with lazy initialization
 	switch name {
 	case "setTimeout":
