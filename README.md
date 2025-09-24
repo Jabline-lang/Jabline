@@ -243,7 +243,7 @@ Jabline is released under the [MIT License](LICENSE).
 
 **Jabline v1.0.0** - *Modern Programming Made Simple*
 
-Built with ❤️ using Go
+Built with ❤️ using Goolang
 
 [Get Started](https://github.com/Jabline-lang/Jabline#quick-start) • [Documentation](examples/) • [Community](https://github.com/Jabline-lang/Jabline/discussions)
 
