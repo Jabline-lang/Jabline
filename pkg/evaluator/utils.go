@@ -113,3 +113,211 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	}
 	return obj
 }
+
+// isClosure checks if an object is a closure (function with captured variables)
+func isClosure(obj object.Object) bool {
+	switch fn := obj.(type) {
+	case *object.Function:
+		return fn.IsClosureCreated
+	case *object.ArrowFunction:
+		return fn.IsClosureCreated
+	case *object.AsyncFunction:
+		return fn.IsClosureCreated
+	default:
+		return false
+	}
+}
+
+// getClosureCapturedVars gets the captured variables from a closure
+func getClosureCapturedVars(obj object.Object) map[string]object.Object {
+	switch fn := obj.(type) {
+	case *object.Function:
+		if fn.IsClosureCreated {
+			return fn.CapturedVars
+		}
+	case *object.ArrowFunction:
+		if fn.IsClosureCreated {
+			return fn.CapturedVars
+		}
+	case *object.AsyncFunction:
+		if fn.IsClosureCreated {
+			return fn.CapturedVars
+		}
+	}
+	return nil
+}
+
+// isCallable checks if an object can be called as a function
+func isCallable(obj object.Object) bool {
+	switch obj.Type() {
+	case object.FUNCTION_OBJ, object.ARROW_FUNCTION_OBJ, object.ASYNC_FUNCTION_OBJ, object.BUILTIN_OBJ:
+		return true
+	default:
+		return false
+	}
+}
+
+// createClosureEnvironment creates an environment for closure execution
+func createClosureEnvironment(outerEnv *object.Environment, capturedVars map[string]object.Object) *object.Environment {
+	env := object.NewClosureEnvironment(outerEnv)
+
+	// Apply captured variables
+	if capturedVars != nil {
+		for name, obj := range capturedVars {
+			env.CaptureVariable(name, obj)
+		}
+	}
+
+	return env
+}
+
+// extractFreeVariables extracts variables that are used but not defined in the current scope
+func extractFreeVariables(node ast.Node, definedVars map[string]bool) []string {
+	freeVars := make([]string, 0)
+	visited := make(map[string]bool)
+
+	var extract func(ast.Node)
+	extract = func(n ast.Node) {
+		switch node := n.(type) {
+		case *ast.Identifier:
+			varName := node.Value
+			if !definedVars[varName] && !visited[varName] {
+				// Skip built-in identifiers and keywords
+				if !isBuiltinIdentifier(varName) {
+					freeVars = append(freeVars, varName)
+					visited[varName] = true
+				}
+			}
+
+		case *ast.Program:
+			for _, stmt := range node.Statements {
+				extract(stmt)
+			}
+
+		case *ast.BlockStatement:
+			for _, stmt := range node.Statements {
+				extract(stmt)
+			}
+
+		case *ast.LetStatement:
+			if node.Value != nil {
+				extract(node.Value)
+			}
+			definedVars[node.Name.Value] = true
+
+		case *ast.ConstStatement:
+			if node.Value != nil {
+				extract(node.Value)
+			}
+			definedVars[node.Name.Value] = true
+
+		case *ast.FunctionStatement:
+			definedVars[node.Name.Value] = true
+			// Don't extract from function body - it has its own scope
+
+		case *ast.ExpressionStatement:
+			extract(node.Expression)
+
+		case *ast.ReturnStatement:
+			if node.ReturnValue != nil {
+				extract(node.ReturnValue)
+			}
+
+		case *ast.AssignmentStatement:
+			extract(node.Left)
+			extract(node.Value)
+
+		case *ast.IfExpression:
+			extract(node.Condition)
+			extract(node.Consequence)
+			if node.Alternative != nil {
+				extract(node.Alternative)
+			}
+
+		case *ast.InfixExpression:
+			extract(node.Left)
+			extract(node.Right)
+
+		case *ast.PrefixExpression:
+			extract(node.Right)
+
+		case *ast.CallExpression:
+			extract(node.Function)
+			for _, arg := range node.Arguments {
+				extract(arg)
+			}
+
+		case *ast.ArrayLiteral:
+			for _, elem := range node.Elements {
+				extract(elem)
+			}
+
+		case *ast.HashLiteral:
+			for key, value := range node.Pairs {
+				extract(key)
+				extract(value)
+			}
+
+		case *ast.IndexExpression:
+			extract(node.Left)
+			extract(node.Index)
+		}
+	}
+
+	extract(node)
+	return freeVars
+}
+
+// isBuiltinIdentifier checks if an identifier is a built-in
+func isBuiltinIdentifier(name string) bool {
+	builtins := []string{
+		"len", "first", "last", "rest", "push", "puts", "echo", "type",
+		"str", "int", "float", "bool", "array", "hash", "keys", "values",
+		"indexOf", "join", "split", "trim", "upper", "lower", "replace",
+		"substr", "contains", "startsWith", "endsWith", "reverse",
+		"sort", "filter", "map", "reduce", "forEach", "find", "some", "every",
+		"min", "max", "sum", "avg", "round", "floor", "ceil", "abs",
+		"sqrt", "pow", "log", "exp", "sin", "cos", "tan", "random",
+		"time", "now", "sleep", "print", "println", "read", "write",
+		"null", "true", "false", "undefined",
+	}
+
+	for _, builtin := range builtins {
+		if name == builtin {
+			return true
+		}
+	}
+	return false
+}
+
+// cloneObject creates a shallow copy of an object for closure capture
+func cloneObject(obj object.Object) object.Object {
+	switch o := obj.(type) {
+	case *object.Integer:
+		return &object.Integer{Value: o.Value}
+	case *object.Float:
+		return &object.Float{Value: o.Value}
+	case *object.String:
+		return &object.String{Value: o.Value}
+	case *object.Boolean:
+		return &object.Boolean{Value: o.Value}
+	case *object.Null:
+		return NULL
+	case *object.Array:
+		// For arrays, we need to be careful about references
+		elements := make([]object.Object, len(o.Elements))
+		copy(elements, o.Elements)
+		return &object.Array{Elements: elements}
+	case *object.Hash:
+		// For hashes, clone the pairs map
+		pairs := make(map[object.HashKey]object.HashPair)
+		for k, v := range o.Pairs {
+			pairs[k] = v
+		}
+		return &object.Hash{Pairs: pairs}
+	default:
+		// For functions and other complex types, return as-is
+		// They should maintain their identity
+		return obj
+	}
+}

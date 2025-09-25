@@ -48,8 +48,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			Body:       node.Body,
 			Env:        env,
 		}
-		env.Set(node.Name.Value, function)
-		return function
+		// Check if this function needs to be a closure
+		closureFunction := createClosureIfNeeded(function, env)
+		env.Set(node.Name.Value, closureFunction)
+		return closureFunction
 
 	case *ast.AsyncFunctionStatement:
 		asyncFunction := &object.AsyncFunction{
@@ -57,8 +59,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			Body:       node.Body,
 			Env:        env,
 		}
-		env.Set(node.Name.Value, asyncFunction)
-		return asyncFunction
+		// Check if this async function needs to be a closure
+		closureAsyncFunction := createClosureIfNeeded(asyncFunction, env)
+		env.Set(node.Name.Value, closureAsyncFunction)
+		return closureAsyncFunction
 
 	case *ast.StructStatement:
 		// Register struct definition with types
@@ -151,9 +155,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalOptionalChainingExpression(node, env)
 
 	case *ast.AsyncFunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		return &object.AsyncFunction{Parameters: params, Env: env, Body: body}
+		// Use the new nested async function evaluation with closure support
+		return evaluateNestedAsyncFunction(node, env)
 
 	case *ast.AwaitExpression:
 		return evalAwaitExpression(node, env)
@@ -165,14 +168,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIdentifier(node, env)
 
 	case *ast.FunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
+		// Use the new nested function evaluation with closure support
+		return evaluateNestedFunction(node, env)
 
 	case *ast.ArrowFunction:
-		params := node.Parameters
-		body := node.Body
-		return &object.ArrowFunction{Parameters: params, Env: env, Body: body}
+		// Use the new nested arrow function evaluation with closure support
+		return evaluateNestedArrowFunction(node, env)
 
 	case *ast.CallExpression:
 		function := Eval(node.Function, env)

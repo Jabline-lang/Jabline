@@ -5,11 +5,14 @@ import (
 	"strings"
 )
 
-// Function representa una función definida por el usuario
+// Function representa una función definida por el usuario con soporte para closures
 type Function struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
 	Env        *Environment
+	// Nuevo: soporte para closures
+	CapturedVars     map[string]Object // variables capturadas del entorno externo
+	IsClosureCreated bool              // indica si esta función fue creada como closure
 }
 
 func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
@@ -23,7 +26,50 @@ func (f *Function) Inspect() string {
 	out += ") {\n"
 	out += f.Body.String()
 	out += "\n}"
+
+	// Agregar información de closure si aplica
+	if f.IsClosureCreated && len(f.CapturedVars) > 0 {
+		out += " [closure with " + string(rune(len(f.CapturedVars))) + " captured vars]"
+	}
+
 	return out
+}
+
+// CreateClosure crea un closure capturando variables del entorno
+func (f *Function) CreateClosure(env *Environment, requiredVars []string) *Function {
+	closure := &Function{
+		Parameters:       f.Parameters,
+		Body:             f.Body,
+		Env:              f.Env,
+		CapturedVars:     make(map[string]Object),
+		IsClosureCreated: true,
+	}
+
+	// Capturar variables necesarias
+	for _, varName := range requiredVars {
+		if obj, ok := env.Get(varName); ok {
+			closure.CapturedVars[varName] = obj
+		}
+	}
+
+	return closure
+}
+
+// GetCapturedVar obtiene una variable capturada por el closure
+func (f *Function) GetCapturedVar(name string) (Object, bool) {
+	if f.CapturedVars == nil {
+		return nil, false
+	}
+	obj, ok := f.CapturedVars[name]
+	return obj, ok
+}
+
+// UpdateCapturedVar actualiza una variable capturada por el closure
+func (f *Function) UpdateCapturedVar(name string, value Object) {
+	if f.CapturedVars == nil {
+		f.CapturedVars = make(map[string]Object)
+	}
+	f.CapturedVars[name] = value
 }
 
 // BuiltinFunction is the type for built-in function implementations
@@ -37,11 +83,14 @@ type Builtin struct {
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "builtin function" }
 
-// ArrowFunction representa una arrow function definida por el usuario
+// ArrowFunction representa una arrow function definida por el usuario con soporte para closures
 type ArrowFunction struct {
 	Parameters []*ast.Identifier
 	Body       ast.Expression // Arrow functions tienen cuerpos de expresión
 	Env        *Environment
+	// Nuevo: soporte para closures
+	CapturedVars     map[string]Object // variables capturadas del entorno externo
+	IsClosureCreated bool              // indica si esta función fue creada como closure
 }
 
 func (af *ArrowFunction) Type() ObjectType { return ARROW_FUNCTION_OBJ }
@@ -64,14 +113,60 @@ func (af *ArrowFunction) Inspect() string {
 
 	out += " => "
 	out += af.Body.String()
+
+	// Agregar información de closure si aplica
+	if af.IsClosureCreated && len(af.CapturedVars) > 0 {
+		out += " [closure]"
+	}
+
 	return out
 }
 
-// AsyncFunction representa una función async definida por el usuario
+// CreateClosure crea un closure capturando variables del entorno
+func (af *ArrowFunction) CreateClosure(env *Environment, requiredVars []string) *ArrowFunction {
+	closure := &ArrowFunction{
+		Parameters:       af.Parameters,
+		Body:             af.Body,
+		Env:              af.Env,
+		CapturedVars:     make(map[string]Object),
+		IsClosureCreated: true,
+	}
+
+	// Capturar variables necesarias
+	for _, varName := range requiredVars {
+		if obj, ok := env.Get(varName); ok {
+			closure.CapturedVars[varName] = obj
+		}
+	}
+
+	return closure
+}
+
+// GetCapturedVar obtiene una variable capturada por el closure
+func (af *ArrowFunction) GetCapturedVar(name string) (Object, bool) {
+	if af.CapturedVars == nil {
+		return nil, false
+	}
+	obj, ok := af.CapturedVars[name]
+	return obj, ok
+}
+
+// UpdateCapturedVar actualiza una variable capturada por el closure
+func (af *ArrowFunction) UpdateCapturedVar(name string, value Object) {
+	if af.CapturedVars == nil {
+		af.CapturedVars = make(map[string]Object)
+	}
+	af.CapturedVars[name] = value
+}
+
+// AsyncFunction representa una función async definida por el usuario con soporte para closures
 type AsyncFunction struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
 	Env        *Environment
+	// Nuevo: soporte para closures
+	CapturedVars     map[string]Object // variables capturadas del entorno externo
+	IsClosureCreated bool              // indica si esta función fue creada como closure
 }
 
 func (af *AsyncFunction) Type() ObjectType { return ASYNC_FUNCTION_OBJ }
@@ -85,7 +180,50 @@ func (af *AsyncFunction) Inspect() string {
 	out += ") {\n"
 	out += af.Body.String()
 	out += "\n}"
+
+	// Agregar información de closure si aplica
+	if af.IsClosureCreated && len(af.CapturedVars) > 0 {
+		out += " [async closure]"
+	}
+
 	return out
+}
+
+// CreateClosure crea un closure capturando variables del entorno
+func (af *AsyncFunction) CreateClosure(env *Environment, requiredVars []string) *AsyncFunction {
+	closure := &AsyncFunction{
+		Parameters:       af.Parameters,
+		Body:             af.Body,
+		Env:              af.Env,
+		CapturedVars:     make(map[string]Object),
+		IsClosureCreated: true,
+	}
+
+	// Capturar variables necesarias
+	for _, varName := range requiredVars {
+		if obj, ok := env.Get(varName); ok {
+			closure.CapturedVars[varName] = obj
+		}
+	}
+
+	return closure
+}
+
+// GetCapturedVar obtiene una variable capturada por el closure
+func (af *AsyncFunction) GetCapturedVar(name string) (Object, bool) {
+	if af.CapturedVars == nil {
+		return nil, false
+	}
+	obj, ok := af.CapturedVars[name]
+	return obj, ok
+}
+
+// UpdateCapturedVar actualiza una variable capturada por el closure
+func (af *AsyncFunction) UpdateCapturedVar(name string, value Object) {
+	if af.CapturedVars == nil {
+		af.CapturedVars = make(map[string]Object)
+	}
+	af.CapturedVars[name] = value
 }
 
 // PromiseState representa el estado de una Promise

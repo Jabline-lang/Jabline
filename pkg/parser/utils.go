@@ -40,6 +40,13 @@ func (p *Parser) noPrefixParseFnError(t token.TokenType) {
 	p.errors = append(p.errors, msg)
 }
 
+// addError añade un error formateado con la posición actual del token
+func (p *Parser) addError(format string, args ...interface{}) {
+	msg := fmt.Sprintf("line %d, column %d: ", p.curTok.Line, p.curTok.Column)
+	msg += fmt.Sprintf(format, args...)
+	p.errors = append(p.errors, msg)
+}
+
 // isAssignmentStatement verifica si el statement actual es una asignación
 func (p *Parser) isAssignmentStatement() bool {
 	if p.curTok.Type != token.IDENT {

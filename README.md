@@ -3,9 +3,9 @@
 
   # Jabline Programming Language
 
-  *A modern, feature-rich interpreted programming language*
+  *A modern, feature-rich interpreted programming language with advanced closure support*
 
-  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
+  [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Go Version](https://img.shields.io/badge/go-1.24.6-00ADD8.svg)](https://golang.org/)
 </div>
@@ -45,10 +45,12 @@ jabline --help
 
 ## 📝 **Language Overview**
 
-Jabline is a modern interpreted programming language designed for rapid development and system integration. It combines familiar syntax with powerful built-in capabilities, making it ideal for scripting, data processing, and application development.
+Jabline is a modern interpreted programming language designed for rapid development and system integration. It combines familiar syntax with powerful built-in capabilities and **advanced closure support**, making it ideal for functional programming, scripting, data processing, and application development.
 
 ### Core Features
 
+- **🔒 Advanced Closures** - Full lexical scoping with variable capture and nested functions
+- **📦 Module System** - Complete ES6-style import/export with barrel patterns
 - **🔧 Rich Built-in Library** - JSON, mathematics, regex, HTTP, file operations
 - **🐛 Advanced Error Handling** - Colored output, stack traces, intelligent suggestions
 - **📊 Native JSON Support** - Built-in parsing and serialization
@@ -61,31 +63,168 @@ Jabline is a modern interpreted programming language designed for rapid developm
 
 ```jabline
 // Variables and constants
-let name = "Jabline";
-const VERSION = "1.0.0";
+let name = "Jabline"
+const VERSION = "2.0.0"
 
-// Functions
-fn calculate(x, y) {
-    return sqrt(pow(x, 2) + pow(y, 2));
+// Functions with closures
+fn createCounter(start) {
+    let count = start
+    
+    return fn() {
+        count = count + 1
+        return count
+    }
 }
 
+// Arrow functions with closures
+let createMultiplier = factor => x => x * factor
+let double = createMultiplier(2)
+
+// Module imports/exports
+import { calculate, PI } from "./math"
+import utils, { isEmpty } from "./utils"
+export default myFunction
+
 // Data structures
-let user = {"name": "Alice", "age": 30};
-let numbers = [1, 2, 3, 4, 5];
+let user = {"name": "Alice", "age": 30}
+let numbers = [1, 2, 3, 4, 5]
 
 // Control flow
 if (user["age"] >= 18) {
-    echo("Adult user");
+    echo("Adult user")
 } else {
-    echo("Minor user");
+    echo("Minor user")
+}
+```
+
+---
+
+## 🔒 **Advanced Closure System**
+
+Jabline features a complete closure implementation with automatic variable capture:
+
+### Lexical Scoping
+```jabline
+fn outerFunction(x) {
+    let outerVar = x * 2
+    
+    fn innerFunction() {
+        return outerVar + 10  // Captures outerVar automatically
+    }
+    
+    return innerFunction
 }
 
-// JSON operations
-let json = stringify(user);
-let parsed = parse(json);
+let closure = outerFunction(5)
+echo(closure())  // 20
+```
 
-// Mathematical operations
-let result = abs(-15) + sqrt(25) + pow(2, 8);
+### Factory Pattern
+```jabline
+fn createBankAccount(initialBalance) {
+    let balance = initialBalance
+    let transactionCount = 0
+    
+    return {
+        "deposit": fn(amount) {
+            balance = balance + amount
+            transactionCount = transactionCount + 1
+            return "Balance: $" + balance
+        },
+        
+        "getBalance": fn() {
+            return balance
+        }
+    }
+}
+
+let account = createBankAccount(1000)
+echo(account["deposit"](250))  // Balance: $1250
+```
+
+### Event Emitters
+```jabline
+fn createEventEmitter() {
+    let listeners = {}
+    
+    return {
+        "on": fn(event, callback) {
+            if (listeners[event] == null) {
+                listeners[event] = []
+            }
+            listeners[event] = push(listeners[event], callback)
+        },
+        
+        "emit": fn(event, data) {
+            if (listeners[event] != null) {
+                for (callback in listeners[event]) {
+                    callback(data)
+                }
+            }
+        }
+    }
+}
+```
+
+### Memoization
+```jabline
+fn memoize(fn) {
+    let cache = {}
+    
+    return fn(arg) {
+        let key = str(arg)
+        if (cache[key] != null) {
+            return cache[key]
+        }
+        let result = fn(arg)
+        cache[key] = result
+        return result
+    }
+}
+```
+
+---
+
+## 📦 **Complete Module System**
+
+ES6-style modules with full import/export support:
+
+### Named Exports/Imports
+```jabline
+// math.jb
+export fn add(a, b) { return a + b }
+export fn multiply(a, b) { return a * b }
+export const PI = 3.14159
+
+// main.jb
+import { add, multiply, PI } from "./math"
+```
+
+### Default Exports/Imports
+```jabline
+// calculator.jb
+fn calculate(op, a, b) {
+    // implementation
+}
+export default calculate
+
+// main.jb
+import calculator from "./calculator"
+```
+
+### Mixed and Aliased Imports
+```jabline
+import utils, { isEmpty as empty, isNumber } from "./utils"
+import { multiply as mult } from "./math"
+import * as mathLib from "./math"
+```
+
+### Barrel Patterns
+```jabline
+// index.jb
+export { add, subtract } from "./math"
+export { isEmpty, isNumber } from "./utils"
+export { default as validator } from "./validator"
 ```
 
 ---
@@ -127,7 +266,7 @@ let result = abs(-15) + sqrt(25) + pow(2, 8);
 
 ## 🏗️ **Architecture**
 
-Jabline is built with a modular, extensible architecture:
+Jabline is built with a modular, extensible architecture featuring advanced closure support:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -137,64 +276,114 @@ Jabline is built with a modular, extensible architecture:
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Lexer       │    │   Syntax Tree   │    │    Built-ins    │
-│    Tokens       │    │   Generation    │    │   Functions     │
+│     Lexer       │    │   Syntax Tree   │    │    Closure      │
+│    Tokens       │    │   Generation    │    │   Environment   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ### Key Components
 - **Lexical Analysis** - Token generation and preprocessing
 - **Syntax Parsing** - AST construction with error recovery
-- **Runtime Evaluation** - Expression evaluation and execution
-- **Object System** - Dynamic typing with primitive and composite types
+- **Runtime Evaluation** - Expression evaluation with closure support
+- **Object System** - Dynamic typing with closure-aware functions
+- **Environment System** - Advanced scoping with variable capture
+- **Module System** - Import/export resolution and caching
 - **Built-in Functions** - Extensive standard library integration
 
 ---
 
 ## 💼 **Use Cases**
 
-### Data Processing
+### Functional Programming
 ```jabline
-// Process JSON data from APIs
-let response = httpGet("https://api.example.com/users");
-let users = parse(response["body"]);
+// Higher-order functions with closures
+let compose = f => g => x => f(g(x))
+let addOne = x => x + 1
+let double = x => x * 2
 
-for (user in users) {
-    if (isEmail(user["email"])) {
-        echo("Valid user: " + user["name"]);
+let addOneThenDouble = compose(double)(addOne)
+echo(addOneThenDouble(5))  // 12
+
+// Partial application
+let greet = greeting => name => greeting + ", " + name + "!"
+let sayHello = greet("Hello")
+echo(sayHello("World"))  // Hello, World!
+```
+
+### State Management
+```jabline
+// Redux-like state management
+fn createStore(initialState) {
+    let state = initialState
+    let listeners = []
+    
+    return {
+        "getState": fn() { return state },
+        "dispatch": fn(action) {
+            state = reducer(state, action)
+            for (listener in listeners) {
+                listener(state)
+            }
+        },
+        "subscribe": fn(listener) {
+            listeners = push(listeners, listener)
+        }
     }
 }
 ```
 
-### Mathematical Computing
+### Data Processing Pipelines
 ```jabline
-// Scientific calculations
-fn calculateDistance(x1, y1, x2, y2) {
-    let dx = x2 - x1;
-    let dy = y2 - y1;
-    return sqrt(pow(dx, 2) + pow(dy, 2));
-}
+// Functional data transformation
+import { filter, map, reduce } from "./functional"
 
-let distance = calculateDistance(0, 0, 3, 4); // 5.0
+let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let result = numbers
+    |> filter(x => x % 2 == 0)        // Even numbers
+    |> map(x => x * x)                // Square them
+    |> reduce((acc, x) => acc + x, 0) // Sum them
+
+echo("Result: " + result)  // 220
 ```
 
-### System Automation
+### Module-based Architecture
 ```jabline
-// File processing with validation
-let files = listDir("./data");
-for (file in files) {
-    if (fileExists(file) && endsWith(file, ".json")) {
-        let content = readFile(file);
-        let data = parse(content);
-        debug("Processed file:", file);
-    }
+// api/users.jb
+import http from "../http"
+import { validate } from "../validators"
+
+export fn createUser(userData) {
+    validate(userData)
+    return http.post("/users", userData)
 }
+
+export fn getUser(id) {
+    return http.get("/users/" + id)
+}
+
+// main.jb
+import { createUser, getUser } from "./api/users"
+
+let newUser = createUser({"name": "Alice", "email": "alice@example.com"})
 ```
 
 ---
 
-## 📊 **Performance & Reliability**
+## 📊 **Performance & Features**
 
+### Closure Performance
+- **Automatic Variable Capture** - Only captures variables actually used
+- **Lexical Scoping** - Efficient nested environment resolution  
+- **Memory Management** - Optimized closure environment storage
+- **Function Inlining** - Smart optimization for simple closures
+
+### Module Performance
+- **Module Caching** - Modules loaded once and cached
+- **Circular Import Detection** - Prevents infinite import loops
+- **Tree Shaking** - Only imports what's actually used
+- **Relative Path Resolution** - Efficient file system operations
+
+### General Performance
 - **Optimized Runtime** - Built on Go for high performance and memory efficiency
 - **Error Recovery** - Graceful handling of syntax and runtime errors
 - **Memory Management** - Automatic garbage collection with minimal overhead
@@ -220,6 +409,9 @@ go build -o jabline main.go
 
 # Run tests
 go test ./...
+
+# Test closures
+jabline run examples/closures/01_closures_guide.jb
 ```
 
 ---
@@ -227,9 +419,38 @@ go test ./...
 ## 📚 **Documentation**
 
 - **[Language Reference](examples/)** - Complete syntax and feature guide
+- **[Closure Examples](examples/closures/)** - Advanced closure patterns and use cases
+- **[Module Examples](examples/modules/)** - Import/export patterns and best practices
 - **[API Documentation](pkg/)** - Built-in function reference
-- **[Examples](examples/)** - Code samples and tutorials
 - **[Contributing Guide](.github/CONTRIBUTING.md)** - Development guidelines
+
+---
+
+## 🆕 **What's New in v2.0.0**
+
+### 🔒 Closures and Advanced Scoping
+- **Lexical Scoping** - Variables captured from outer scopes automatically
+- **Nested Functions** - Functions inside functions with full closure support
+- **Variable Capture** - Smart capture of only necessary variables
+- **Arrow Function Closures** - Full closure support for arrow functions
+- **Closure Environment** - Advanced environment management system
+
+### 📦 Complete Module System
+- **ES6-style Imports/Exports** - `import`, `export`, `export default`
+- **Named and Default Exports** - Full flexibility in module design
+- **Aliased Imports** - `import { func as alias }` support
+- **Namespace Imports** - `import * as name` for full module import
+- **Barrel Patterns** - Re-export support for clean APIs
+- **Circular Import Protection** - Prevents infinite import loops
+- **Module Caching** - Efficient module loading and reuse
+
+### 🎯 Advanced Features
+- **Factory Pattern Support** - Create objects with encapsulated state
+- **Event Emitter Pattern** - Built-in event system capabilities
+- **Memoization Support** - Function result caching with closures
+- **State Machines** - Encapsulated state management
+- **Pipeline Patterns** - Functional data transformation chains
+- **Higher-Order Functions** - Functions that operate on other functions
 
 ---
 
@@ -241,7 +462,7 @@ Jabline is released under the [MIT License](LICENSE).
 
 <div align="center">
 
-**Jabline v1.0.0** - *Modern Programming Made Simple*
+**Jabline v2.0.0** - *Modern Programming with Advanced Closures*
 
 Built with ❤️ using Goolang
 

@@ -458,24 +458,42 @@ func (p *Parser) parseThrowStatement() *ast.ThrowStatement {
 	return stmt
 }
 
-// parseImportStatement parsea una declaración import
+// parseImportStatement parsea una declaración import con sintaxis completa
 func (p *Parser) parseImportStatement() *ast.ImportStatement {
 	stmt := &ast.ImportStatement{Token: p.curTok}
 
-	// Check for selective import: import { item1, item2 } from "module"
+	// 1. import { item1, item2, item3 as alias } from "module"
 	if p.peekTokenIs(token.LBRACE) {
+		stmt.ImportType = ast.IMPORT_NAMED
 		p.nextToken() // move to {
 
 		p.nextToken() // move to first identifier
 		for {
 			if !p.curTokenIs(token.IDENT) {
+				p.addError("expected identifier in import list, got %s", p.curTok.Literal)
 				return nil
 			}
 
-			stmt.ImportList = append(stmt.ImportList, &ast.Identifier{
-				Token: p.curTok,
-				Value: p.curTok.Literal,
-			})
+			importItem := &ast.ImportItem{
+				Name: &ast.Identifier{
+					Token: p.curTok,
+					Value: p.curTok.Literal,
+				},
+			}
+
+			// Check for alias: item as alias
+			if p.peekTokenIs(token.IDENT) && p.peekTok.Literal == "as" {
+				p.nextToken() // move to "as"
+				if !p.expectPeek(token.IDENT) {
+					return nil
+				}
+				importItem.Alias = &ast.Identifier{
+					Token: p.curTok,
+					Value: p.curTok.Literal,
+				}
+			}
+
+			stmt.NamedImports = append(stmt.NamedImports, importItem)
 
 			if p.peekTokenIs(token.COMMA) {
 				p.nextToken() // move to comma
@@ -492,15 +510,135 @@ func (p *Parser) parseImportStatement() *ast.ImportStatement {
 		if !p.expectPeek(token.FROM) {
 			return nil
 		}
-	}
 
-	if !p.expectPeek(token.STRING) {
+		if !p.expectPeek(token.STRING) {
+			return nil
+		}
+
+		stmt.ModuleName = &ast.StringLiteral{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+	} else if p.peekTokenIs(token.ASTERISK) {
+		// 2. import * as namespace from "module"
+		stmt.ImportType = ast.IMPORT_NAMESPACE
+		p.nextToken() // move to *
+
+		if !p.expectPeek(token.IDENT) || p.curTok.Literal != "as" {
+			p.addError("expected 'as' after '*' in import statement")
+			return nil
+		}
+
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+
+		stmt.NamespaceAlias = &ast.Identifier{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+
+		if !p.expectPeek(token.FROM) {
+			return nil
+		}
+
+		if !p.expectPeek(token.STRING) {
+			return nil
+		}
+
+		stmt.ModuleName = &ast.StringLiteral{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+	} else if p.peekTokenIs(token.IDENT) {
+		// 3. import defaultExport from "module"
+		// 4. import defaultExport, { named1, named2 } from "module"
+		p.nextToken() // move to identifier
+
+		defaultImport := &ast.Identifier{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+
+		// Check if there are also named imports
+		if p.peekTokenIs(token.COMMA) {
+			stmt.ImportType = ast.IMPORT_MIXED
+			p.nextToken() // move to comma
+
+			if !p.expectPeek(token.LBRACE) {
+				return nil
+			}
+
+			// Parse named imports
+			p.nextToken() // move to first named import
+			for {
+				if !p.curTokenIs(token.IDENT) {
+					p.addError("expected identifier in named import list")
+					return nil
+				}
+
+				importItem := &ast.ImportItem{
+					Name: &ast.Identifier{
+						Token: p.curTok,
+						Value: p.curTok.Literal,
+					},
+				}
+
+				// Check for alias in named import
+				if p.peekTokenIs(token.IDENT) && p.peekTok.Literal == "as" {
+					p.nextToken() // move to "as"
+					if !p.expectPeek(token.IDENT) {
+						return nil
+					}
+					importItem.Alias = &ast.Identifier{
+						Token: p.curTok,
+						Value: p.curTok.Literal,
+					}
+				}
+
+				stmt.NamedImports = append(stmt.NamedImports, importItem)
+
+				if p.peekTokenIs(token.COMMA) {
+					p.nextToken() // move to comma
+					p.nextToken() // move to next identifier
+				} else {
+					break
+				}
+			}
+
+			if !p.expectPeek(token.RBRACE) {
+				return nil
+			}
+		} else {
+			stmt.ImportType = ast.IMPORT_DEFAULT
+		}
+
+		stmt.DefaultImport = defaultImport
+
+		if !p.expectPeek(token.FROM) {
+			return nil
+		}
+
+		if !p.expectPeek(token.STRING) {
+			return nil
+		}
+
+		stmt.ModuleName = &ast.StringLiteral{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+	} else if p.peekTokenIs(token.STRING) {
+		// 5. import "module" (side-effect import)
+		stmt.ImportType = ast.IMPORT_SIDE_EFFECT
+		p.nextToken() // move to string
+
+		stmt.ModuleName = &ast.StringLiteral{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+	} else {
+		p.addError("invalid import syntax")
 		return nil
-	}
-
-	stmt.ModuleName = &ast.StringLiteral{
-		Token: p.curTok,
-		Value: p.curTok.Literal,
 	}
 
 	if p.peekTokenIs(token.SEMICOLON) {
@@ -510,13 +648,119 @@ func (p *Parser) parseImportStatement() *ast.ImportStatement {
 	return stmt
 }
 
-// parseExportStatement parsea una declaración export
+// parseExportStatement parsea una declaración export con sintaxis completa
 func (p *Parser) parseExportStatement() *ast.ExportStatement {
 	stmt := &ast.ExportStatement{Token: p.curTok}
 
-	p.nextToken() // move to the statement being exported
+	// Check for different export patterns
+	if p.peekTokenIs(token.LBRACE) {
+		// export { name1, name2, name3 as alias }
+		p.nextToken() // move to {
 
-	stmt.Statement = p.parseStatement()
+		p.nextToken() // move to first identifier
+		for {
+			if !p.curTokenIs(token.IDENT) {
+				p.addError("expected identifier in export list")
+				return nil
+			}
+
+			exportItem := &ast.ExportItem{
+				Name: &ast.Identifier{
+					Token: p.curTok,
+					Value: p.curTok.Literal,
+				},
+			}
+
+			// Check for alias: name as alias
+			if p.peekTokenIs(token.IDENT) && p.peekTok.Literal == "as" {
+				p.nextToken() // move to "as"
+				if !p.expectPeek(token.IDENT) {
+					return nil
+				}
+				exportItem.Alias = &ast.Identifier{
+					Token: p.curTok,
+					Value: p.curTok.Literal,
+				}
+			}
+
+			stmt.ExportList = append(stmt.ExportList, exportItem)
+
+			if p.peekTokenIs(token.COMMA) {
+				p.nextToken() // move to comma
+				p.nextToken() // move to next identifier
+			} else {
+				break
+			}
+		}
+
+		if !p.expectPeek(token.RBRACE) {
+			return nil
+		}
+
+		// Check for "from" clause: export { name1, name2 } from "module"
+		if p.peekTokenIs(token.FROM) {
+			stmt.ExportType = ast.EXPORT_NAMED_FROM
+			p.nextToken() // move to FROM
+
+			if !p.expectPeek(token.STRING) {
+				return nil
+			}
+
+			stmt.ModuleName = &ast.StringLiteral{
+				Token: p.curTok,
+				Value: p.curTok.Literal,
+			}
+		} else {
+			stmt.ExportType = ast.EXPORT_LIST
+		}
+	} else if p.peekTokenIs(token.ASTERISK) {
+		// export * from "module" or export * as namespace from "module"
+		p.nextToken() // move to *
+
+		if p.peekTokenIs(token.IDENT) && p.peekTok.Literal == "as" {
+			stmt.ExportType = ast.EXPORT_ALL_AS
+			p.nextToken() // move to "as"
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			stmt.NamespaceAlias = &ast.Identifier{
+				Token: p.curTok,
+				Value: p.curTok.Literal,
+			}
+		} else {
+			stmt.ExportType = ast.EXPORT_ALL
+		}
+
+		if !p.expectPeek(token.FROM) {
+			return nil
+		}
+
+		if !p.expectPeek(token.STRING) {
+			return nil
+		}
+
+		stmt.ModuleName = &ast.StringLiteral{
+			Token: p.curTok,
+			Value: p.curTok.Literal,
+		}
+	} else if p.peekTokenIs(token.DEFAULT) {
+		// export default expression
+		stmt.ExportType = ast.EXPORT_DEFAULT
+		stmt.IsDefault = true
+		p.nextToken() // move to "default"
+		p.nextToken() // move to expression/statement
+
+		stmt.Statement = p.parseStatement()
+	} else {
+		// export let/const/fn/class/etc.
+		stmt.ExportType = ast.EXPORT_DECLARATION
+		p.nextToken() // move to the statement being exported
+		stmt.Statement = p.parseStatement()
+	}
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
 
 	return stmt
 }
