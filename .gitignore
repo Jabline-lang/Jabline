@@ -68,3 +68,6 @@ test_output/
 
 # Documentation build
 docs/_build/
+
+# Ignore examples directories
+examples
