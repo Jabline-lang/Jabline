@@ -1,0 +1,108 @@
+export let SECONDS_IN_MINUTE = 60;
+export let MINUTES_IN_HOUR = 60;
+export let HOURS_IN_DAY = 24;
+
+export let MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+export let DAY_NAMES = [
+    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+];
+
+export fn isLeapYear(year) {
+    if (year % 4 == 0) {
+        if (year % 100 == 0) {
+            if (year % 400 == 0) {
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+export fn createDate(day, month, year) {
+    return {
+        "day": day,
+        "month": month,
+        "year": year
+    };
+}
+
+export fn formatDate(dateObj) {
+    let dayStr = "" + dateObj["day"];
+    let monthStr = "" + dateObj["month"];
+    let yearStr = "" + dateObj["year"];
+
+    if (dateObj["day"] < 10) {
+        dayStr = "0" + dayStr;
+    }
+    if (dateObj["month"] < 10) {
+        monthStr = "0" + monthStr;
+    }
+
+    return dayStr + "/" + monthStr + "/" + yearStr;
+}
+
+export fn addDays(dateObj, days) {
+    let newDay = dateObj["day"] + days;
+    let newMonth = dateObj["month"];
+    let newYear = dateObj["year"];
+
+    while (newDay > 30) {
+        newDay = newDay - 30;
+        newMonth = newMonth + 1;
+        if (newMonth > 12) {
+            newMonth = 1;
+            newYear = newYear + 1;
+        }
+    }
+
+    return createDate(newDay, newMonth, newYear);
+}
+
+export fn getMonthName(dateObj) {
+    return MONTH_NAMES[dateObj["month"] - 1];
+}
+
+export fn createTime(hours, minutes, seconds) {
+    return {
+        "hours": hours,
+        "minutes": minutes,
+        "seconds": seconds
+    };
+}
+
+export fn formatTime(timeObj) {
+    let hoursStr = "" + timeObj["hours"];
+    let minutesStr = "" + timeObj["minutes"];
+    let secondsStr = "" + timeObj["seconds"];
+
+    if (timeObj["hours"] < 10) {
+        hoursStr = "0" + hoursStr;
+    }
+    if (timeObj["minutes"] < 10) {
+        minutesStr = "0" + minutesStr;
+    }
+    if (timeObj["seconds"] < 10) {
+        secondsStr = "0" + secondsStr;
+    }
+
+    return hoursStr + ":" + minutesStr + ":" + secondsStr;
+}
+
+export fn createDateTime(day, month, year, hours, minutes, seconds) {
+    return {
+        "date": createDate(day, month, year),
+        "time": createTime(hours, minutes, seconds)
+    };
+}
+
+export fn formatDateTime(dateTimeObj) {
+    let dateStr = formatDate(dateTimeObj["date"]);
+    let timeStr = formatTime(dateTimeObj["time"]);
+    return dateStr + " " + timeStr;
+}

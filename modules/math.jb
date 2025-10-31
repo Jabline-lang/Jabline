@@ -1,0 +1,105 @@
+export let PI = 3;
+export let E = 2;
+
+export fn abs(x) {
+    if (x < 0) {
+        return -x;
+    }
+    return x;
+}
+
+
+export fn max(a, b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+
+export fn min(a, b) {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+
+export fn pow(base, exp) {
+    if (exp == 0) {
+        return 1;
+    }
+    if (exp < 0) {
+        return 0; 
+    }
+
+    let result = 1;
+    let i = 0;
+    while (i < exp) {
+        result = result * base;
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn sqrt(x) {
+    if (x < 0) {
+        throw "Cannot calculate square root of negative number";
+    }
+    if (x == 0) {
+        return 0;
+    }
+
+    let guess = x / 2;
+    if (guess * guess == x) {
+        return guess;
+    }
+    if ((guess + 1) * (guess + 1) <= x) {
+        return guess + 1;
+    }
+    return guess;
+}
+
+export fn factorial(n) {
+    if (n < 0) {
+        throw "Cannot calculate factorial of negative number";
+    }
+    if (n == 0 || n == 1) {
+        return 1;
+    }
+
+    let result = 1;
+    let i = 2;
+    while (i <= n) {
+        result = result * i;
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn isEven(n) {
+    return n % 2 == 0;
+}
+
+export fn isOdd(n) {
+    return n % 2 != 0;
+}
+
+export fn random(min, max) {
+
+    let seed = (min + max) * 17 + 42;
+    seed = (seed * 13 + 7) % 1000;
+    return min + (seed % (max - min + 1));
+}
+
+export fn round(x) {
+    return x;
+}
+
+export fn floor(x) {
+    return x;
+}
+
+export fn ceil(x) {
+    return x;
+}
