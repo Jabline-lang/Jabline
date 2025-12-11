@@ -1,0 +1,39 @@
+// Ejemplo 4: Estructuras de Datos (Structs y Maps)
+
+echo("--- Structs ---");
+// Definición de una estructura
+struct Usuario {
+    nombre,
+    edad,
+    activo
+}
+
+// Instanciación
+let user1 = Usuario {
+    nombre: "Carlos",
+    edad: 30,
+    activo: true
+};
+
+echo("Usuario: " + user1.nombre + ", Activo: " + user1.activo);
+
+// Modificación
+user1.edad = 31;
+echo("Nueva edad: " + user1.edad);
+
+echo("\n--- HashMaps (Diccionarios) ---");
+// Los mapas son colecciones clave-valor dinámicas
+let config = {
+    "tema": "oscuro",
+    "versiones": [1, 2, 3],
+    "meta": {
+        "autor": "Admin"
+    }
+};
+
+echo("Tema actual: " + config["tema"]);
+echo("Autor: " + config["meta"]["autor"]);
+
+// Asignación dinámica
+config["nuevo_valor"] = 100;
+echo("Valor asignado: " + config["nuevo_valor"]);

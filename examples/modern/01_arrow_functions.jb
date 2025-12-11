@@ -1,0 +1,29 @@
+// Ejemplo Moderno 1: Arrow Functions (Funciones Flecha)
+
+// Sintaxis concisa para funciones anónimas
+let sumar = (a, b) => a + b;
+let cuadrado = n => n * n;
+
+echo("Suma flecha: " + sumar(5, 10));
+echo("Cuadrado flecha: " + cuadrado(4));
+
+// Uso con arrays y funciones de orden superior (Higher-Order Functions)
+let numeros = [1, 2, 3, 4, 5];
+
+// map: transformar elementos
+let dobles = map(numeros, n => n * 2);
+echo("Dobles: " + dobles);
+
+// filter: filtrar elementos
+let pares = filter(numeros, n => n % 2 == 0);
+echo("Pares: " + pares);
+
+// reduce: acumular valor
+let total = reduce(numeros, (acc, val) => acc + val, 0);
+echo("Suma total: " + total);
+
+// Currying con arrow functions
+let crearMultiplicador = factor => numero => numero * factor;
+let duplicar = crearMultiplicador(2);
+
+echo("Currying (5 * 2): " + duplicar(5));

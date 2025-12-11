@@ -1,0 +1,110 @@
+// Ejemplo de importaciones selectivas en Jabline
+// Demuestra cómo importar solo funciones específicas de un módulo
+
+echo("=== Importaciones Selectivas en Jabline ===")
+echo("")
+
+// ========================================
+// 1. Importación selectiva del módulo math
+// ========================================
+echo("--- 1. Importación Selectiva: Math ---")
+
+// Importar solo funciones específicas del módulo math
+import { abs, factorial, pow } from "math"
+
+echo("Usando solo las funciones importadas selectivamente:")
+echo("abs(-15) = " + abs(-15))
+echo("factorial(5) = " + factorial(5))
+echo("pow(3, 4) = " + pow(3, 4))
+echo("")
+
+// Nota: PI y E no fueron importados selectivamente, por lo que no están disponibles
+echo("Las constantes PI y E no están disponibles porque no fueron importadas.")
+echo("")
+
+// ========================================
+// 2. Importación selectiva del módulo arrays
+// ========================================
+echo("--- 2. Importación Selectiva: Arrays ---")
+
+// Importar solo algunas funciones del módulo arrays
+import { sort, max, min, sum } from "arrays"
+
+let numeros = [42, 15, 7, 28, 3, 19, 6];
+echo("Array original: " + numeros)
+
+let ordenados = sort(numeros);
+echo("Ordenados: " + ordenados)
+echo("Máximo: " + max(numeros))
+echo("Mínimo: " + min(numeros))
+echo("Suma: " + sum(numeros))
+echo("")
+
+// ========================================
+// 3. Importación selectiva del módulo strings
+// ========================================
+echo("--- 3. Importación Selectiva: Strings ---")
+
+// Importar solo funciones específicas de strings
+import { capitalize, isValidEmail } from "strings_minimal"
+
+let nombres = ["juan", "maría", "carlos", "ana"];
+echo("Capitalizando nombres:")
+
+for (nombre in nombres) {
+    echo("  " + nombre + " -> " + capitalize(nombre))
+}
+echo("")
+
+// Validar emails usando la función importada
+let emails = ["test@example.com", "invalid-email", "admin@site.org"];
+echo("Validando emails:")
+
+for (email in emails) {
+    if (isValidEmail(email)) {
+        echo("  ✓ " + email + " es válido")
+    } else {
+        echo("  ✗ " + email + " es inválido")
+    }
+}
+echo("")
+
+// ========================================
+// 4. Combinando importaciones selectivas
+// ========================================
+echo("--- 4. Combinando Importaciones Selectivas ---")
+
+// Usar funciones de diferentes módulos juntas
+let datos = [5, 10, 15, 20, 25];
+echo("Datos originales: " + datos)
+
+// Usar funciones matemáticas y de arrays
+let total = sum(datos);
+let maximo = max(datos);
+let potenciaMax = pow(maximo, 2);
+let factorialMin = factorial(min(datos));
+
+echo("Suma total: " + total)
+echo("Valor máximo: " + maximo)
+echo("Máximo al cuadrado: " + potenciaMax)
+echo("Factorial del mínimo: " + factorialMin)
+echo("")
+
+// ========================================
+// 5. Ventajas de las importaciones selectivas
+// ========================================
+echo("--- 5. Ventajas de las Importaciones Selectivas ---")
+echo("")
+echo("✓ Importas solo lo que necesitas")
+echo("✓ Reduces el espacio de nombres global")
+echo("✓ Código más claro y mantenible")
+echo("✓ Evitas conflictos de nombres")
+echo("✓ Mejor rendimiento (menos carga)")
+echo("")
+
+echo("Sintaxis de importación selectiva:")
+echo("  import { funcion1, funcion2, constante } from \"modulo\"")
+echo("")
+
+echo("🎯 Las importaciones selectivas hacen el código más eficiente!")
+echo("🚀 ¡Usa solo lo que necesitas de cada módulo!")

@@ -1,0 +1,23 @@
+let _md5 = md5;
+let _sha256 = sha256;
+let _base64Encode = base64Encode;
+let _base64Decode = base64Decode;
+
+export let md5 = fn(input) {
+    return _md5(input);
+};
+
+export let sha256 = fn(input) {
+    return _sha256(input);
+};
+
+export let base64Encode = fn(input) {
+    return _base64Encode(input);
+};
+
+export let base64Decode = fn(input) {
+    return _base64Decode(input);
+};
+
+export let SHA256_DIGEST_SIZE = 32;
+export let MD5_DIGEST_SIZE = 16;

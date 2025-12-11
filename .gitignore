@@ -68,15 +68,8 @@ test_output/
 # Documentation build
 docs/_build/
 
-# Ignore examples directories
-examples
 
 # Ignore modules directories for maintenance
-modules/crypto
-modules/os
-modules/data
-modules/strings.jb 
-modules/arrays.jb
 
 # Modify REAMDE.md
 README1.md

@@ -1,0 +1,443 @@
+export fn map(array, mapFunction) {
+    let result = [];
+    for (item in array) {
+        let transformed = mapFunction(item);
+        result = push(result, transformed);
+    }
+    return result;
+}
+export fn filter(array, filterFunction) {
+    let result = [];
+    for (item in array) {
+        if (filterFunction(item)) {
+            result = push(result, item);
+        }
+    }
+    return result;
+}
+export fn reduce(array, reduceFunction, initialValue) {
+    let accumulator = initialValue;
+    for (item in array) {
+        accumulator = reduceFunction(accumulator, item);
+    }
+    return accumulator;
+}
+export fn find(array, findFunction) {
+    for (item in array) {
+        if (findFunction(item)) {
+            return item;
+        }
+    }
+    return null;
+}
+export fn findIndex(array, findFunction) {
+    let i = 0;
+
+    while (i < len(array)) {
+        if (findFunction(array[i])) {
+            return i;
+        }
+        i = i + 1;
+    }
+
+    return -1;
+}
+
+export fn every(array, testFunction) {
+    for (item in array) {
+        if (!testFunction(item)) {
+            return false;
+        }
+    }
+    return true;
+}
+export fn some(array, testFunction) {
+    for (item in array) {
+        if (testFunction(item)) {
+            return true;
+        }
+    }
+    return false;
+}
+export fn chunk(array, size) {
+    if (size <= 0) {
+        return [array];
+    }
+
+    let result = [];
+    let i = 0;
+
+    while (i < len(array)) {
+        let currentChunk = [];
+        let j = 0;
+
+        while (j < size && (i + j) < len(array)) {
+            currentChunk = push(currentChunk, array[i + j]);
+            j = j + 1;
+        }
+
+        result = push(result, currentChunk);
+        i = i + size;
+    }
+
+    return result;
+}
+
+export fn flatten(array) {
+    let result = [];
+    let i = 0;
+
+    while (i < len(array)) {
+        let current = array[i];
+
+        if (type(current) == "ARRAY") {
+            let j = 0;
+            while (j < len(current)) {
+                result = push(result, current[j]);
+                j = j + 1;
+            }
+        } else {
+            result = push(result, current);
+        }
+
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn zip(array1, array2) {
+    let result = [];
+    let minLength = len(array1);
+
+    if (len(array2) < minLength) {
+        minLength = len(array2);
+    }
+
+    let i = 0;
+    while (i < minLength) {
+        let pair = [array1[i], array2[i]];
+        result = push(result, pair);
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn unzip(pairsArray) {
+    let first = [];
+    let second = [];
+    let i = 0;
+
+    while (i < len(pairsArray)) {
+        let pair = pairsArray[i];
+
+        if (type(pair) == "ARRAY" && len(pair) >= 2) {
+            first = push(first, pair[0]);
+            second = push(second, pair[1]);
+        }
+
+        i = i + 1;
+    }
+
+    return [first, second];
+}
+
+export fn union(array1, array2) {
+    let result = [];
+    let seen = {};
+
+    let i = 0;
+    while (i < len(array1)) {
+        let item = array1[i];
+        let key = "" + item;
+
+        if (seen[key] == null) {
+            result = push(result, item);
+            seen[key] = true;
+        }
+
+        i = i + 1;
+    }
+
+    i = 0;
+    while (i < len(array2)) {
+        let item = array2[i];
+        let key = "" + item;
+
+        if (seen[key] == null) {
+            result = push(result, item);
+            seen[key] = true;
+        }
+
+        i = i + 1;
+    }
+
+    return result;
+}
+export fn intersection(array1, array2) {
+    let result = [];
+    let set2 = {};
+
+    for (item in array2) {
+        let key = "" + item;
+        set2[key] = true;
+    }
+
+    for (item in array1) {
+        let key = "" + item;
+        if (set2[key] != null) {
+            result = push(result, item);
+        }
+    }
+
+    return result;
+}ay2[i];
+        set2[key] = true;
+        i = i + 1;
+    }
+
+    i = 0;
+    while (i < len(array1)) {
+        let item = array1[i];
+        let key = "" + item;
+
+        if (hasKey(set2, key)) {
+            result = push(result, item);
+        }
+
+        i = i + 1;
+    }
+
+    return unique(result); 
+}
+
+export fn difference(array1, array2) {
+    let result = [];
+    let set2 = {};
+
+    let i = 0;
+    while (i < len(array2)) {
+        let key = "" + array2[i];
+        set2[key] = true;
+        i = i + 1;
+    }
+
+    i = 0;
+    while (i < len(array1)) {
+        let item = array1[i];
+        let key = "" + item;
+
+        if (!hasKey(set2, key)) {
+            result = push(result, item);
+        }
+
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn mapObject(obj, mapFunction) {
+    let result = {};
+
+    for (key in obj) {
+        let transformedValue = mapFunction(obj[key], key);
+        result[key] = transformedValue;
+    }
+
+    return result;
+}
+
+export fn filterObject(obj, filterFunction) {
+    let result = {};
+
+    for (key in obj) {
+        if (filterFunction(obj[key], key)) {
+            result[key] = obj[key];
+        }
+    }
+
+    return result;
+}
+
+export fn pickKeys(obj, keys) {
+    let result = {};
+    let i = 0;
+
+    while (i < len(keys)) {
+        let key = keys[i];
+        if (hasKey(obj, key)) {
+            result[key] = obj[key];
+        }
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn omitKeys(obj, keys) {
+    let result = {};
+    let keysToOmit = {};
+
+    let i = 0;
+    while (i < len(keys)) {
+        keysToOmit[keys[i]] = true;
+        i = i + 1;
+    }
+
+    for (key in obj) {
+        if (!hasKey(keysToOmit, key)) {
+            result[key] = obj[key];
+        }
+    }
+
+    return result;
+}
+
+export fn groupBy(array, keyFunction) {
+    let groups = {};
+    let i = 0;
+
+    while (i < len(array)) {
+        let item = array[i];
+        let key = "" + keyFunction(item);
+
+        if (!hasKey(groups, key)) {
+            groups[key] = [];
+        }
+
+        groups[key] = push(groups[key], item);
+        i = i + 1;
+    }
+
+    return groups;
+}
+
+export fn countBy(array, keyFunction) {
+    let counts = {};
+    let i = 0;
+
+    while (i < len(array)) {
+        let item = array[i];
+        let key = "" + keyFunction(item);
+
+        if (!hasKey(counts, key)) {
+            counts[key] = 0;
+        }
+
+        counts[key] = counts[key] + 1;
+        i = i + 1;
+    }
+
+    return counts;
+}
+
+export fn sortBy(array, sortFunction) {
+
+    let paired = map(array, item => [item, sortFunction(item)]);
+
+    let i = 0;
+    while (i < len(paired) - 1) {
+        let j = 0;
+        while (j < len(paired) - i - 1) {
+            if (paired[j][1] > paired[j + 1][1]) {
+                let temp = paired[j];
+                paired[j] = paired[j + 1];
+                paired[j + 1] = temp;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+
+    return map(paired, pair => pair[0]);
+}
+
+export fn partition(array, testFunction) {
+    let truthy = [];
+    let falsy = [];
+    let i = 0;
+
+    while (i < len(array)) {
+        if (testFunction(array[i])) {
+            truthy = push(truthy, array[i]);
+        } else {
+            falsy = push(falsy, array[i]);
+        }
+        i = i + 1;
+    }
+
+    return [truthy, falsy];
+}
+
+export fn pipe(value, functions) {
+    let result = value;
+    let i = 0;
+
+    while (i < len(functions)) {
+        result = functions[i](result);
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn compose(functions) {
+    return (value) => {
+        let result = value;
+        let i = len(functions) - 1;
+
+        while (i >= 0) {
+            result = functions[i](result);
+            i = i - 1;
+        }
+
+        return result;
+    };
+}
+
+fn hasKey(obj, key) {
+    for (k in obj) {
+        if (k == key) {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn unique(array) {
+    let result = [];
+    let seen = {};
+    let i = 0;
+
+    while (i < len(array)) {
+        let item = array[i];
+        let key = "" + item;
+
+        if (!hasKey(seen, key)) {
+            result = push(result, item);
+            seen[key] = true;
+        }
+
+        i = i + 1;
+    }
+
+    return result;
+}
+
+export fn demo() {
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+    let result = pipe(numbers, [
+        arr => filter(arr, x => x % 2 == 0),  
+        arr => map(arr, x => x * x),          
+        arr => reduce(arr, (acc, x) => acc + x, 0) 
+    ]);
+
+    return {
+        "original": numbers,
+        "pipeline_result": result,
+        "description": "Sum of squares of even numbers"
+    };
+}

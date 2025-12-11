@@ -72,14 +72,12 @@ func main() {
 		return
 	}
 
-	// Step 1: Check prerequisites
 	fmt.Printf("\n%s🔧 Checking prerequisites...%s\n", ColorBlue, ColorReset)
 	if err := installer.checkPrerequisites(); err != nil {
 		fmt.Printf("%s❌ Prerequisites check failed: %v%s\n", ColorRed, err, ColorReset)
 		return
 	}
 
-	// Step 2: Setup temporary directory
 	fmt.Printf("%s📁 Setting up temporary directory...%s\n", ColorBlue, ColorReset)
 	if err := installer.setupTempDir(); err != nil {
 		fmt.Printf("%s❌ Failed to setup temp directory: %v%s\n", ColorRed, err, ColorReset)
@@ -87,28 +85,24 @@ func main() {
 	}
 	defer installer.cleanup()
 
-	// Step 3: Clone repository
 	fmt.Printf("%s📥 Cloning repository...%s\n", ColorBlue, ColorReset)
 	if err := installer.cloneRepo(); err != nil {
 		fmt.Printf("%s❌ Failed to clone repository: %v%s\n", ColorRed, err, ColorReset)
 		return
 	}
 
-	// Step 4: Build binary
 	fmt.Printf("%s🔨 Building binary...%s\n", ColorBlue, ColorReset)
 	if err := installer.buildBinary(); err != nil {
 		fmt.Printf("%s❌ Failed to build binary: %v%s\n", ColorRed, err, ColorReset)
 		return
 	}
 
-	// Step 5: Install binary
 	fmt.Printf("%s📦 Installing binary...%s\n", ColorBlue, ColorReset)
 	if err := installer.installBinary(); err != nil {
 		fmt.Printf("%s❌ Failed to install binary: %v%s\n", ColorRed, err, ColorReset)
 		return
 	}
 
-	// Step 6: Verify installation
 	fmt.Printf("%s✅ Verifying installation...%s\n", ColorBlue, ColorReset)
 	if err := installer.verifyInstallation(); err != nil {
 		fmt.Printf("%s⚠️  Installation completed but verification failed: %v%s\n", ColorYellow, err, ColorReset)

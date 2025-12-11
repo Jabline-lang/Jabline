@@ -3,9 +3,9 @@
 
   # Jabline Programming Language
 
-  *The Jabline programming language is a modern interpreted programming language geared toward general-purpose and embedded systems.*
+  *The Jabline programming language is a compiled (JBVM), modern, cloud-oriented programming language with concurrency and parallelism.*
 
-  [![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
+  [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![Go Version](https://img.shields.io/badge/go-1.25.3-00ADD8.svg)](https://golang.org/)
 </div>
@@ -39,16 +39,24 @@ jabline --version
 
 # Show help
 jabline --help
+
+# Activation Language Server Protocol
+jabline lsp
+
+# Compile .jb files
+jabline build program.jb -o program && ./program
 ```
 
 ---
 
 ## 📝 Language Overview
 
-Jabline is a modern interpreted programming language designed for rapid development and systems integration. It combines a familiar syntax with powerful built-in features.
+Jabline is a modern compiled programming language, designed for rapid development and cloud integration, with a familiar syntax and powerful built-in features.
 
 ### Core Features
 
+- **📠 Read-Evaluate-Print-Loop** - Functional and easy-to-use REPL
+- **💻 Language Server Protocol** - Complete language server protocol system for your code editor
 - **🔒 Advanced Closures** - Full lexical scoping with variable capture and nested functions
 - **📦 Module System** - Complete ES6-style import/export with barrel patterns
 - **🔧 Rich Built-in Library** - JSON, mathematics, regex, HTTP, file operations
@@ -57,14 +65,14 @@ Jabline is a modern interpreted programming language designed for rapid developm
 - **🧮 Scientific Computing** - Complete mathematical function library
 - **🌐 HTTP Client** - Integrated web request capabilities
 - **📁 File System Operations** - Comprehensive file and directory management
-- **⚡ Performance** - Optimized Go-based interpreter
+- **⚡ Performance** - Optimized Go-based compiled
 
 ### Syntax Highlights
 
 ```jabline
 // Variables and constants
 let name = "Jabline"
-const VERSION = "0.0.1"
+const VERSION = "0.1.0"
 
 // Functions with closures
 fn createCounter(start) {

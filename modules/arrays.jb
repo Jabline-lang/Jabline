@@ -1,0 +1,287 @@
+export fn findIndex(inputArr, targetValue) {
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] == targetValue) {
+            return index;
+        }
+        index = index + 1;
+    }
+    return -1;
+}
+
+export fn contains(inputArr, targetValue) {
+    return findIndex(inputArr, targetValue) != -1;
+}
+
+export fn remove(inputArr, targetValue) {
+    let resultArr = [];
+    let index = 0;
+    while (index < len(inputArr)) {
+        if (inputArr[index] != targetValue) {
+            resultArr = push(resultArr, inputArr[index]);
+        }
+        index = index + 1;
+    }
+    return resultArr;
+}
+
+export fn removeAt(inputArr, targetIndex) {
+    if (targetIndex < 0 || targetIndex >= len(inputArr)) {
+        return inputArr;
+    }
+
+    let resultArr = [];
+    let currentIndex = 0;
+    while (currentIndex < len(inputArr)) {
+        if (currentIndex != targetIndex) {
+            resultArr = push(resultArr, inputArr[currentIndex]);
+        }
+        currentIndex = currentIndex + 1;
+    }
+    return resultArr;
+}
+
+export fn insertAt(inputArr, targetIndex, newValue) {
+    if (targetIndex < 0) {
+        targetIndex = 0;
+    }
+    if (targetIndex > len(inputArr)) {
+        targetIndex = len(inputArr);
+    }
+
+    let resultArr = [];
+    let currentIndex = 0;
+
+    while (currentIndex < targetIndex) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+
+    resultArr = push(resultArr, newValue);
+
+    while (currentIndex < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+
+    return resultArr;
+}
+
+export fn slice(inputArr, startIndex, endIndex) {
+    let actualStart = 0;
+    if (startIndex > 0) {
+        actualStart = startIndex;
+    }
+
+    let actualEnd = len(inputArr);
+    if (endIndex < len(inputArr)) {
+        actualEnd = endIndex;
+    }
+
+    if (actualStart >= actualEnd) {
+        return [];
+    }
+
+    let resultArr = [];
+    let currentIndex = actualStart;
+    while (currentIndex < actualEnd) {
+        resultArr = push(resultArr, inputArr[currentIndex]);
+        currentIndex = currentIndex + 1;
+    }
+    return resultArr;
+}
+
+export fn concat(firstArr, secondArr) {
+    let resultArr = [];
+    let index = 0;
+
+    while (index < len(firstArr)) {
+        resultArr = push(resultArr, firstArr[index]);
+        index = index + 1;
+    }
+
+    index = 0;
+    while (index < len(secondArr)) {
+        resultArr = push(resultArr, secondArr[index]);
+        index = index + 1;
+    }
+
+    return resultArr;
+}
+
+export fn reverseArray(inputArr) {
+    let resultArr = [];
+    let index = len(inputArr) - 1;
+    while (index >= 0) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index - 1;
+    }
+    return resultArr;
+}
+
+export fn max(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+
+    let maximum = inputArr[0];
+    for (item in rest(inputArr)) {
+        if (item > maximum) {
+            maximum = item;
+        }
+    }
+    return maximum;
+}
+export fn min(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+
+    let minimum = inputArr[0];
+    for (item in rest(inputArr)) {
+        if (item < minimum) {
+            minimum = item;
+        }
+    }
+    return minimum;
+}
+export fn sum(inputArr) {
+    let total = 0;
+    for (item in inputArr) {
+        total = total + item;
+    }
+    return total;
+}
+export fn average(inputArr) {
+    if (len(inputArr) == 0) {
+        return 0;
+    }
+    return sum(inputArr) / len(inputArr);
+}
+
+export fn unique(inputArr) {
+    let resultArr = [];
+    let seen = {};
+    for (item in inputArr) {
+        let key = "" + item;
+        if (seen[key] == null) {
+            resultArr = push(resultArr, item);
+            seen[key] = true;
+        }
+    }
+    return resultArr;
+}
+export fn sort(inputArr) {
+    let resultArr = [];
+    let index = 0;
+
+    while (index < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index + 1;
+    }
+
+    let arraySize = len(resultArr);
+    let outerIndex = 0;
+    while (outerIndex < arraySize - 1) {
+        let innerIndex = 0;
+        while (innerIndex < arraySize - outerIndex - 1) {
+            if (resultArr[innerIndex] > resultArr[innerIndex + 1]) {
+                
+                let tempValue = resultArr[innerIndex];
+                resultArr[innerIndex] = resultArr[innerIndex + 1];
+                resultArr[innerIndex + 1] = tempValue;
+            }
+            innerIndex = innerIndex + 1;
+        }
+        outerIndex = outerIndex + 1;
+    }
+
+    return resultArr;
+}
+
+export fn chunk(inputArr, chunkSize) {
+    if (chunkSize <= 0) {
+        return [inputArr];
+    }
+
+    let resultArr = [];
+    let outerIndex = 0;
+
+    while (outerIndex < len(inputArr)) {
+        let currentChunk = [];
+        let innerIndex = 0;
+        while (innerIndex < chunkSize && (outerIndex + innerIndex) < len(inputArr)) {
+            currentChunk = push(currentChunk, inputArr[outerIndex + innerIndex]);
+            innerIndex = innerIndex + 1;
+        }
+        resultArr = push(resultArr, currentChunk);
+        outerIndex = outerIndex + chunkSize;
+    }
+
+    return resultArr;
+}
+
+export fn flatten(inputArr) {
+    let resultArr = [];
+    let outerIndex = 0;
+    while (outerIndex < len(inputArr)) {
+        let currentItem = inputArr[outerIndex];
+        if (type(currentItem) == "ARRAY") {
+            let innerIndex = 0;
+            while (innerIndex < len(currentItem)) {
+                resultArr = push(resultArr, currentItem[innerIndex]);
+                innerIndex = innerIndex + 1;
+            }
+        } else {
+            resultArr = push(resultArr, currentItem);
+        }
+        outerIndex = outerIndex + 1;
+    }
+    return resultArr;
+}
+
+export fn shuffle(inputArr) {
+    let resultArr = [];
+    let index = 0;
+
+    while (index < len(inputArr)) {
+        resultArr = push(resultArr, inputArr[index]);
+        index = index + 1;
+    }
+
+    index = len(resultArr) - 1;
+    while (index > 0) {
+
+        let randomIndex = ((index * 17 + 42) * 1103515245 + 12345) % (index + 1);
+
+        let tempValue = resultArr[index];
+        resultArr[index] = resultArr[randomIndex];
+        resultArr[randomIndex] = tempValue;
+
+        index = index - 1;
+    }
+
+    return resultArr;
+}
+
+export fn all(inputArr, targetValue) {
+    for (item in inputArr) {
+        if (item != targetValue) {
+            return false;
+        }
+    }
+    return true;
+}
+export fn any(inputArr, targetValue) {
+    return contains(inputArr, targetValue);
+}
+
+export fn countValue(inputArr, targetValue) {
+    let count = 0;
+    for (item in inputArr) {
+        if (item == targetValue) {
+            count = count + 1;
+        }
+    }
+    return count;
+}

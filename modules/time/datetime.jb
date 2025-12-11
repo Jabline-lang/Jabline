@@ -1,6 +1,25 @@
+export struct Date {
+    day: int,
+    month: int,
+    year: int
+}
+
+export struct Time {
+    hours: int,
+    minutes: int,
+    seconds: int
+}
+
+export struct DateTime {
+    date: Date,
+    time: Time
+}
+
 export let SECONDS_IN_MINUTE = 60;
 export let MINUTES_IN_HOUR = 60;
 export let HOURS_IN_DAY = 24;
+
+let DAYS_IN_MONTH = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 export let MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
@@ -12,82 +31,86 @@ export let DAY_NAMES = [
 ];
 
 export fn isLeapYear(year) {
-    if (year % 4 == 0) {
-        if (year % 100 == 0) {
-            if (year % 400 == 0) {
-                return true;
-            }
-            return false;
-        }
+    if (year % 400 == 0) {
         return true;
     }
-    return false;
+    if (year % 100 == 0) {
+        return false;
+    }
+    return year % 4 == 0;
 }
 
 export fn createDate(day, month, year) {
-    return {
-        "day": day,
-        "month": month,
-        "year": year
+    return Date{
+        day: day,
+        month: month,
+        year: year
     };
 }
 
 export fn formatDate(dateObj) {
-    let dayStr = "" + dateObj["day"];
-    let monthStr = "" + dateObj["month"];
-    let yearStr = "" + dateObj["year"];
+    let dayStr = "" + dateObj.day;
+    let monthStr = "" + dateObj.month;
+    let yearStr = "" + dateObj.year;
 
-    if (dateObj["day"] < 10) {
+    if (dateObj.day < 10) {
         dayStr = "0" + dayStr;
     }
-    if (dateObj["month"] < 10) {
+    if (dateObj.month < 10) {
         monthStr = "0" + monthStr;
     }
 
     return dayStr + "/" + monthStr + "/" + yearStr;
 }
 
-export fn addDays(dateObj, days) {
-    let newDay = dateObj["day"] + days;
-    let newMonth = dateObj["month"];
-    let newYear = dateObj["year"];
+export fn addDays(dateObj, daysToAdd) {
+    let day = dateObj.day + daysToAdd;
+    let month = dateObj.month;
+    let year = dateObj.year;
 
-    while (newDay > 30) {
-        newDay = newDay - 30;
-        newMonth = newMonth + 1;
-        if (newMonth > 12) {
-            newMonth = 1;
-            newYear = newYear + 1;
+    let daysInMonth = fn(m, y) {
+        if (m == 2 && isLeapYear(y)) {
+            return 29;
+        }
+        return DAYS_IN_MONTH[m];
+    };
+
+    while (day > daysInMonth(month, year)) {
+        day = day - daysInMonth(month, year);
+        month = month + 1;
+        if (month > 12) {
+            month = 1;
+            year = year + 1;
         }
     }
 
-    return createDate(newDay, newMonth, newYear);
+    return createDate(day, month, year);
 }
 
 export fn getMonthName(dateObj) {
-    return MONTH_NAMES[dateObj["month"] - 1];
+    return MONTH_NAMES[dateObj.month - 1];
 }
 
 export fn createTime(hours, minutes, seconds) {
-    return {
-        "hours": hours,
-        "minutes": minutes,
-        "seconds": seconds
+    return Time{
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds
     };
 }
 
 export fn formatTime(timeObj) {
-    let hoursStr = "" + timeObj["hours"];
-    let minutesStr = "" + timeObj["minutes"];
-    let secondsStr = "" + timeObj["seconds"];
+    let hoursStr = "" + timeObj.hours;
+    let minutesStr = "" + timeObj.minutes;
+    let secondsStr = "" + timeObj.seconds;
 
-    if (timeObj["hours"] < 10) {
+    if (timeObj.hours < 10) {
         hoursStr = "0" + hoursStr;
     }
-    if (timeObj["minutes"] < 10) {
+    if (timeObj.minutes < 10) {
         minutesStr = "0" + minutesStr;
     }
-    if (timeObj["seconds"] < 10) {
+    if (timeObj.seconds < 10) {
         secondsStr = "0" + secondsStr;
     }
 
@@ -95,14 +118,14 @@ export fn formatTime(timeObj) {
 }
 
 export fn createDateTime(day, month, year, hours, minutes, seconds) {
-    return {
-        "date": createDate(day, month, year),
-        "time": createTime(hours, minutes, seconds)
+    return DateTime{
+        date: createDate(day, month, year),
+        time: createTime(hours, minutes, seconds)
     };
 }
 
 export fn formatDateTime(dateTimeObj) {
-    let dateStr = formatDate(dateTimeObj["date"]);
-    let timeStr = formatTime(dateTimeObj["time"]);
+    let dateStr = formatDate(dateTimeObj.date);
+    let timeStr = formatTime(dateTimeObj.time);
     return dateStr + " " + timeStr;
 }

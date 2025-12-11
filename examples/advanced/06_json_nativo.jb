@@ -1,0 +1,24 @@
+// Ejemplo de uso de JSON
+
+import { parse, stringify } from "json";
+
+let jsonString = "{\"nombre\": \"Juan\", \"edad\": 30, \"hobbies\": [\"leer\", \"codificar\"]}";
+
+echo("--- Parsing JSON ---");
+echo("String original: " + jsonString);
+
+try {
+    let datos = parse(jsonString);
+    echo("Nombre: " + datos["nombre"]);
+    echo("Primer hobby: " + datos["hobbies"][0]);
+    
+    // Modificar objeto
+    datos["edad"] = 31;
+    
+    echo("\n--- Stringify JSON ---");
+    let nuevoJson = stringify(datos);
+    echo("Nuevo JSON: " + nuevoJson);
+    
+} catch (e) {
+    echo("Error procesando JSON: " + e);
+}
