@@ -133,7 +133,7 @@ func (vm *VM) Run() error {
 		case code.OpReturn: if err := vm.opReturn(); err != nil { return vm.newRuntimeError(err.Error()) }
 		case code.OpClosure: if err := vm.opClosure(ins, &ip); err != nil { return vm.newRuntimeError(err.Error()) }
 		case code.OpInstance: if err := vm.opInstance(ins, &ip); err != nil { return vm.newRuntimeError(err.Error()) }
-		case code.OpImport: if err := vm.opImport(); err != nil { return vm.newRuntimeError(err.Error()) }
+		case code.OpImport: if err := vm.opImport(ins, &ip); err != nil { return vm.newRuntimeError(err.Error()) }
 		case code.OpTry: vm.opTry(ins, &ip)
 		case code.OpEndTry: vm.opEndTry()
 		case code.OpThrow: if err := vm.opThrow(); err != nil { return vm.newRuntimeError(err.Error()) }
