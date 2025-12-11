@@ -1,0 +1,36 @@
+// Test for the new built-in function: range()
+
+echo("Running tests for range() function...")
+
+// Test 1: range(end)
+let a = range(5)
+echo("range(5): ", a) // Expected: [0, 1, 2, 3, 4]
+
+// Test 2: range(start, end)
+let b = range(2, 7)
+echo("range(2, 7): ", b) // Expected: [2, 3, 4, 5, 6]
+
+// Test 3: range(start, end, step)
+let c = range(0, 10, 2)
+echo("range(0, 10, 2): ", c) // Expected: [0, 2, 4, 6, 8]
+
+// Test 4: Negative step
+let d = range(5, 0, -1)
+echo("range(5, 0, -1): ", d) // Expected: [5, 4, 3, 2, 1]
+
+// Test 5: No-op range
+let e = range(5, 5)
+echo("range(5, 5): ", e) // Expected: []
+
+// Test 6: range where start > end with positive step
+let f = range(10, 5)
+echo("range(10, 5): ", f) // Expected: []
+
+// Test 7: for loop with range
+let total = 0
+for i in range(1, 6) {
+    total = total + i
+}
+echo("Sum of 1 to 5: ", total) // Expected: 15
+
+echo("Tests for range() completed.")

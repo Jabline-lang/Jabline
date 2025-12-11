@@ -1,0 +1,211 @@
+// =============================================
+// DEMO RÁPIDO: Operadores Modernos (?? y ?.)
+// =============================================
+
+echo("🚀 Demo de Operadores Modernos en Jabline")
+echo("")
+
+// =============================================
+// 1. NULLISH COALESCING (??) - Básico
+// =============================================
+
+echo("1. Operador ?? (Nullish Coalescing):")
+echo("------------------------------------")
+
+// Valores por defecto cuando algo es null
+let nombre = null ?? "Anónimo"
+let edad = null ?? 25
+let activo = true ?? false
+
+echo("null ?? 'Anónimo' = " + nombre)       // Anónimo
+echo("null ?? 25 = " + edad)                // 25
+echo("true ?? false = " + activo)           // true (no es null)
+
+echo("")
+
+// =============================================
+// 2. OPTIONAL CHAINING (?.) - Básico
+// =============================================
+
+echo("2. Operador ?. (Optional Chaining):")
+echo("-------------------------------------")
+
+// Estructura simple
+struct Persona {
+    nombre: string,
+    telefono: null
+}
+
+let usuario1 = Persona {
+    nombre: "Juan",
+    telefono: "123-456-789"
+}
+
+let usuario2 = null
+
+// Acceso seguro - no produce error si es null
+let tel1 = usuario1?.telefono ?? "Sin teléfono"
+let tel2 = usuario2?.telefono ?? "Sin teléfono"
+
+echo("Usuario 1 teléfono: " + tel1)         // 123-456-789
+echo("Usuario null teléfono: " + tel2)      // Sin teléfono
+
+echo("")
+
+// =============================================
+// 3. COMBINADOS - Ejemplo Práctico
+// =============================================
+
+echo("3. Combinando ambos operadores:")
+echo("----------------------------------")
+
+struct Config {
+    host: "localhost",
+    puerto: 8080,
+    ssl: false,
+    admin: null
+}
+
+struct Admin {
+    nombre: "admin",
+    email: "admin@example.com"
+}
+
+// Configuración completa
+let config1 = Config {
+    host: "mi-servidor.com",
+    puerto: 443,
+    ssl: true,
+    admin: Admin {
+        nombre: "SuperAdmin",
+        email: "super@example.com"
+    }
+}
+
+// Configuración básica
+let config2 = Config {
+    host: null,
+    puerto: null,
+    ssl: false,
+    admin: null
+}
+
+// Extraer valores con defaults seguros
+fn mostrarConfig(cfg) {
+    let host = cfg?.host ?? "localhost"
+    let puerto = cfg?.puerto ?? 8080
+    let ssl = cfg?.ssl ?? false
+    let adminNombre = cfg?.admin?.nombre ?? "Sin admin"
+    let adminEmail = cfg?.admin?.email ?? "Sin email"
+
+    echo(`Servidor: ${host}:${puerto} (SSL: ${ssl})`)
+    echo(`Admin: ${adminNombre} <${adminEmail}>`)
+    echo("")
+}
+
+echo("Config 1:")
+mostrarConfig(config1)
+
+echo("Config 2:")
+mostrarConfig(config2)
+
+echo("Config null:")
+mostrarConfig(null)
+
+// =============================================
+// 4. CASOS REALES
+// =============================================
+
+echo("4. Casos de uso reales:")
+echo("------------------------")
+
+// API Response simulada
+struct ApiResponse {
+    data: null,
+    error: null,
+    status: 200
+}
+
+struct UserData {
+    id: 1,
+    profile: null
+}
+
+struct Profile {
+    avatar: "default.jpg",
+    bio: "Sin bio"
+}
+
+let respuestaExitosa = ApiResponse {
+    data: UserData {
+        id: 42,
+        profile: Profile {
+            avatar: "user42.jpg",
+            bio: "Desarrollador Full Stack"
+        }
+    },
+    error: null,
+    status: 200
+}
+
+let respuestaError = ApiResponse {
+    data: null,
+    error: "Usuario no encontrado",
+    status: 404
+}
+
+// Función para procesar respuesta de API
+fn procesarRespuesta(response) {
+    let userId = response?.data?.id ?? 0
+    let avatar = response?.data?.profile?.avatar ?? "default.jpg"
+    let bio = response?.data?.profile?.bio ?? "Sin información"
+    let errorMsg = response?.error ?? "Sin errores"
+    let status = response?.status ?? 500
+
+    echo(`Status: ${status}`)
+    echo(`User ID: ${userId}`)
+    echo(`Avatar: ${avatar}`)
+    echo(`Bio: ${bio}`)
+    echo(`Error: ${errorMsg}`)
+    echo("")
+}
+
+echo("Respuesta exitosa:")
+procesarRespuesta(respuestaExitosa)
+
+echo("Respuesta con error:")
+procesarRespuesta(respuestaError)
+
+echo("Respuesta null:")
+procesarRespuesta(null)
+
+// =============================================
+// 5. COMPARACIÓN CON MÉTODOS TRADICIONALES
+// =============================================
+
+echo("5. Comparación - Antes vs Después:")
+echo("-----------------------------------")
+
+let datos = null
+
+// Método tradicional (largo y propenso a errores)
+let valorTradicional = "Valor por defecto"
+if (datos != null) {
+    valorTradicional = datos
+}
+
+// Con operador moderno (conciso y claro)
+let valorModerno = datos ?? "Valor por defecto"
+
+echo("Tradicional: " + valorTradicional)
+echo("Moderno: " + valorModerno)
+
+echo("")
+echo("✅ Los operadores ?? y ?. hacen el código:")
+echo("  • Más legible")
+echo("  • Más seguro")
+echo("  • Menos propenso a errores")
+echo("  • Más conciso")
+
+echo("")
+echo("🎉 ¡Demo completado! Los operadores modernos están listos para usar.")

@@ -7,9 +7,10 @@ import (
 )
 
 type Parser struct {
-	l       *lexer.Lexer
-	curTok  token.Token
-	peekTok token.Token
+	l        *lexer.Lexer
+	curTok   token.Token
+	peekTok  token.Token
+	peekTok2 token.Token
 
 	errors []string
 
@@ -37,8 +38,10 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+	p.nextToken()
 	return p
 }
+
 
 func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.IDENT, p.parseArrowFunctionFromIdent)
@@ -94,7 +97,12 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 
 func (p *Parser) nextToken() {
 	p.curTok = p.peekTok
-	p.peekTok = p.l.NextToken()
+	p.peekTok = p.peekTok2
+	p.peekTok2 = p.l.NextToken()
+}
+
+func (p *Parser) peekToken2Is(t token.TokenType) bool {
+	return p.peekTok2.Type == t
 }
 
 func (p *Parser) Errors() []string {

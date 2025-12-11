@@ -189,8 +189,44 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 }
 
 func (p *Parser) parseGroupedOrArrowFunction() ast.Expression {
+	lParenToken := p.curTok
 
-	return p.parseGroupedExpression()
+	expressions := p.parseExpressionList(token.RPAREN)
+
+	if !p.peekTokenIs(token.ARROW) {
+
+		if len(expressions) == 0 {
+			p.errors = append(p.errors, "Cannot use '()' as an expression.")
+			return nil
+		}
+		if len(expressions) > 1 {
+			p.errors = append(p.errors, "Cannot use comma-separated expressions in a grouped expression.")
+			return nil
+		}
+		return expressions[0]
+	}
+
+	p.nextToken()
+	p.nextToken()
+
+	params := []*ast.Identifier{}
+	for _, exp := range expressions {
+		ident, ok := exp.(*ast.Identifier)
+		if !ok {
+			p.errors = append(p.errors, fmt.Sprintf("Expected identifier in arrow function parameter list, but got %T", exp))
+			return nil
+		}
+		params = append(params, ident)
+	}
+
+	arrow := &ast.ArrowFunction{
+		Token:      lParenToken,
+		Parameters: params,
+	}
+
+	arrow.Body = p.parseExpression(LOWEST)
+
+	return arrow
 }
 
 func (p *Parser) parseIfExpression() ast.Expression {

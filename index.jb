@@ -1,0 +1,2 @@
+let nombre = echoUser("¿Cuál es tu nombre? ")
+echo("Hola, " + nombre + "! Bienvenido a Jabline.")

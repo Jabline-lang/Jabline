@@ -22,9 +22,19 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.FOR:
 		return p.parseForStatement()
 	case token.FUNCTION:
+		if p.peekTokenIs(token.LPAREN) {
+			return p.parseExpressionStatement()
+		}
 		return p.parseFunctionStatement()
 	case token.ASYNC:
-		return p.parseAsyncFunctionStatement()
+		if p.peekTokenIs(token.FUNCTION) {
+			if p.peekToken2Is(token.LPAREN) {
+				return p.parseExpressionStatement()
+			}
+			return p.parseAsyncFunctionStatement()
+		}
+		return p.parseExpressionStatement()
+
 	case token.STRUCT:
 		return p.parseStructStatement()
 	case token.BREAK:
@@ -489,7 +499,7 @@ func (p *Parser) parseImportStatement() *ast.ImportStatement {
 		stmt.ImportType = ast.IMPORT_NAMESPACE
 		p.nextToken()
 
-		if !p.expectPeek(token.IDENT) || p.curTok.Literal != "as" {
+		if !p.expectPeek(token.AS) {
 			p.addError("expected 'as' after '*' in import statement")
 			return nil
 		}

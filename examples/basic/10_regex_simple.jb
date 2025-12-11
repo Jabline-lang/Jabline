@@ -1,0 +1,22 @@
+// Ejemplo de Regex Simple
+
+let texto = "El número de teléfono es 555-1234";
+let patron = "\\d{3}-\\d{4}"; // Patrón para buscar números tipo 555-1234
+
+// Asumiendo que existe una librería o built-in 'regex'
+// Si no, usamos la función match() global si existe
+import { match, replace } from "regex"; // Import hipotético si es un módulo interno
+
+echo("Texto: " + texto);
+echo("Buscando patrón: " + patron);
+
+let encontrado = match(patron, texto);
+
+if (encontrado) {
+    echo("¡Número encontrado!: " + encontrado);
+} else {
+    echo("No se encontró el número.");
+}
+
+let nuevoTexto = replace(patron, "XXX-XXXX", texto);
+echo("Texto censurado: " + nuevoTexto);

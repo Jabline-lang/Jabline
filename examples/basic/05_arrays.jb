@@ -1,0 +1,27 @@
+// Ejemplo 5: Arrays y Manipulación
+
+let frutas = ["Manzana", "Banana", "Naranja"];
+echo("Array original: " + frutas);
+
+// Acceso por índice
+echo("Primera fruta: " + frutas[0]);
+
+// Modificación
+frutas[1] = "Uva";
+echo("Array modificado: " + frutas);
+
+// Funciones nativas de arrays (asumiendo existencia de len, push, pop)
+echo("Cantidad de frutas: " + len(frutas));
+
+push(frutas, "Pera");
+echo("Después de push: " + frutas);
+
+let ultima = pop(frutas);
+echo("Fruta eliminada: " + ultima);
+echo("Array final: " + frutas);
+
+// Iteración sobre array
+echo("\n--- Iterando Array ---");
+foreach (fruta in frutas) {
+    echo("Fruta: " + fruta);
+}

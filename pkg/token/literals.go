@@ -9,6 +9,4 @@ const (
 	FLOAT            = "FLOAT"
 	STRING           = "STRING"
 	TEMPLATE_LITERAL = "TEMPLATE_LITERAL"
-	TRUE             = "TRUE"
-	FALSE            = "FALSE"
 )

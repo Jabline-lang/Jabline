@@ -1,105 +1,120 @@
-export let PI = 3;
-export let E = 2;
+export let PI = 3.141592653589793;
+export let E = 2.718281828459045;
 
-export fn abs(x) {
-    if (x < 0) {
-        return -x;
+let _abs = abs;
+let _sqrt = sqrt;
+let _pow = pow;
+let _sin = sin;
+let _cos = cos;
+let _tan = tan;
+let _asin = asin;
+let _acos = acos;
+let _atan = atan;
+let _log = log;
+let _log10 = log10;
+let _log2 = log2;
+let _exp = exp;
+let _floor = floor;
+let _ceil = ceil;
+let _round = round;
+let _min = min;
+let _max = max;
+let _radians = radians;
+let _degrees = degrees;
+let _random = random;
+let _factorial = factorial;
+
+
+export let abs = fn(x) {
+    return _abs(x);
+};
+
+export let sqrt = fn(x) {
+    return _sqrt(x);
+};
+
+export let pow = fn(base, exp) {
+    return _pow(base, exp);
+};
+
+export let sin = fn(x) {
+    return _sin(x);
+};
+
+export let cos = fn(x) {
+    return _cos(x);
+};
+
+export let tan = fn(x) {
+    return _tan(x);
+};
+
+export let asin = fn(x) {
+    return _asin(x);
+};
+
+export let acos = fn(x) {
+    return _acos(x);
+};
+
+export let atan = fn(x) {
+    return _atan(x);
+};
+
+export let log = fn(x) {
+    return _log(x);
+};
+
+export let log10 = fn(x) {
+    return _log10(x);
+};
+
+export let log2 = fn(x) {
+    return _log2(x);
+};
+
+export let exp = fn(x) {
+    return _exp(x);
+};
+
+export let floor = fn(x) {
+    return _floor(x);
+};
+
+export let ceil = fn(x) {
+    return _ceil(x);
+};
+
+export let round = fn(x) {
+    return _round(x);
+};
+
+export let min = fn(a, b) {
+    return _min(a, b);
+};
+
+export let max = fn(a, b) {
+    return _max(a, b);
+};
+
+export let radians = fn(x) {
+    return _radians(x);
+};
+
+export let degrees = fn(x) {
+    return _degrees(x);
+};
+
+export let random = fn(min, max) {
+    if (min == null && max == null) {
+        return _random();
     }
-    return x;
-}
-
-
-export fn max(a, b) {
-    if (a > b) {
-        return a;
+    if (max == null) {
+        return _random(min);
     }
-    return b;
-}
+    return _random(min, max);
+};
 
-
-export fn min(a, b) {
-    if (a < b) {
-        return a;
-    }
-    return b;
-}
-
-
-export fn pow(base, exp) {
-    if (exp == 0) {
-        return 1;
-    }
-    if (exp < 0) {
-        return 0; 
-    }
-
-    let result = 1;
-    let i = 0;
-    while (i < exp) {
-        result = result * base;
-        i = i + 1;
-    }
-    return result;
-}
-
-export fn sqrt(x) {
-    if (x < 0) {
-        throw "Cannot calculate square root of negative number";
-    }
-    if (x == 0) {
-        return 0;
-    }
-
-    let guess = x / 2;
-    if (guess * guess == x) {
-        return guess;
-    }
-    if ((guess + 1) * (guess + 1) <= x) {
-        return guess + 1;
-    }
-    return guess;
-}
-
-export fn factorial(n) {
-    if (n < 0) {
-        throw "Cannot calculate factorial of negative number";
-    }
-    if (n == 0 || n == 1) {
-        return 1;
-    }
-
-    let result = 1;
-    let i = 2;
-    while (i <= n) {
-        result = result * i;
-        i = i + 1;
-    }
-    return result;
-}
-
-export fn isEven(n) {
-    return n % 2 == 0;
-}
-
-export fn isOdd(n) {
-    return n % 2 != 0;
-}
-
-export fn random(min, max) {
-
-    let seed = (min + max) * 17 + 42;
-    seed = (seed * 13 + 7) % 1000;
-    return min + (seed % (max - min + 1));
-}
-
-export fn round(x) {
-    return x;
-}
-
-export fn floor(x) {
-    return x;
-}
-
-export fn ceil(x) {
-    return x;
-}
+export let factorial = fn(n) {
+    return _factorial(n);
+};

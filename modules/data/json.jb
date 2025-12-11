@@ -1,0 +1,20 @@
+let _parse = parse;
+let _stringify = stringify;
+let _isValid = JSON.isValid;
+let _prettify = JSON.prettify;
+
+export let parse = fn(jsonStr) {
+    return _parse(jsonStr);
+};
+
+export let stringify = fn(obj) {
+    return _stringify(obj);
+};
+
+export let isValid = fn(jsonStr) {
+    return _isValid(jsonStr);
+};
+
+export let prettify = fn(obj, indent = "  ") {
+    return _prettify(obj, indent);
+};

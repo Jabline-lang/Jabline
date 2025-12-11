@@ -30,6 +30,10 @@ const (
 	INT_TYPE    = "INT_TYPE"
 	FLOAT_TYPE  = "FLOAT_TYPE"
 	BOOL_TYPE   = "BOOL_TYPE"
+	TRUE        = "TRUE"
+	FALSE       = "FALSE"
+	ENUM        = "ENUM"
+	AS          = "AS"
 )
 
 var keywords = map[string]TokenType{
@@ -64,6 +68,8 @@ var keywords = map[string]TokenType{
 	"int":      INT_TYPE,
 	"float":    FLOAT_TYPE,
 	"bool":     BOOL_TYPE,
+	"enum":     ENUM,
+	"as":       AS,
 }
 
 func LookupIdent(ident string) TokenType {

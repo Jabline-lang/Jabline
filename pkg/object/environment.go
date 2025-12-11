@@ -1,10 +1,10 @@
 package object
 
 type Environment struct {
-	store     map[string]Object
-	constants map[string]Object
-	outer     *Environment
-
+	store       map[string]Object
+	constants   map[string]Object
+	outer       *Environment
+	ModulePath  string
 	closureVars map[string]Object
 	isClosure   bool
 }
@@ -22,6 +22,9 @@ func NewEnvironment() *Environment {
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()
 	env.outer = outer
+	if outer != nil {
+		env.ModulePath = outer.ModulePath
+	}
 	return env
 }
 
