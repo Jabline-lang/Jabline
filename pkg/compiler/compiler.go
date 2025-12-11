@@ -6,7 +6,6 @@ import (
 	"jabline/pkg/code"
 	"jabline/pkg/object"
 	"jabline/pkg/stdlib"
-	"reflect"
 )
 
 type Compiler struct {
@@ -78,13 +77,21 @@ type Bytecode struct {
 	Exports      map[string]int
 }
 
+func (c *Compiler) currentInstructions() code.Instructions {
+	return c.scopes[c.scopeIndex].instructions
+}
+
+func (c *Compiler) setInstructions(ins code.Instructions) {
+	c.scopes[c.scopeIndex].instructions = ins
+}
+
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
 		Instructions: c.currentInstructions(),
 		Constants:    c.constants,
 		SymbolTable:  c.symbolTable,
 		SourceMap:    c.scopes[c.scopeIndex].sourceMap,
-		Exports:      c.scopes[c.scopeIndex].exports,
+		Exports:      c.exports,
 	}
 }
 
