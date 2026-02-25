@@ -1,0 +1,22 @@
+// Ejemplo 7: Ejemplo Completo - Sistema de Biblioteca
+
+// Estructura para libros
+struct Libro {
+    titulo: string,
+    disponible: bool
+}
+
+// Crear biblioteca con libros
+let biblioteca = [
+    Libro { titulo: "1984", disponible: true },
+    Libro { titulo: "Cien años de soledad", disponible: true }
+];
+
+// Función para prestar libro
+fn prestarLibro(indice) {
+    biblioteca[indice].disponible = false;
+    return "Libro '" + biblioteca[indice].titulo + "' prestado";
+}
+
+echo(prestarLibro(0));
+echo("Disponible: " + biblioteca[0].disponible);
