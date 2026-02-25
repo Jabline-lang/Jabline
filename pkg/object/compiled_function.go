@@ -6,13 +6,20 @@ import (
 )
 
 type CompiledFunction struct {
-	Instructions  code.Instructions
-	NumLocals     int
-	NumParameters int
-	SourceMap     code.SourceMap
+	Instructions   code.Instructions
+	NumLocals      int
+	NumParameters  int
+	SourceMap      code.SourceMap
+	IsAsync        bool
+	Name           string
+	TypeParameters []string
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
 func (cf *CompiledFunction) Inspect() string {
-	return fmt.Sprintf("CompiledFunction[%p]", cf)
+	name := cf.Name
+	if name == "" {
+		name = "<anonymous>"
+	}
+	return fmt.Sprintf("CompiledFunction[%p, %s]", cf, name)
 }

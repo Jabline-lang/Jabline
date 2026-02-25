@@ -3,13 +3,13 @@
 // Estructura para libros
 struct Libro {
     titulo: string,
-    disponible: true
+    disponible: bool
 }
 
 // Crear biblioteca con libros
 let biblioteca = [
-    Libro { titulo: "1984" },
-    Libro { titulo: "Cien años de soledad" }
+    Libro { titulo: "1984", disponible: true },
+    Libro { titulo: "Cien años de soledad", disponible: true }
 ];
 
 // Función para prestar libro

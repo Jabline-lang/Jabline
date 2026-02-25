@@ -9,45 +9,60 @@ import (
 type LetStatement struct {
 	Token token.Token
 	Name  *Identifier
+	Type  *TypeExpression
 	Value Expression
 }
 
 func (ls *LetStatement) statementNode()       {}
 func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 func (ls *LetStatement) String() string {
-	if ls.Value != nil {
-		return fmt.Sprintf("%s = %s;", ls.Name.String(), ls.Value.String())
+	typeStr := ""
+	if ls.Type != nil {
+		typeStr = ": " + ls.Type.String()
 	}
-	return fmt.Sprintf("%s = ;", ls.Name.String())
+	if ls.Value != nil {
+		return fmt.Sprintf("%s%s = %s;", ls.Name.String(), typeStr, ls.Value.String())
+	}
+	return fmt.Sprintf("%s%s = ;", ls.Name.String(), typeStr)
 }
 
 type ConstStatement struct {
 	Token token.Token
 	Name  *Identifier
+	Type  *TypeExpression
 	Value Expression
 }
 
 func (cs *ConstStatement) statementNode()       {}
 func (cs *ConstStatement) TokenLiteral() string { return cs.Token.Literal }
 func (cs *ConstStatement) String() string {
-	if cs.Value != nil {
-		return fmt.Sprintf("const %s = %s;", cs.Name.String(), cs.Value.String())
+	typeStr := ""
+	if cs.Type != nil {
+		typeStr = ": " + cs.Type.String()
 	}
-	return fmt.Sprintf("const %s = ;", cs.Name.String())
+	if cs.Value != nil {
+		return fmt.Sprintf("const %s%s = %s;", cs.Name.String(), typeStr, cs.Value.String())
+	}
+	return fmt.Sprintf("const %s%s = ;", cs.Name.String(), typeStr)
 }
 
 type EchoStatement struct {
-	Token token.Token
-	Value Expression
+	Token  token.Token
+	Values []Expression
 }
 
 func (es *EchoStatement) statementNode()       {}
 func (es *EchoStatement) TokenLiteral() string { return es.Token.Literal }
 func (es *EchoStatement) String() string {
-	if es.Value != nil {
-		return "echo(" + es.Value.String() + ");"
+	out := "echo("
+	for i, v := range es.Values {
+		out += v.String()
+		if i < len(es.Values)-1 {
+			out += ", "
+		}
 	}
-	return "echo();"
+	out += ");"
+	return out
 }
 
 type ExpressionStatement struct {

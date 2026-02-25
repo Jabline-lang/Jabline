@@ -1,6 +1,9 @@
 package ast
 
-import "jabline/pkg/token"
+import (
+	"jabline/pkg/token"
+	"strings"
+)
 
 type PrefixExpression struct {
 	Token    token.Token
@@ -98,4 +101,36 @@ func (oce *OptionalChainingExpression) expressionNode()      {}
 func (oce *OptionalChainingExpression) TokenLiteral() string { return oce.Token.Literal }
 func (oce *OptionalChainingExpression) String() string {
 	return "(" + oce.Left.String() + "?." + oce.Right.String() + ")"
+}
+
+type SpawnExpression struct {
+	Token token.Token // The 'spawn' token
+	Call  *CallExpression
+}
+
+func (se *SpawnExpression) expressionNode()      {}
+func (se *SpawnExpression) TokenLiteral() string { return se.Token.Literal }
+func (se *SpawnExpression) String() string {
+	return "spawn " + se.Call.String()
+}
+
+type InstantiatedExpression struct {
+	Token         token.Token // The '[' token
+	Left          Expression
+	TypeArguments []*TypeExpression
+}
+
+func (ie *InstantiatedExpression) expressionNode()      {}
+func (ie *InstantiatedExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InstantiatedExpression) String() string {
+	var out strings.Builder
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	args := []string{}
+	for _, arg := range ie.TypeArguments {
+		args = append(args, arg.String())
+	}
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString("]")
+	return out.String()
 }

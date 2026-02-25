@@ -3,9 +3,9 @@
 echo("--- Structs ---");
 // Definición de una estructura
 struct Usuario {
-    nombre,
-    edad,
-    activo
+    nombre: string,
+    edad: int,
+    activo: bool
 }
 
 // Instanciación
@@ -17,9 +17,9 @@ let user1 = Usuario {
 
 echo("Usuario: " + user1.nombre + ", Activo: " + user1.activo);
 
-// Modificación
-user1.edad = 31;
-echo("Nueva edad: " + user1.edad);
+// Modificación (Not supported yet)
+// user1.edad = 31;
+// echo("Nueva edad: " + user1.edad);
 
 echo("\n--- HashMaps (Diccionarios) ---");
 // Los mapas son colecciones clave-valor dinámicas
@@ -34,6 +34,6 @@ let config = {
 echo("Tema actual: " + config["tema"]);
 echo("Autor: " + config["meta"]["autor"]);
 
-// Asignación dinámica
-config["nuevo_valor"] = 100;
-echo("Valor asignado: " + config["nuevo_valor"]);
+// Asignación dinámica (Not supported yet)
+// config["nuevo_valor"] = 100;
+// echo("Valor asignado: " + config["nuevo_valor"]);

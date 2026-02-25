@@ -1,8 +1,9 @@
 package object
 
 type Struct struct {
-	Name   string
-	Fields map[string]string
+	Name           string
+	TypeParameters []string
+	Fields         map[string]string
 }
 
 func (s *Struct) Type() ObjectType { return STRUCT_OBJ }
@@ -15,8 +16,18 @@ func (s *Struct) Inspect() string {
 	return out
 }
 
+type InstantiatedStruct struct {
+	Struct       *Struct
+	FullTypeName string
+}
+
+func (is *InstantiatedStruct) Type() ObjectType { return INSTANTIATED_STRUCT_OBJ }
+func (is *InstantiatedStruct) Inspect() string {
+	return "instantiated struct " + is.FullTypeName
+}
+
 type Instance struct {
-	StructName string
+	StructName string // Esto ahora almacenará el nombre completo instanciado si aplica
 	Fields     map[string]Object
 }
 

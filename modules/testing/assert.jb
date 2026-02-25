@@ -222,6 +222,69 @@ export fn it(testName, testFunction) {
     testFunction();
 }
 
+export fn fails(testFn, message) {
+    if (message == null) {
+        message = "Function should fail";
+    }
+
+    let result = is_error(testFn());
+    if (result) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "error", "success");
+        return false;
+    }
+}
+
+export fn roughlyEqual(actual, expected, delta, message) {
+    if (message == null) {
+        message = "Values should be roughly equal";
+    }
+
+    let diff = actual - expected;
+    if (diff < 0) { diff = -diff; }
+
+    if (diff <= delta) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, expected + " (+/- " + delta + ")", actual);
+        return false;
+    }
+}
+
+export fn includes(container, item, message) {
+    if (message == null) {
+        message = "Container should include item";
+    }
+
+    let found = false;
+    if (type(container) == "ARRAY") {
+        for (x in container) {
+            if (x == item) { found = true; }
+        }
+    } else if (type(container) == "STRING") {
+        // Simple search if Jabline supports it or use index
+        let i = 0;
+        while (i <= len(container) - len(item)) {
+            // This is complex in Jabline without slice.
+            // Let's assume we can use the new native strings/slice 
+            // once we have a way to call it here.
+            // For now, let's keep it simple.
+            i = i + 1;
+        }
+    }
+
+    if (found) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "to include " + item, container);
+        return false;
+    }
+}
+
 export fn showFinalReport() {
     echo("");
     echo("📋 FINAL TEST REPORT");

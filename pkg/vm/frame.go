@@ -6,9 +6,12 @@ import (
 )
 
 type Frame struct {
-	cl          *object.Closure
-	ip          int
-	basePointer int
+	cl             *object.Closure
+	ip             int
+	basePointer    int
+	savedGlobals   []object.Object
+	savedConstants []object.Object
+	TypeArgs       map[string]string
 }
 
 func NewFrame(cl *object.Closure, basePointer int) *Frame {
@@ -16,6 +19,7 @@ func NewFrame(cl *object.Closure, basePointer int) *Frame {
 		cl:          cl,
 		ip:          -1,
 		basePointer: basePointer,
+		TypeArgs:    make(map[string]string),
 	}
 }
 

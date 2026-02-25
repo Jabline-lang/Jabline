@@ -7,6 +7,7 @@ const (
 	LOWEST
 	NULLISH_COALESCING
 	TERNARY
+	CHANNEL_SEND
 	OR
 	AND
 	EQUALS
@@ -21,6 +22,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ARROW_LEFT:         CHANNEL_SEND,
 	token.NULLISH_COALESCING: NULLISH_COALESCING,
 	token.QUESTION:           TERNARY,
 	token.OR:                 OR,
@@ -33,15 +35,21 @@ var precedences = map[token.TokenType]int{
 	token.GT_EQ:              LESSGREATER,
 	token.PLUS:               SUM,
 	token.MINUS:              SUM,
+	token.BIT_OR:             SUM,
+	token.BIT_XOR:            SUM,
 	token.SLASH:              PRODUCT,
 	token.ASTERISK:           PRODUCT,
 	token.MOD:                PRODUCT,
+	token.BIT_AND:            PRODUCT,
+	token.SHIFT_LEFT:         PRODUCT,
+	token.SHIFT_RIGHT:        PRODUCT,
 	token.LPAREN:             CALL,
 	token.DOT:                INDEX,
 	token.LBRACKET:           INDEX,
 	token.OPTIONAL_CHAINING:  OPTIONAL_CHAINING,
 	token.INCREMENT:          POSTFIX,
 	token.DECREMENT:          POSTFIX,
+	token.LBRACE:             CALL,
 }
 
 func (p *Parser) peekPrecedence() int {

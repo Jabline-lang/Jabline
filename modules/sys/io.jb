@@ -1,0 +1,6 @@
+import * as native from "_io"
+
+export let readFile = native.readFile
+export let writeFile = native.writeFile
+export let readLines = native.readLines
+export let input = native.echoUser

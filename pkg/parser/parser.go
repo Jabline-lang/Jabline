@@ -42,7 +42,6 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-
 func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.IDENT, p.parseArrowFunctionFromIdent)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
@@ -51,6 +50,8 @@ func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.TEMPLATE_LITERAL, p.parseTemplateLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.ARROW_LEFT, p.parsePrefixExpression)
+	p.registerPrefix(token.BIT_NOT, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.NULL, p.parseNull)
@@ -59,13 +60,27 @@ func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.ASYNC, p.parseAsyncFunctionLiteral)
 	p.registerPrefix(token.AWAIT, p.parseAwaitExpression)
+	p.registerPrefix(token.SPAWN, p.parseSpawnExpression)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
-	p.registerPrefix(token.LBRACE, p.parseHashOrStructLiteral)
+	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
+
+	// Register specific numeric type keywords as type cast expressions
+	p.registerPrefix(token.INT8_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.INT16_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.INT32_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.INT64_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.UINT8_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.UINT16_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.UINT32_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.UINT64_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.FLOAT32_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.FLOAT64_TYPE, p.parseTypeCastExpression)
 }
 
 func (p *Parser) registerInfixFunctions() {
 	p.registerInfix(token.NULLISH_COALESCING, p.parseNullishCoalescingExpression)
 	p.registerInfix(token.OPTIONAL_CHAINING, p.parseOptionalChainingExpression)
+	p.registerInfix(token.ARROW_LEFT, p.parseInfixExpression)
 	p.registerInfix(token.QUESTION, p.parseTernaryExpression)
 	p.registerInfix(token.OR, p.parseInfixExpression)
 	p.registerInfix(token.AND, p.parseInfixExpression)
@@ -74,6 +89,11 @@ func (p *Parser) registerInfixFunctions() {
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(token.MOD, p.parseInfixExpression)
+	p.registerInfix(token.BIT_AND, p.parseInfixExpression)
+	p.registerInfix(token.BIT_OR, p.parseInfixExpression)
+	p.registerInfix(token.BIT_XOR, p.parseInfixExpression)
+	p.registerInfix(token.SHIFT_LEFT, p.parseInfixExpression)
+	p.registerInfix(token.SHIFT_RIGHT, p.parseInfixExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
@@ -85,6 +105,7 @@ func (p *Parser) registerInfixFunctions() {
 	p.registerInfix(token.LBRACKET, p.parseArrayIndexExpression)
 	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
 	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
+	p.registerInfix(token.LBRACE, p.parseStructLiteralInfix)
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {

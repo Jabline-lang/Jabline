@@ -7,6 +7,8 @@ import (
 type Closure struct {
 	Fn       *CompiledFunction
 	Free     []Object
+	Globals  []Object // Capture globals context
+	Constants []Object // Capture constants context
 }
 
 func (c *Closure) Type() ObjectType { return CLOSURE_OBJ }

@@ -7,18 +7,34 @@ import (
 )
 
 type TypeExpression struct {
-	Token token.Token
-	Value string
+	Token     token.Token
+	Value     string
+	Arguments []*TypeExpression // Para Genéricos: Array[int] -> Base: "Array", Arguments: ["int"]
 }
 
 func (te *TypeExpression) expressionNode()      {}
 func (te *TypeExpression) TokenLiteral() string { return te.Token.Literal }
-func (te *TypeExpression) String() string       { return te.Value }
+func (te *TypeExpression) String() string {
+	if len(te.Arguments) == 0 {
+		return te.Value
+	}
+	var out strings.Builder
+	out.WriteString(te.Value)
+	out.WriteString("[")
+	args := []string{}
+	for _, arg := range te.Arguments {
+		args = append(args, arg.String())
+	}
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString("]")
+	return out.String()
+}
 
 type StructStatement struct {
-	Token  token.Token
-	Name   *Identifier
-	Fields map[string]*TypeExpression
+	Token          token.Token
+	Name           *Identifier
+	TypeParameters []*Identifier
+	Fields         map[string]*TypeExpression
 }
 
 func (ss *StructStatement) statementNode()       {}
@@ -28,6 +44,15 @@ func (ss *StructStatement) String() string {
 	out.WriteString(ss.TokenLiteral())
 	out.WriteString(" ")
 	out.WriteString(ss.Name.String())
+	if len(ss.TypeParameters) > 0 {
+		out.WriteString("[")
+		params := []string{}
+		for _, p := range ss.TypeParameters {
+			params = append(params, p.String())
+		}
+		out.WriteString(strings.Join(params, ", "))
+		out.WriteString("]")
+	}
 	out.WriteString(" { ")
 
 	fields := []string{}
@@ -41,7 +66,7 @@ func (ss *StructStatement) String() string {
 
 type StructLiteral struct {
 	Token  token.Token
-	Name   *Identifier
+	Name   Expression
 	Fields map[string]Expression
 }
 

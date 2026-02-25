@@ -45,11 +45,11 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-																										bytecode := comp.Bytecode()
-																										machine := vm.New(bytecode.Instructions, bytecode.Constants, filename)
-																										err = machine.Run()
-																							
-																																			if err != nil {
+		bytecode := comp.Bytecode()
+		machine := vm.New(bytecode.Instructions, bytecode.Constants, filename)
+		err = machine.Run()
+
+		if err != nil {
 			fmt.Printf("VM runtime error: %s\n", err)
 			os.Exit(1)
 		}

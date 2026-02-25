@@ -16,13 +16,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 
-	var leftExp ast.Expression
-
-	if p.curTok.Type == token.IDENT && p.peekTok.Type == token.LBRACE {
-		leftExp = p.parseStructLiteral()
-	} else {
-		leftExp = prefix()
-	}
+	leftExp := prefix()
 
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekTok.Type]
@@ -40,6 +34,22 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	return leftExp
+}
+
+func (p *Parser) parseSpawnExpression() ast.Expression {
+	exp := &ast.SpawnExpression{Token: p.curTok}
+
+	p.nextToken() // move past 'spawn'
+
+	callExp := p.parseExpression(LOWEST)
+	call, ok := callExp.(*ast.CallExpression)
+	if !ok {
+		p.errors = append(p.errors, fmt.Sprintf("expected function call after spawn, got %T", callExp))
+		return nil
+	}
+
+	exp.Call = call
+	return exp
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
@@ -191,42 +201,108 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 func (p *Parser) parseGroupedOrArrowFunction() ast.Expression {
 	lParenToken := p.curTok
 
-	expressions := p.parseExpressionList(token.RPAREN)
+	// Peak ahead to see if it's an arrow function or empty param list
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken() // curTok = RPAREN
+		// Must be an arrow function: () => ... OR (): type => ...
+		var returnType *ast.TypeExpression
+		if p.peekTokenIs(token.COLON) {
+			p.nextToken() // curTok = COLON
+			p.nextToken() // curTok = type
+			returnType = p.parseTypeExpression()
+		}
 
-	if !p.peekTokenIs(token.ARROW) {
-
-		if len(expressions) == 0 {
-			p.errors = append(p.errors, "Cannot use '()' as an expression.")
+		if !p.expectPeek(token.ARROW) {
 			return nil
 		}
-		if len(expressions) > 1 {
-			p.errors = append(p.errors, "Cannot use comma-separated expressions in a grouped expression.")
+
+		p.nextToken() // move to body
+		arrow := &ast.ArrowFunction{
+			Token:      lParenToken,
+			Parameters: []*ast.Identifier{},
+			ReturnType: returnType,
+		}
+		arrow.Body = p.parseExpression(LOWEST)
+		return arrow
+	}
+
+	// Try to parse as expressions first.
+	// But wait, if it has types like (x: int), parseExpressionList(token.RPAREN) will fail.
+	// So we need to be smarter.
+
+	// Let's use parseFunctionParameters if we see a COLON after the first identifier or if we have multiple params.
+	// For simplicity, let's try to parse it as parameters IF we see ARROW or COLON after the list.
+
+	// Actually, the easiest is to allow COLON in a custom list parser.
+
+	p.nextToken() // Move to first element
+
+	// We'll collect both expressions and identifiers
+	exprs := []ast.Expression{}
+	idents := []*ast.Identifier{}
+	isArrow := false
+
+	for {
+		expr := p.parseExpression(LOWEST)
+		if expr == nil {
 			return nil
 		}
-		return expressions[0]
+
+		// If the expression is an identifier and followed by a COLON, it's definitely a typed parameter
+		if ident, ok := expr.(*ast.Identifier); ok && p.peekTokenIs(token.COLON) {
+			isArrow = true
+			p.nextToken() // COLON
+			p.nextToken() // type
+			ident.Type = p.parseTypeExpression()
+			idents = append(idents, ident)
+		} else if ident, ok := expr.(*ast.Identifier); ok {
+			idents = append(idents, ident)
+			exprs = append(exprs, expr)
+		} else {
+			exprs = append(exprs, expr)
+		}
+
+		if !p.peekTokenIs(token.COMMA) {
+			break
+		}
+		p.nextToken() // COMMA
+		p.nextToken() // next element
 	}
 
-	p.nextToken()
-	p.nextToken()
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
 
-	params := []*ast.Identifier{}
-	for _, exp := range expressions {
-		ident, ok := exp.(*ast.Identifier)
-		if !ok {
-			p.errors = append(p.errors, fmt.Sprintf("Expected identifier in arrow function parameter list, but got %T", exp))
+	// After RPAREN, check for COLON or ARROW
+	var returnType *ast.TypeExpression
+	if p.peekTokenIs(token.COLON) {
+		isArrow = true
+		p.nextToken() // COLON
+		p.nextToken() // type
+		returnType = p.parseTypeExpression()
+	}
+
+	if p.peekTokenIs(token.ARROW) || isArrow {
+		if !p.expectPeek(token.ARROW) {
 			return nil
 		}
-		params = append(params, ident)
+		p.nextToken() // body
+
+		arrow := &ast.ArrowFunction{
+			Token:      lParenToken,
+			Parameters: idents,
+			ReturnType: returnType,
+		}
+		arrow.Body = p.parseExpression(LOWEST)
+		return arrow
 	}
 
-	arrow := &ast.ArrowFunction{
-		Token:      lParenToken,
-		Parameters: params,
+	// Not an arrow function, must be a grouped expression
+	if len(exprs) != 1 {
+		p.addError("unexpected comma in expression")
+		return nil
 	}
-
-	arrow.Body = p.parseExpression(LOWEST)
-
-	return arrow
+	return exprs[0]
 }
 
 func (p *Parser) parseIfExpression() ast.Expression {
@@ -287,8 +363,15 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 }
 
 func (p *Parser) parseArrayIndexExpression(left ast.Expression) ast.Expression {
-	exp := &ast.ArrayIndexExpression{Token: p.curTok, Left: left}
+	// Si el token actual es [, el peek podría ser un tipo
+	if p.isTypeStart(p.peekTok.Type) {
+		exp := &ast.InstantiatedExpression{Token: p.curTok, Left: left}
+		// No avanzamos aquí, parseTypeArguments se encarga de saltar el [
+		exp.TypeArguments = p.parseTypeArguments()
+		return exp
+	}
 
+	exp := &ast.ArrayIndexExpression{Token: p.curTok, Left: left}
 	p.nextToken()
 	exp.Index = p.parseExpression(LOWEST)
 
@@ -299,6 +382,17 @@ func (p *Parser) parseArrayIndexExpression(left ast.Expression) ast.Expression {
 	return exp
 }
 
+func (p *Parser) isTypeStart(t token.TokenType) bool {
+	switch t {
+	case token.STRING_TYPE, token.INT_TYPE, token.INT8_TYPE, token.INT16_TYPE,
+		token.INT32_TYPE, token.INT64_TYPE, token.UINT8_TYPE, token.UINT16_TYPE,
+		token.UINT32_TYPE, token.UINT64_TYPE, token.FLOAT_TYPE, token.FLOAT32_TYPE,
+		token.FLOAT64_TYPE, token.BOOL_TYPE, token.IDENT:
+		return true
+	}
+	return false
+}
+
 func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	exp := &ast.IndexExpression{Token: p.curTok, Left: left}
 
@@ -306,7 +400,9 @@ func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 		return nil
 	}
 
-	exp.Index = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+	// Treat dot notation property access as a string literal index
+	// obj.prop becomes equivalent to obj["prop"]
+	exp.Index = &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
 
 	return exp
 }
@@ -349,14 +445,6 @@ func (p *Parser) parsePostfixExpression(left ast.Expression) ast.Expression {
 	}
 }
 
-func (p *Parser) parseHashOrStructLiteral() ast.Expression {
-	if p.curTok.Type == token.IDENT {
-		return p.parseStructLiteral()
-	}
-
-	return p.parseHashLiteral()
-}
-
 func (p *Parser) parseHashLiteral() ast.Expression {
 	hash := &ast.HashLiteral{Token: p.curTok}
 	hash.Pairs = make(map[ast.Expression]ast.Expression)
@@ -368,7 +456,12 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 
 	p.nextToken()
 
-	key := p.parseExpression(LOWEST)
+	var key ast.Expression
+	if p.curTok.Type == token.IDENT && p.peekTokenIs(token.COLON) {
+		key = &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
+	} else {
+		key = p.parseExpression(LOWEST)
+	}
 
 	if !p.expectPeek(token.COLON) {
 		return nil
@@ -382,7 +475,11 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		p.nextToken()
 		p.nextToken()
 
-		key := p.parseExpression(LOWEST)
+		if p.curTok.Type == token.IDENT && p.peekTokenIs(token.COLON) {
+			key = &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
+		} else {
+			key = p.parseExpression(LOWEST)
+		}
 
 		if !p.expectPeek(token.COLON) {
 			return nil
@@ -464,6 +561,13 @@ func (p *Parser) parseAsyncFunctionLiteral() ast.Expression {
 
 	lit.Parameters = p.parseFunctionParameters()
 
+	// Optional return type: `async fn(params): int { ... }`
+	if p.peekTokenIs(token.COLON) {
+		p.nextToken() // consume COLON
+		p.nextToken() // move to type token
+		lit.ReturnType = p.parseTypeExpression()
+	}
+
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
@@ -481,4 +585,29 @@ func (p *Parser) parseAwaitExpression() ast.Expression {
 	expression.Value = p.parseExpression(PREFIX)
 
 	return expression
+}
+
+func (p *Parser) parseTypeCastExpression() ast.Expression {
+	tok := p.curTok // Current token is INT8_TYPE, UINT16_TYPE, etc.
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken() // Advance to the expression inside parentheses
+	argExp := p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	// Create a CallExpression that will call the builtin function (e.g., "int8")
+	// The function part of the CallExpression will be an Identifier representing the type name.
+	callExp := &ast.CallExpression{
+		Token:     tok,                                             // The type token itself (e.g., INT8_TYPE)
+		Function:  &ast.Identifier{Token: tok, Value: tok.Literal}, // Identifier "int8"
+		Arguments: []ast.Expression{argExp},
+	}
+
+	return callExp
 }

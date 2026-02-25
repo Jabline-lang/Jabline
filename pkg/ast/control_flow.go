@@ -4,6 +4,28 @@ import (
 	"jabline/pkg/token"
 )
 
+type RetryStatement struct {
+	Token      token.Token
+	Attempts   Expression
+	RetryBlock *BlockStatement
+	CatchBlock *BlockStatement
+	CatchParam *Identifier
+}
+
+func (rs *RetryStatement) statementNode()       {}
+func (rs *RetryStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *RetryStatement) String() string {
+	out := "retry (" + rs.Attempts.String() + ") " + rs.RetryBlock.String()
+	if rs.CatchBlock != nil {
+		out += " catch"
+		if rs.CatchParam != nil {
+			out += "(" + rs.CatchParam.String() + ")"
+		}
+		out += " " + rs.CatchBlock.String()
+	}
+	return out
+}
+
 type IfExpression struct {
 	Token       token.Token
 	Condition   Expression
