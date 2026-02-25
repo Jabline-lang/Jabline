@@ -7,9 +7,11 @@ import (
 )
 
 type FunctionLiteral struct {
-	Token      token.Token
-	Parameters []*Identifier
-	Body       *BlockStatement
+	Token          token.Token
+	TypeParameters []*Identifier
+	Parameters     []*Identifier
+	ReturnType     *TypeExpression
+	Body           *BlockStatement
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -21,17 +23,32 @@ func (fl *FunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 	out.WriteString(fl.TokenLiteral())
+	if len(fl.TypeParameters) > 0 {
+		out.WriteString("[")
+		tparams := []string{}
+		for _, tp := range fl.TypeParameters {
+			tparams = append(tparams, tp.String())
+		}
+		out.WriteString(strings.Join(tparams, ", "))
+		out.WriteString("]")
+	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(")")
+	if fl.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(fl.ReturnType.String())
+	}
+	out.WriteString(" ")
 	out.WriteString(fl.Body.String())
 	return out.String()
 }
 
 type CallExpression struct {
-	Token     token.Token
-	Function  Expression
-	Arguments []Expression
+	Token         token.Token
+	Function      Expression
+	TypeArguments []*TypeExpression
+	Arguments     []Expression
 }
 
 func (ce *CallExpression) expressionNode()      {}
@@ -43,6 +60,15 @@ func (ce *CallExpression) String() string {
 		args = append(args, a.String())
 	}
 	out.WriteString(ce.Function.String())
+	if len(ce.TypeArguments) > 0 {
+		out.WriteString("[")
+		targs := []string{}
+		for _, ta := range ce.TypeArguments {
+			targs = append(targs, ta.String())
+		}
+		out.WriteString(strings.Join(targs, ", "))
+		out.WriteString("]")
+	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
 	out.WriteString(")")
@@ -50,10 +76,14 @@ func (ce *CallExpression) String() string {
 }
 
 type FunctionStatement struct {
-	Token      token.Token
-	Name       *Identifier
-	Parameters []*Identifier
-	Body       *BlockStatement
+	Token          token.Token
+	ReceiverName   *Identifier // The 'l' in (l Libro)
+	ReceiverType   *Identifier // The 'Libro' in (l Libro)
+	Name           *Identifier
+	TypeParameters []*Identifier
+	Parameters     []*Identifier
+	ReturnType     *TypeExpression
+	Body           *BlockStatement
 }
 
 func (fs *FunctionStatement) statementNode()       {}
@@ -66,10 +96,33 @@ func (fs *FunctionStatement) String() string {
 	}
 	out.WriteString(fs.TokenLiteral())
 	out.WriteString(" ")
+
+	if fs.ReceiverName != nil && fs.ReceiverType != nil {
+		out.WriteString("(")
+		out.WriteString(fs.ReceiverName.String())
+		out.WriteString(" ")
+		out.WriteString(fs.ReceiverType.String())
+		out.WriteString(") ")
+	}
+
 	out.WriteString(fs.Name.String())
+	if len(fs.TypeParameters) > 0 {
+		out.WriteString("[")
+		tparams := []string{}
+		for _, tp := range fs.TypeParameters {
+			tparams = append(tparams, tp.String())
+		}
+		out.WriteString(strings.Join(tparams, ", "))
+		out.WriteString("]")
+	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(")")
+	if fs.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(fs.ReturnType.String())
+	}
+	out.WriteString(" ")
 	out.WriteString(fs.Body.String())
 	return out.String()
 }
@@ -77,6 +130,7 @@ func (fs *FunctionStatement) String() string {
 type ArrowFunction struct {
 	Token      token.Token
 	Parameters []*Identifier
+	ReturnType *TypeExpression
 	Body       Expression
 }
 
@@ -99,15 +153,22 @@ func (af *ArrowFunction) String() string {
 	}
 
 	out.WriteString(" => ")
+	if af.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(af.ReturnType.String())
+		out.WriteString(" ")
+	}
 	out.WriteString(af.Body.String())
 	return out.String()
 }
 
 type AsyncFunctionStatement struct {
-	Token      token.Token
-	Name       *Identifier
-	Parameters []*Identifier
-	Body       *BlockStatement
+	Token          token.Token
+	Name           *Identifier
+	TypeParameters []*Identifier
+	Parameters     []*Identifier
+	ReturnType     *TypeExpression
+	Body           *BlockStatement
 }
 
 func (afs *AsyncFunctionStatement) statementNode()       {}
@@ -121,17 +182,33 @@ func (afs *AsyncFunctionStatement) String() string {
 	out.WriteString(afs.TokenLiteral())
 	out.WriteString(" fn ")
 	out.WriteString(afs.Name.String())
+	if len(afs.TypeParameters) > 0 {
+		out.WriteString("[")
+		tparams := []string{}
+		for _, tp := range afs.TypeParameters {
+			tparams = append(tparams, tp.String())
+		}
+		out.WriteString(strings.Join(tparams, ", "))
+		out.WriteString("]")
+	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(")")
+	if afs.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(afs.ReturnType.String())
+	}
+	out.WriteString(" ")
 	out.WriteString(afs.Body.String())
 	return out.String()
 }
 
 type AsyncFunctionLiteral struct {
-	Token      token.Token
-	Parameters []*Identifier
-	Body       *BlockStatement
+	Token          token.Token
+	TypeParameters []*Identifier
+	Parameters     []*Identifier
+	ReturnType     *TypeExpression
+	Body           *BlockStatement
 }
 
 func (afl *AsyncFunctionLiteral) expressionNode()      {}
@@ -143,9 +220,23 @@ func (afl *AsyncFunctionLiteral) String() string {
 		params = append(params, p.String())
 	}
 	out.WriteString(afl.TokenLiteral())
-	out.WriteString(" fn(")
+	if len(afl.TypeParameters) > 0 {
+		out.WriteString("[")
+		tparams := []string{}
+		for _, tp := range afl.TypeParameters {
+			tparams = append(tparams, tp.String())
+		}
+		out.WriteString(strings.Join(tparams, ", "))
+		out.WriteString("]")
+	}
+	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
-	out.WriteString(") ")
+	out.WriteString(")")
+	if afl.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(afl.ReturnType.String())
+	}
+	out.WriteString(" ")
 	out.WriteString(afl.Body.String())
 	return out.String()
 }

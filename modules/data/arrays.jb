@@ -285,3 +285,54 @@ export fn countValue(inputArr, targetValue) {
     }
     return count;
 }
+
+export fn zip(arr1, arr2) {
+    let result = [];
+    let i = 0;
+    let minLen = len(arr1);
+    if (len(arr2) < minLen) { minLen = len(arr2); }
+    
+    while (i < minLen) {
+        result = push(result, [arr1[i], arr2[i]]);
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn groupBy(inputArr, keyFn) {
+    let result = {};
+    for (item in inputArr) {
+        let key = "" + keyFn(item);
+        if (result[key] == null) {
+            set(result, key, []);
+        }
+        set(result, key, push(result[key], item));
+    }
+    return result;
+}
+
+export fn partition(inputArr, predicateFn) {
+    let truthy = [];
+    let falsy = [];
+    for (item in inputArr) {
+        if (predicateFn(item)) {
+            truthy = push(truthy, item);
+        } else {
+            falsy = push(falsy, item);
+        }
+    }
+    return [truthy, falsy];
+}
+
+export fn uniqueBy(inputArr, keyFn) {
+    let result = [];
+    let seen = {};
+    for (item in inputArr) {
+        let key = "" + keyFn(item);
+        if (seen[key] == null) {
+            result = push(result, item);
+            set(seen, key, true);
+        }
+    }
+    return result;
+}

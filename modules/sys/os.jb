@@ -1,0 +1,37 @@
+// modules/sys/os.jb
+// This file aggregates core OS functions and environment utilities.
+
+import * as native from "_os"
+import * as env from "sys/os/env"
+
+// Re-export core OS functions
+export let exit = native.exit;
+export let getenv = native.getenv;
+export let setenv = native.setenv;
+export let getwd = native.getwd;
+export let mkdir = native.mkdir;
+export let remove = native.remove;
+export let rename = native.rename;
+export let stat = native.stat;
+export let chmod = native.chmod;
+export let tempDir = native.tempDir;
+
+// Re-export environment utility functions
+export let getEnvWithDefault = env.getEnvWithDefault
+export let hasEnv = env.hasEnv
+export let getCommonEnvVars = env.getCommonEnvVars
+export let setMultipleEnv = env.setMultipleEnv
+export let detectOS = env.detectOS
+export let isWindows = env.isWindows
+export let isUnix = env.isUnix
+export let getUserInfo = env.getUserInfo
+export let createConfig = env.createConfig
+export let getSystemPaths = env.getSystemPaths
+export let loadConfigWithPrefix = env.loadConfigWithPrefix
+
+// Re-export structs (optional, if needed by consumers)
+export let CommonEnvVars = env.CommonEnvVars
+export let UserInfo = env.UserInfo
+export let Config = env.Config
+export let WindowsSystemPaths = env.WindowsSystemPaths
+export let UnixSystemPaths = env.UnixSystemPaths

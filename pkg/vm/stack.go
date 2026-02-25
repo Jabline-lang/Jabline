@@ -15,6 +15,9 @@ func (vm *VM) push(o object.Object) error {
 }
 
 func (vm *VM) pop() object.Object {
+	if vm.sp == 0 {
+		panic("stack underflow in VM.pop()")
+	}
 	o := vm.stack[vm.sp-1]
 	vm.sp--
 	return o
@@ -42,7 +45,14 @@ func (vm *VM) pushFrame(f *Frame) {
 
 func (vm *VM) popFrame() *Frame {
 	vm.framesIndex--
-	return vm.frames[vm.framesIndex]
+	frame := vm.frames[vm.framesIndex]
+	if frame.savedGlobals != nil {
+		vm.globals = frame.savedGlobals
+	}
+	if frame.savedConstants != nil {
+		vm.constants = frame.savedConstants
+	}
+	return frame
 }
 
 func (vm *VM) pushHandler(catchIP int) {

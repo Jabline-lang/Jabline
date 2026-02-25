@@ -22,9 +22,6 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.FOR:
 		return p.parseForStatement()
 	case token.FUNCTION:
-		if p.peekTokenIs(token.LPAREN) {
-			return p.parseExpressionStatement()
-		}
 		return p.parseFunctionStatement()
 	case token.ASYNC:
 		if p.peekTokenIs(token.FUNCTION) {
@@ -43,6 +40,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseContinueStatement()
 	case token.TRY:
 		return p.parseTryStatement()
+	case token.RETRY:
+		return p.parseRetryStatement()
+	case token.SERVICE:
+		return p.parseServiceStatement()
 	case token.THROW:
 		return p.parseThrowStatement()
 	case token.SWITCH:
@@ -51,6 +52,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseImportStatement()
 	case token.EXPORT:
 		return p.parseExportStatement()
+	case token.ENUM:
+		return p.parseEnumStatement()
 	default:
 		if p.isAssignmentStatement() {
 			return p.parseFieldAssignmentStatement()
@@ -70,6 +73,44 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	}
 
 	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	// Optional type annotation: `let x: int = 5;`
+	if p.peekTokenIs(token.COLON) {
+		p.nextToken() // consume COLON
+		p.nextToken() // move to type token
+		stmt.Type = &ast.TypeExpression{Token: p.curTok, Value: p.curTok.Literal}
+	}
+
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseConstStatement() *ast.ConstStatement {
+	stmt := &ast.ConstStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	// Optional type annotation: `const x: int = 5;`
+	if p.peekTokenIs(token.COLON) {
+		p.nextToken() // consume COLON
+		p.nextToken() // move to type token
+		stmt.Type = &ast.TypeExpression{Token: p.curTok, Value: p.curTok.Literal}
+	}
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
@@ -107,12 +148,7 @@ func (p *Parser) parseEchoStatement() *ast.EchoStatement {
 		return nil
 	}
 
-	p.nextToken()
-	stmt.Value = p.parseExpression(LOWEST)
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
-	}
+	stmt.Values = p.parseExpressionList(token.RPAREN)
 
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
@@ -265,10 +301,6 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		p.nextToken()
 	}
 
-	if len(block.Statements) == 0 {
-		p.errors = append(p.errors, "block statement must contain at least one statement")
-	}
-
 	if p.curTokenIs(token.EOF) && !p.curTokenIs(token.RBRACE) {
 		p.errors = append(p.errors, "unclosed block: expected '}' before end of file")
 		return nil
@@ -381,11 +413,117 @@ func (p *Parser) parseAsyncFunctionStatement() ast.Statement {
 
 	stmt.Parameters = p.parseFunctionParameters()
 
+	// Optional return type: `async fn name(params): int`
+	if p.peekTokenIs(token.COLON) {
+		p.nextToken() // consume COLON
+		p.nextToken() // move to type token
+		stmt.ReturnType = p.parseTypeExpression()
+	}
+
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
 	stmt.Body = p.parseBlockStatement()
+
+	return stmt
+}
+
+func (p *Parser) parseServiceStatement() *ast.ServiceStatement {
+	stmt := &ast.ServiceStatement{Token: p.curTok}
+	stmt.Fields = make(map[string]ast.Expression)
+	stmt.Methods = []*ast.FunctionStatement{}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+		p.nextToken()
+
+		// Method: fn name() {}
+		if p.curTok.Type == token.FUNCTION {
+			fnStmt := p.parseFunctionStatement()
+			if fnNode, ok := fnStmt.(*ast.FunctionStatement); ok {
+				// Implicitly bind to this service? Compiler handles name mangling.
+				stmt.Methods = append(stmt.Methods, fnNode)
+			}
+			continue
+		}
+
+		// Field: name: value (Config)
+		if p.curTok.Type == token.IDENT {
+			key := p.curTok.Literal
+			if !p.expectPeek(token.COLON) {
+				return nil
+			}
+			p.nextToken() // Skip colon
+
+			val := p.parseExpression(LOWEST)
+			stmt.Fields[key] = val
+
+			if p.peekTokenIs(token.SEMICOLON) {
+				p.nextToken()
+			}
+			// Comma support for fields
+			if p.peekTokenIs(token.COMMA) {
+				p.nextToken()
+			}
+			continue
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseRetryStatement() *ast.RetryStatement {
+	stmt := &ast.RetryStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	p.nextToken()
+	stmt.Attempts = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.RetryBlock = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.CATCH) {
+		p.nextToken()
+
+		if p.peekTokenIs(token.LPAREN) {
+			p.nextToken()
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			stmt.CatchParam = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+			if !p.expectPeek(token.RPAREN) {
+				return nil
+			}
+		}
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+
+		stmt.CatchBlock = p.parseBlockStatement()
+	}
 
 	return stmt
 }
@@ -599,13 +737,24 @@ func (p *Parser) parseImportStatement() *ast.ImportStatement {
 			Value: p.curTok.Literal,
 		}
 	} else if p.peekTokenIs(token.STRING) {
-
-		stmt.ImportType = ast.IMPORT_SIDE_EFFECT
 		p.nextToken()
-
 		stmt.ModuleName = &ast.StringLiteral{
 			Token: p.curTok,
 			Value: p.curTok.Literal,
+		}
+
+		if p.peekTokenIs(token.AS) {
+			stmt.ImportType = ast.IMPORT_ALIAS
+			p.nextToken()
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			stmt.NamespaceAlias = &ast.Identifier{
+				Token: p.curTok,
+				Value: p.curTok.Literal,
+			}
+		} else {
+			stmt.ImportType = ast.IMPORT_SIDE_EFFECT
 		}
 	} else {
 		p.addError("invalid import syntax")
@@ -732,29 +881,6 @@ func (p *Parser) parseExportStatement() *ast.ExportStatement {
 	return stmt
 }
 
-func (p *Parser) parseConstStatement() *ast.ConstStatement {
-	stmt := &ast.ConstStatement{Token: p.curTok}
-
-	if !p.expectPeek(token.IDENT) {
-		return nil
-	}
-
-	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
-
-	if !p.expectPeek(token.ASSIGN) {
-		return nil
-	}
-
-	p.nextToken()
-	stmt.Value = p.parseExpression(LOWEST)
-
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-
-	return stmt
-}
-
 func (p *Parser) parseSwitchStatement() *ast.SwitchStatement {
 	stmt := &ast.SwitchStatement{Token: p.curTok}
 
@@ -835,4 +961,44 @@ func (p *Parser) parseDefaultClause() *ast.DefaultClause {
 	}
 
 	return clause
+}
+
+// parseEnumStatement parses: enum Name { Variant1, Variant2, ... }
+func (p *Parser) parseEnumStatement() *ast.EnumStatement {
+	stmt := &ast.EnumStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.Values = []*ast.Identifier{}
+
+	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+		p.nextToken()
+		if !p.curTokenIs(token.IDENT) {
+			p.addError("expected identifier in enum body, got %s", p.curTok.Literal)
+			return nil
+		}
+		variant := &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+		stmt.Values = append(stmt.Values, variant)
+
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken() // consume comma
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
 }

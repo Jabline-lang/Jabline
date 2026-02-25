@@ -1,0 +1,4 @@
+import * as native from "_os"
+
+export let exit = native.exit
+export let getenv = native.getenv

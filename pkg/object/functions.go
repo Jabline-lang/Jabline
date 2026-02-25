@@ -331,3 +331,24 @@ func NewRejectedPromise(reason Object) *Promise {
 		OnRejected: nil,
 	}
 }
+
+type BoundMethod struct {
+	Receiver Object
+	Function *Closure
+}
+
+func (bm *BoundMethod) Type() ObjectType { return BOUND_METHOD_OBJ }
+func (bm *BoundMethod) Inspect() string {
+	return "BoundMethod(" + bm.Function.Inspect() + ")"
+}
+
+type InstantiatedFunction struct {
+	Closure      *Closure
+	TypeArgs     map[string]string
+	FullTypeName string
+}
+
+func (ifn *InstantiatedFunction) Type() ObjectType { return INSTANTIATED_FUNCTION_OBJ }
+func (ifn *InstantiatedFunction) Inspect() string {
+	return "instantiated fn " + ifn.FullTypeName
+}

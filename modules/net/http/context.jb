@@ -1,0 +1,54 @@
+import * as json from "encoding/json"
+import * as status from "net/http/status"
+
+export fn createContext(req) {
+    // Helper methods encapsulated in closures
+    
+    let _json = fn(data, statusCode) {
+        if (statusCode == null) { statusCode = status.OK; }
+        
+        let bodyStr = json.stringify(data);
+        return {
+            "status": statusCode,
+            "body": bodyStr,
+            "headers": { "Content-Type": "application/json" }
+        };
+    };
+
+    let _text = fn(msg, statusCode) {
+        if (statusCode == null) { statusCode = status.OK; }
+        return {
+            "status": statusCode,
+            "body": msg,
+            "headers": { "Content-Type": "text/plain" }
+        };
+    };
+    
+    let _html = fn(html, statusCode) {
+        if (statusCode == null) { statusCode = status.OK; }
+        return {
+            "status": statusCode,
+            "body": html,
+            "headers": { "Content-Type": "text/html" }
+        };
+    };
+
+    let _bind = fn() {
+        if (req["body"] == null || req["body"] == "") {
+            return {};
+        }
+        return json.parse(req["body"]);
+    };
+
+    // Return the Context object (Hash of functions and data)
+    return {
+        "req": req,
+        "json": _json,
+        "text": _text,
+        "html": _html,
+        "bind": _bind,
+        "method": req["method"],
+        "url": req["url"],
+        "path": req["url"] // TODO: Parse query params vs path later
+    };
+}

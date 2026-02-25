@@ -35,7 +35,7 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 
 		symbol := docInfo.SymbolTable.RootScope.Get(n.Value)
 		if symbol != nil {
-			content = fmt.Sprintf("**Identifier**: `%s` (Type: `%s`, Kind: `%s`)", symbol.Name, symbol.Type, symbol.Kind)
+			content = fmt.Sprintf("**Identifier**: `%s` (Type: `%s`, Kind: `%v`)", symbol.Name, symbol.Type, symbol.Kind)
 		} else {
 			content = fmt.Sprintf("**Identifier**: `%s` (Undefined)", n.Value)
 		}

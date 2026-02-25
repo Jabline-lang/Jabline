@@ -9,6 +9,7 @@ const (
 	OpSub
 	OpMul
 	OpDiv
+	OpMod
 
 	OpPop
 	OpDup
@@ -37,16 +38,22 @@ const (
 	OpGetLocal
 	OpSetLocal
 	OpGetFree
+	OpSetFree
 
 	OpArray
 	OpHash
 	OpIndex
 	OpInstance
+	OpGetProperty
+	OpSetProperty
 
 	OpCall
 	OpReturnValue
 	OpReturn
 	OpClosure
+
+	OpSpawn
+	OpAwait
 
 	OpGetBuiltin
 	OpImport
@@ -54,4 +61,18 @@ const (
 	OpThrow
 	OpTry
 	OpEndTry
+
+	OpBitAnd
+	OpBitOr
+	OpBitXor
+	OpBitNot
+	OpShiftLeft
+	OpShiftRight
+	OpRegisterMethod
+	OpService
+	OpCheckType
+	OpSendChannel
+	OpRecvChannel
+	OpCurrentClosure
+	OpInstantiate
 )
