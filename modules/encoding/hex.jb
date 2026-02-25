@@ -1,0 +1,4 @@
+import * as native from "_encoding"
+
+export let encode = native.hexEncode
+export let decode = native.hexDecode

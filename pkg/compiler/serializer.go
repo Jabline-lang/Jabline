@@ -58,5 +58,6 @@ func registerTypes() {
 	gob.Register(&object.Null{})
 	gob.Register(&object.CompiledFunction{})
 	gob.Register(&object.Closure{})
+	gob.Register(&object.Channel{})
 
 }

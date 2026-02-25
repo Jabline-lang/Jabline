@@ -1,0 +1,110 @@
+import * as context from "net/http/context"
+import * as status from "net/http/status"
+import * as strings from "strings"
+
+
+export fn createRouter() {
+    let state = {
+        "routes": {}, // method -> [ { path, handler, params: [] } ]
+        "middlewares": []
+    };
+
+    let _use = fn(mw) {
+        set(state, "middlewares", push(state["middlewares"], mw));
+    };
+
+    let _register = fn(method, path, handler) {
+        if (state["routes"][method] == null) {
+            set(state["routes"], method, []);
+        }
+        
+        let routeObj = {
+            "path": path,
+            "handler": handler
+        };
+        
+        set(state["routes"], method, push(state["routes"][method], routeObj));
+    };
+
+    let _match = fn(method, url) {
+        let methodRoutes = state["routes"][method];
+        if (methodRoutes == null) { return null; }
+
+        let urlParts = strings.split(url, "/");
+        
+        let i = 0;
+        while (i < len(methodRoutes)) {
+            let route = methodRoutes[i];
+            let routeParts = strings.split(route["path"], "/");
+            
+            if (len(urlParts) == len(routeParts)) {
+                let match = true;
+                let params = {};
+                let j = 0;
+                while (j < len(routeParts)) {
+                    if (strings.startsWith(routeParts[j], ":")) {
+                        let paramName = strings.slice(routeParts[j], 1); // Skip ":"
+                        set(params, paramName, urlParts[j]);
+                    } else if (routeParts[j] != urlParts[j]) {
+                        match = false;
+                        j = len(routeParts); // break
+                    }
+                    j = j + 1;
+                }
+                
+                if (match) {
+                    return { "handler": route["handler"], "params": params };
+                }
+            }
+            i = i + 1;
+        }
+        return null;
+    };
+
+
+    let _dispatch = fn(req) {
+        let matchResult = _match(req["method"], req["url"]);
+
+
+        
+        let initialFinalHandler = fn(ctx) {
+            if (matchResult == null) {
+                return { "status": status.NOT_FOUND, "body": "404 Not Found" };
+            }
+            // Inject params into context
+            set(ctx, "params", matchResult["params"]);
+            let h = matchResult["handler"];
+            echo("DEBUG: Final handler type:", type(h), "value:", toString(h));
+            return h(ctx);
+        };
+
+
+        fn runMiddleware(index, ctx) {
+            if (index < len(state["middlewares"])) {
+                let mw = state["middlewares"][index];
+                echo("Calling MW:", index, "Type:", type(mw));
+                return mw(ctx, fn(c) {
+
+                    return runMiddleware(index + 1, c);
+                });
+            }
+            return initialFinalHandler(ctx);
+        }
+
+
+
+        let ctx = context.createContext(req);
+        return runMiddleware(0, ctx);
+    };
+
+
+    return {
+        "use": _use,
+        "get": fn(path, h) { _register("GET", path, h); },
+        "post": fn(path, h) { _register("POST", path, h); },
+        "put": fn(path, h) { _register("PUT", path, h); },
+        "delete": fn(path, h) { _register("DELETE", path, h); },
+        "serveHTTP": _dispatch
+    };
+}
+

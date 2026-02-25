@@ -1,19 +1,26 @@
-package compiler
+package symbol
+
+import "jabline/pkg/object"
 
 type SymbolScope string
 
 const (
-	GlobalScope  SymbolScope = "GLOBAL"
-	LocalScope   SymbolScope = "LOCAL"
-	BuiltinScope SymbolScope = "BUILTIN"
-	FreeScope    SymbolScope = "FREE"
+	GlobalScope   SymbolScope = "GLOBAL"
+	LocalScope    SymbolScope = "LOCAL"
+	BuiltinScope  SymbolScope = "BUILTIN"
+	FreeScope     SymbolScope = "FREE"
 	FunctionScope SymbolScope = "FUNCTION"
+	TypeScope     SymbolScope = "TYPE"
 )
 
 type Symbol struct {
-	Name  string
-	Scope SymbolScope
-	Index int
+	Name       string
+	Scope      SymbolScope
+	Index      int
+	IsExported bool
+	IsConst    bool          // true when declared with 'const'
+	Value      object.Object // stores the actual object for constants/structs
+	DataType   string        // stores the type name for static validation
 }
 
 type SymbolTable struct {
@@ -21,6 +28,14 @@ type SymbolTable struct {
 	store          map[string]Symbol
 	numDefinitions int
 	FreeSymbols    []Symbol
+}
+
+func (s *SymbolTable) MarkExported(name string) {
+	obj, ok := s.store[name]
+	if ok {
+		obj.IsExported = true
+		s.store[name] = obj
+	}
 }
 
 func NewSymbolTable() *SymbolTable {
@@ -37,7 +52,11 @@ func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 }
 
 func (s *SymbolTable) Define(name string) Symbol {
-	symbol := Symbol{Name: name, Index: s.numDefinitions}
+	return s.DefineWithType(name, "")
+}
+
+func (s *SymbolTable) DefineWithType(name string, dataType string) Symbol {
+	symbol := Symbol{Name: name, Index: s.numDefinitions, DataType: dataType}
 	if s.Outer == nil {
 		symbol.Scope = GlobalScope
 	} else {
@@ -46,6 +65,34 @@ func (s *SymbolTable) Define(name string) Symbol {
 	s.store[name] = symbol
 	s.numDefinitions++
 	return symbol
+}
+
+func (s *SymbolTable) DefineType(name string) Symbol {
+	symbol := Symbol{Name: name, Index: 0, Scope: TypeScope}
+	s.store[name] = symbol
+	return symbol
+}
+
+func (s *SymbolTable) DefineConst(name string) Symbol {
+	return s.DefineConstWithType(name, "")
+}
+
+func (s *SymbolTable) DefineConstWithType(name string, dataType string) Symbol {
+	symbol := s.DefineWithType(name, dataType)
+	symbol.IsConst = true
+	s.store[name] = symbol
+	return symbol
+}
+
+func (s *SymbolTable) IsConstant(name string) bool {
+	obj, ok := s.store[name]
+	if ok {
+		return obj.IsConst
+	}
+	if s.Outer != nil {
+		return s.Outer.IsConstant(name)
+	}
+	return false
 }
 
 func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
@@ -87,4 +134,8 @@ func (s *SymbolTable) defineFree(original Symbol) Symbol {
 
 func (s *SymbolTable) GetStore() map[string]Symbol {
 	return s.store
+}
+
+func (s *SymbolTable) NumDefinitions() int {
+	return s.numDefinitions
 }

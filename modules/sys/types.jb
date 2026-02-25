@@ -1,0 +1,12 @@
+import * as native from "_types"
+
+export let int8 = native.int8
+export let int16 = native.int16
+export let int32 = native.int32
+export let int64 = native.int64
+export let uint8 = native.uint8
+export let uint16 = native.uint16
+export let uint32 = native.uint32
+export let uint64 = native.uint64
+export let float32 = native.float32
+export let float64 = native.float64

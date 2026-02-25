@@ -1,0 +1,7 @@
+// Module that simulates router MW dispatch
+export fn callMW(mw) {
+    let nextFn = fn(c) {
+        return "NEXT_CALLED with: " + toString(c);
+    };
+    return mw("CTX_OBJ", nextFn);
+}

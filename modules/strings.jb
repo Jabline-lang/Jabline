@@ -1,88 +1,57 @@
-export let MESSAGE = "Strings module loaded successfully";
+import * as native from "_strings"
 
-export fn capitalize(inputStr) {
-    if (len(inputStr) == 0) {
-        return inputStr;
+// Native Exports
+export let upper = native.upper;
+export let lower = native.lower;
+export let contains = native.contains;
+export let trim = native.trim;
+export let split = native.split;
+export let match = native.match;
+export let replace = native.replace;
+export let regex_replace = native.regex_replace;
+export let startsWith = native.startsWith;
+export let endsWith = native.endsWith;
+export let join = native.join;
+export let slice = native.slice;
+export let indexOf = native.indexOf;
+
+// Jabline Implementation
+export fn capitalize(s) {
+    if (len(s) == 0) { return s; }
+    let first = upper(s[0]);
+    
+    let result = first;
+    let i = 1;
+    while (i < len(s)) {
+        result = result + lower(s[i]);
+        i = i + 1;
     }
-
-    let firstChar = charAt(inputStr, 0);
-    let upperChar = upper(firstChar);
-
-    if (len(inputStr) == 1) {
-        return upperChar;
-    }
-
-    let restStr = substring(inputStr, 1, len(inputStr));
-    return upperChar + restStr;
+    return result;
 }
 
-export fn formatName(firstName, lastName) {
-    let firstTrimmed = trim(firstName);
-    let lastTrimmed = trim(lastName);
-
-    if (firstTrimmed == "" && lastTrimmed == "") {
-        return "";
+export fn title(s) {
+    let words = split(s, " ");
+    let i = 0;
+    while (i < len(words)) {
+        words[i] = capitalize(words[i]);
+        i = i + 1;
     }
-
-    if (firstTrimmed != "" && lastTrimmed != "") {
-        return capitalize(firstTrimmed) + " " + capitalize(lastTrimmed);
-    }
-
-    if (firstTrimmed != "") {
-        return capitalize(firstTrimmed);
-    }
-
-    return capitalize(lastTrimmed);
+    return join(words, " ");
 }
 
-export fn isValidEmail(emailStr) {
-    let trimmedEmail = trim(emailStr);
-
-    if (len(trimmedEmail) == 0) {
-        return false;
+export fn camelCase(s) {
+    let words = split(replace(s, "_", " "), " ");
+    let result = lower(words[0]);
+    let i = 1;
+    while (i < len(words)) {
+        result = result + capitalize(words[i]);
+        i = i + 1;
     }
-
-    let atPos = indexOf(trimmedEmail, "@");
-    let dotPos = lastIndexOf(trimmedEmail, ".");
-
-    if (atPos > 0 && dotPos > atPos && dotPos < len(trimmedEmail) - 1) {
-        return true;
-    }
-
-    return false;
+    return result;
 }
 
-export fn extractDomain(emailStr) {
-    let atPos = indexOf(emailStr, "@");
-
-    if (atPos > 0) {
-        return substring(emailStr, atPos + 1, len(emailStr));
-    }
-
-    return "";
-}
-
-export fn cleanSpaces(inputStr) {
-    let trimmedStr = trim(inputStr);
-    let resultStr = "";
-    let wasSpace = false;
-    let idx = 0;
-
-    while (idx < len(trimmedStr)) {
-        let currentChar = charAt(trimmedStr, idx);
-
-        if (currentChar == " ") {
-            if (wasSpace == false) {
-                resultStr = resultStr + currentChar;
-                wasSpace = true;
-            }
-        } else {
-            resultStr = resultStr + currentChar;
-            wasSpace = false;
-        }
-
-        idx = idx + 1;
-    }
-
-    return resultStr;
+export fn snake_case(s) {
+    // Basic implementation: replace spaces and hyphens with underscores, then lowercase.
+    let result = lower(replace(replace(s, " ", "_"), "-", "_"));
+    return result;
 }

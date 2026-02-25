@@ -24,6 +24,7 @@ const (
 	IMPORT_NAMESPACE
 	IMPORT_SIDE_EFFECT
 	IMPORT_MIXED
+	IMPORT_ALIAS
 )
 
 type ImportStatement struct {
@@ -69,6 +70,9 @@ func (is *ImportStatement) String() string {
 		}
 		out += " } from " + is.ModuleName.String()
 		return out
+
+	case IMPORT_ALIAS:
+		return "import " + is.ModuleName.String() + " as " + is.NamespaceAlias.String()
 	}
 	return "import"
 }

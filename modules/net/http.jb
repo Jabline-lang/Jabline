@@ -1,0 +1,24 @@
+import * as native from "_http"
+import * as router from "net/http/router"
+import * as status from "net/http/status"
+
+// Export native low-level functions
+export let get = native.get;
+export let post = native.post;
+
+// Export high-level Router factory
+export let NewRouter = router.createRouter;
+
+// Export Status Codes
+export let Status = status;
+
+// High-level server start function
+// Usage: http.ListenAndServe(8080, r)
+export let ListenAndServe = fn(port, handler) {
+    // Check if it's our Router object (has serveHTTP method)
+    if (type(handler) == "HASH" && handler["serveHTTP"] != null) {
+        return native.serve(port, handler["serveHTTP"]);
+    }
+    // Otherwise assume it's a raw function
+    return native.serve(port, handler);
+};

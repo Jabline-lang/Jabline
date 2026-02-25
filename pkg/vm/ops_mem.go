@@ -35,7 +35,12 @@ func (vm *VM) opGetBuiltin(ins code.Instructions, ip *int) error {
 	builtinIndex := int(ins[*ip+1])
 	*ip += 1
 	definition := stdlib.Registry[builtinIndex]
-	return vm.push(definition.Builtin)
+	return vm.push(definition.Object)
+}
+
+func (vm *VM) opCurrentClosure() error {
+	currentClosure := vm.currentFrame().cl
+	return vm.push(currentClosure)
 }
 
 func (vm *VM) opClosure(ins code.Instructions, ip *int) error {
@@ -50,4 +55,11 @@ func (vm *VM) opGetFree(ins code.Instructions, ip *int) error {
 	*ip += 1
 	currentClosure := vm.currentFrame().cl
 	return vm.push(currentClosure.Free[freeIndex])
+}
+
+func (vm *VM) opSetFree(ins code.Instructions, ip *int) {
+	freeIndex := int(ins[*ip+1])
+	*ip += 1
+	currentClosure := vm.currentFrame().cl
+	currentClosure.Free[freeIndex] = vm.pop()
 }

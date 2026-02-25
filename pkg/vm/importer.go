@@ -11,6 +11,8 @@ import (
 	"jabline/pkg/lexer"
 	"jabline/pkg/object"
 	"jabline/pkg/parser"
+	"jabline/pkg/stdlib" // Add this import
+	"jabline/pkg/symbol"
 )
 
 type ModuleLoader struct {
@@ -31,6 +33,22 @@ func NewModuleLoader() *ModuleLoader {
 }
 
 func (ml *ModuleLoader) Load(name string) (*object.Hash, error) {
+	// Check for native modules mapping (e.g. "modules/strings" -> "_strings")
+	var nativeName string
+	if strings.HasPrefix(name, "modules/") {
+		nativeName = "_" + strings.TrimPrefix(name, "modules/")
+	} else if strings.HasPrefix(name, "_") {
+		// Allow direct access to "_" prefixed native modules if needed
+		nativeName = name
+	}
+
+	if nativeName != "" {
+		if nativeMod := stdlib.GetNativeModule(nativeName); nativeMod != nil {
+			return nativeMod, nil
+		}
+		// If it has modules/ prefix but not found in stdlib, it might be an error or a physical folder
+		// but typically we expect them in stdlib.
+	}
 
 	absPath, err := ml.resolvePath(name)
 	if err != nil {
@@ -60,19 +78,19 @@ func (ml *ModuleLoader) Load(name string) (*object.Hash, error) {
 	}
 
 	bytecode := comp.Bytecode()
-	
+
 	moduleVM := NewWithLoader(bytecode.Instructions, bytecode.Constants, absPath, ml)
-	
+
 	err = moduleVM.Run()
 	if err != nil {
 		return nil, fmt.Errorf("runtime error in module '%s': %s", name, err)
 	}
 
 	exports := make(map[object.HashKey]object.HashPair)
-	for name, symbol := range bytecode.SymbolTable.GetStore() {
-		if symbol.Scope == compiler.GlobalScope {
-			if symbol.Index < len(moduleVM.globals) {
-				val := moduleVM.globals[symbol.Index]
+	for name, sym := range bytecode.SymbolTable.GetStore() { // Renamed 'symbol' to 'sym'
+		if sym.Scope == symbol.GlobalScope && sym.IsExported { // Only export marked symbols
+			if sym.Index < len(moduleVM.globals) {
+				val := moduleVM.globals[sym.Index]
 				if val != nil {
 					key := &object.String{Value: name}
 					exports[key.HashKey()] = object.HashPair{Key: key, Value: val}
@@ -82,7 +100,7 @@ func (ml *ModuleLoader) Load(name string) (*object.Hash, error) {
 	}
 
 	moduleHash := &object.Hash{Pairs: exports}
-	
+
 	ml.cache[absPath] = moduleHash
 
 	return moduleHash, nil

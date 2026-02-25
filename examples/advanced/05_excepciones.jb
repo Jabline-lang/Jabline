@@ -21,8 +21,6 @@ try {
     echo("Esto no debería imprimirse");
 } catch (e) {
     echo("¡Excepción capturada!: " + e);
-} finally {
-    echo("Bloque finally: Esto se ejecuta siempre");
 }
 
 echo("\n--- Continuación del programa ---");

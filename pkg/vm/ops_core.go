@@ -33,6 +33,8 @@ func (vm *VM) opPrefix(op code.Opcode) error {
 		return vm.executeBangOperator()
 	case code.OpMinus:
 		return vm.executeMinusOperator()
+	case code.OpBitNot:
+		return vm.executeBitNotOperator()
 	}
 	return nil
 }

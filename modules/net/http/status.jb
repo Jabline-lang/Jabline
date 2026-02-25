@@ -1,0 +1,21 @@
+export let OK = 200;
+export let CREATED = 201;
+export let ACCEPTED = 202;
+export let NO_CONTENT = 204;
+
+export let MOVED_PERMANENTLY = 301;
+export let FOUND = 302;
+export let NOT_MODIFIED = 304;
+
+export let BAD_REQUEST = 400;
+export let UNAUTHORIZED = 401;
+export let FORBIDDEN = 403;
+export let NOT_FOUND = 404;
+export let METHOD_NOT_ALLOWED = 405;
+export let CONFLICT = 409;
+export let UNPROCESSABLE_ENTITY = 422;
+
+export let INTERNAL_SERVER_ERROR = 500;
+export let NOT_IMPLEMENTED = 501;
+export let BAD_GATEWAY = 502;
+export let SERVICE_UNAVAILABLE = 503;

@@ -1,0 +1,39 @@
+export fn getKeys(h) {
+    return keys(h); // Calls global native keys()
+}
+
+export fn getValues(h) {
+    return values(h); // Calls global native values()
+}
+
+export fn merge(h1, h2) {
+    let result = {};
+    let ks1 = keys(h1);
+    for (k in ks1) {
+        set(result, k, h1[k]);
+    }
+    let ks2 = keys(h2);
+    for (k in ks2) {
+        set(result, k, h2[k]);
+    }
+    return result;
+}
+
+export fn mapValues(h, mapFn) {
+    let result = {};
+    let ks = keys(h);
+    for (k in ks) {
+        set(result, k, mapFn(h[k]));
+    }
+    return result;
+}
+
+export fn invert(h) {
+    let result = {};
+    let ks = keys(h);
+    for (k in ks) {
+        let val = "" + h[k];
+        set(result, val, k);
+    }
+    return result;
+}

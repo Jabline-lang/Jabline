@@ -123,7 +123,7 @@ func main() {
 	})
 
 	_, result, _ := read()
-	fmt.Printf("[PASS] Server Initialized. Capabilities received: %s\n", len(result) > 0)
+	fmt.Printf("[PASS] Server Initialized. Capabilities received: %t\n", len(result) > 0)
 
 	sendNotification("initialized", map[string]interface{}{})
 

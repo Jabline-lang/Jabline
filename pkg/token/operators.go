@@ -15,6 +15,13 @@ const (
 	INCREMENT = "++"
 	DECREMENT = "--"
 
+	BIT_AND     = "&"
+	BIT_OR      = "|"
+	BIT_XOR     = "^"
+	BIT_NOT     = "~"
+	SHIFT_LEFT  = "<<"
+	SHIFT_RIGHT = ">>"
+
 	BANG = "!"
 	AND  = "&&"
 	OR   = "||"
@@ -28,7 +35,8 @@ const (
 
 	QUESTION = "?"
 
-	ARROW = "=>"
+	ARROW      = "=>"
+	ARROW_LEFT = "<-"
 
 	NULLISH_COALESCING = "??"
 	OPTIONAL_CHAINING  = "?."
