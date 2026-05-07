@@ -1,0 +1,64 @@
+// internal/embedded/modules/net/http/router.jb
+// Router factory usable como Express.js
+// Usa builtins de Go (path_segments, path_param) para evitar loops anidados de Jabline.
+
+export fn createRouter(self) {
+    let state = {};
+    state["routes"] = [];
+
+    fn addRoute(method, routePath, handler) {
+        let segs = path_segments(routePath);
+        state["routes"] = push(state["routes"], {
+            "method":   method,
+            "segments": segs,
+            "handler":  handler
+        });
+    }
+
+    fn dispatch(req) {
+        let method  = req["method"];
+        let reqSegs = path_segments(req["url"]);
+        let routes  = state["routes"];
+
+        for (let ri = 0; ri < len(routes); ri = ri + 1) {
+            let route     = routes[ri];
+            let routeSegs = route["segments"];
+
+            if (route["method"] == method && len(routeSegs) == len(reqSegs)) {
+                let matched = true;
+                let params  = {};
+
+                for (let si = 0; si < len(routeSegs); si = si + 1) {
+                    let routeSeg = routeSegs[si];
+                    let reqSeg   = reqSegs[si];
+                    let paramName = path_param(routeSeg);
+
+                    if (paramName != "") {
+                        params[paramName] = reqSeg;
+                    } else if (routeSeg != reqSeg) {
+                        matched = false;
+                        break;
+                    }
+                }
+
+                if (matched) {
+                    return route["handler"](req, params);
+                }
+            }
+        }
+
+        return {
+            "status":  404,
+            "body":    stringify({ "error": "Not Found", "path": req["url"] }),
+            "headers": { "Content-Type": "application/json" }
+        };
+    }
+
+    return {
+        "get":      fn(self, routePath, handler) { addRoute("GET",    routePath, handler); },
+        "post":     fn(self, routePath, handler) { addRoute("POST",   routePath, handler); },
+        "put":      fn(self, routePath, handler) { addRoute("PUT",    routePath, handler); },
+        "delete":   fn(self, routePath, handler) { addRoute("DELETE", routePath, handler); },
+        "dispatch": fn(self, req) { return dispatch(req); }
+    };
+}

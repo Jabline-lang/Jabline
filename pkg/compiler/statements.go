@@ -14,13 +14,9 @@ func (c *Compiler) compileLetStatement(node *ast.LetStatement) error {
 	}
 
 	var typeName string
+
 	if node.Type != nil {
 		typeName = node.Type.Value
-		valType := c.inferType(node.Value)
-		if err := c.checkTypeMatch(typeName, valType, node.Value); err != nil {
-			// Add file:line:col info to the error
-			return fmt.Errorf("compile error: %s", err)
-		}
 
 		typeIdx := c.addConstant(&object.String{Value: typeName})
 		c.emit(code.OpCheckType, typeIdx)
@@ -32,6 +28,62 @@ func (c *Compiler) compileLetStatement(node *ast.LetStatement) error {
 	sym := c.symbolTable.DefineWithType(node.Name.Value, typeName)
 
 	if sym.Scope == symbol.GlobalScope { // Use sym.Scope
+		c.emit(code.OpSetGlobal, sym.Index)
+	} else {
+		c.emit(code.OpSetLocal, sym.Index)
+	}
+
+	return nil
+}
+
+func (c *Compiler) compileInterfaceStatement(node *ast.InterfaceStatement) error {
+	interfaceDef := &object.Interface{
+		Name:           node.Name.Value,
+		TypeParameters: []string{},
+		Methods:        make(map[string]*object.InterfaceMethod),
+	}
+
+	for _, tp := range node.TypeParameters {
+		interfaceDef.TypeParameters = append(interfaceDef.TypeParameters, tp.Value)
+	}
+
+	for name, methodNode := range node.Methods {
+		params := make([]string, len(methodNode.Parameters))
+		for i, p := range methodNode.Parameters {
+			params[i] = p.Value
+		}
+
+		retType := ""
+		if methodNode.ReturnType != nil {
+			retType = methodNode.ReturnType.String()
+		}
+
+		interfaceDef.Methods[name] = &object.InterfaceMethod{
+			Name:       name,
+			Parameters: params,
+			ReturnType: retType,
+		}
+	}
+
+	// Add interface definition to constants pool
+	interfaceConstIdx := c.addConstant(interfaceDef)
+
+	// Define the symbol for the interface name
+	sym := c.symbolTable.Define(node.Name.Value)
+
+	// Inject the object directly in the compiler symbol table to make it accessible during static type checking
+	updatedSym := sym
+	updatedSym.Value = interfaceDef
+	c.symbolTable.GetStore()[node.Name.Value] = updatedSym
+
+	// Also define it as an allowable static type string
+	c.symbolTable.DefineType(node.Name.Value)
+
+	// Emit instructions to push the interface definition (as a constant) onto the stack
+	// and then assign it to the variable associated with the interface's name.
+	c.emit(code.OpConstant, interfaceConstIdx)
+
+	if sym.Scope == symbol.GlobalScope {
 		c.emit(code.OpSetGlobal, sym.Index)
 	} else {
 		c.emit(code.OpSetLocal, sym.Index)
@@ -78,11 +130,6 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 		return nil
 	}
 
-	// Compile the value to be assigned
-	if err := c.Compile(node.Value); err != nil {
-		return err
-	}
-
 	// We only support assignment to identifiers for now (e.g. x = 5)
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
@@ -99,10 +146,34 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 		return fmt.Errorf("undefined variable %s", ident.Value)
 	}
 
-	// Static type validation for assignment
-	valType := c.inferType(node.Value)
-	if err := c.checkTypeMatch(sym.DataType, valType, node.Value); err != nil {
-		return fmt.Errorf("compile error: assignment to '%s' failed - %s", ident.Value, err)
+	// Optimization: Detect i = i + 1 or i = i - 1
+	if op, ok := c.isIncrementPattern(ident, node.Value); ok {
+		if sym.Scope == symbol.LocalScope {
+			if op == "+" {
+				c.emit(code.OpIncLocal, sym.Index)
+			} else {
+				c.emit(code.OpDecLocal, sym.Index)
+			}
+			return nil
+		} else if sym.Scope == symbol.GlobalScope {
+			if op == "+" {
+				c.emit(code.OpIncGlobal, sym.Index)
+			} else {
+				c.emit(code.OpDecGlobal, sym.Index)
+			}
+			return nil
+		}
+	}
+
+	// Non-optimized path: Compile the value to be assigned
+	if err := c.Compile(node.Value); err != nil {
+		return err
+	}
+
+	// Emit OpCheckType for assignments if we have a type
+	if sym.DataType != "" {
+		typeIdx := c.addConstant(&object.String{Value: sym.DataType})
+		c.emit(code.OpCheckType, typeIdx)
 	}
 
 	switch sym.Scope {
@@ -118,6 +189,35 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 
 	return nil
 }
+
+func (c *Compiler) isIncrementPattern(ident *ast.Identifier, expr ast.Expression) (string, bool) {
+	infix, ok := expr.(*ast.InfixExpression)
+	if !ok {
+		return "", false
+	}
+
+	if infix.Operator != "+" && infix.Operator != "-" {
+		return "", false
+	}
+
+	leftIdent, ok := infix.Left.(*ast.Identifier)
+	if !ok || leftIdent.Value != ident.Value {
+		return "", false
+	}
+
+	intLit, ok := infix.Right.(*ast.IntegerLiteral)
+	if ok && intLit.Value == 1 {
+		return infix.Operator, true
+	}
+
+	floatLit, ok := infix.Right.(*ast.FloatLiteral)
+	if ok && floatLit.Value == 1.0 {
+		return infix.Operator, true
+	}
+
+	return "", false
+}
+
 func (c *Compiler) compileExpressionStatement(node *ast.ExpressionStatement) error {
 	if err := c.Compile(node.Expression); err != nil {
 		return err
@@ -477,9 +577,16 @@ func (c *Compiler) compileTryStatement(node *ast.TryStatement) error {
 	if node.CatchBlock != nil {
 		// If CatchParam is defined, define it in the symbol table and store the exception object
 		if node.CatchParam != nil {
-			sym := c.symbolTable.Define(node.CatchParam.Value)
+			var sym symbol.Symbol
+			if originalSymbolTable.Outer == nil {
+				// At top level, define as global to avoid being overwritten by stack operations
+				sym = originalSymbolTable.Define(node.CatchParam.Value)
+			} else {
+				sym = c.symbolTable.Define(node.CatchParam.Value)
+			}
+
 			// The VM pushes the exception object onto the stack before jumping to catchStartPos
-			// So, we need to pop it and set it as a local variable.
+			// So, we need to pop it and set it as a local/global variable.
 			if sym.Scope == symbol.GlobalScope {
 				c.emit(code.OpSetGlobal, sym.Index)
 			} else {
@@ -569,10 +676,6 @@ func (c *Compiler) compileConstStatement(node *ast.ConstStatement) error {
 	var typeName string
 	if node.Type != nil {
 		typeName = node.Type.Value
-		valType := c.inferType(node.Value)
-		if err := c.checkTypeMatch(typeName, valType, node.Value); err != nil {
-			return fmt.Errorf("compile error: constant '%s' type mismatch - %s", node.Name.Value, err)
-		}
 
 		typeIdx := c.addConstant(&object.String{Value: typeName})
 		c.emit(code.OpCheckType, typeIdx)
@@ -844,6 +947,139 @@ func (c *Compiler) compileForEachStatement(node *ast.ForEachStatement) error {
 	// Handle break statements
 	for _, breakPos := range loopScope.BreakPos {
 		c.changeOperand(breakPos, afterLoopPos)
+	}
+
+	return nil
+}
+
+func (c *Compiler) compileMatchStatement(node *ast.MatchStatement) error {
+	if err := c.Compile(node.Expression); err != nil {
+		return err
+	}
+
+	var jumpToEnds []int
+
+	for _, matchCase := range node.Cases {
+		if matchCase.IsDefault {
+			continue // Handle default at the end
+		}
+
+		c.emit(code.OpDup) // Duplicate subject for each case comparison
+
+		switch pattern := matchCase.Pattern.(type) {
+
+		case *ast.Identifier:
+			// Type match: case Int / case String / etc.
+			typeIdx := c.addConstant(&object.String{Value: pattern.Value})
+			c.emit(code.OpIsType, typeIdx)
+
+		case *ast.ArrayLiteral:
+			// Structural match: case [a, b, c]
+			// Stack: [arr_dup]
+			// Store arr_dup into a temp variable so we can call len() and index it.
+			tmpArrSym := c.symbolTable.Define("$$match_arr$$")
+			if tmpArrSym.Scope == symbol.GlobalScope {
+				c.emit(code.OpSetGlobal, tmpArrSym.Index)
+			} else {
+				c.emit(code.OpSetLocal, tmpArrSym.Index)
+			}
+
+			// Call len($$match_arr$$) and compare with pattern element count.
+			lenSym, ok := c.symbolTable.Resolve("len")
+			if !ok {
+				return fmt.Errorf("builtin 'len' not found for structural match")
+			}
+			c.emit(code.OpGetBuiltin, lenSym.Index)
+			if tmpArrSym.Scope == symbol.GlobalScope {
+				c.emit(code.OpGetGlobal, tmpArrSym.Index)
+			} else {
+				c.emit(code.OpGetLocal, tmpArrSym.Index)
+			}
+			c.emit(code.OpCall, 1) // result: actual length
+
+			expectedLen := int64(len(pattern.Elements))
+			expectedLenIdx := c.addConstant(&object.Integer{Value: expectedLen})
+			c.emit(code.OpConstant, expectedLenIdx)
+			c.emit(code.OpEqual) // true if lengths match
+
+			// After jumpNotMatch we bind elements. Handled below.
+
+		default:
+			// Equality match: case 42 / case "hello" / etc.
+			if err := c.Compile(matchCase.Pattern); err != nil {
+				return err
+			}
+			c.emit(code.OpEqual)
+		}
+
+		jumpNotMatch := c.emit(code.OpJumpNotTruthy, 9999)
+
+		// Case matched — pop the original subject from stack.
+		c.emit(code.OpPop)
+
+		// For structural array match: bind each identifier element to the array slot.
+		if pattern, ok := matchCase.Pattern.(*ast.ArrayLiteral); ok {
+			tmpArrSym, _ := c.symbolTable.Resolve("$$match_arr$$")
+			for i, elem := range pattern.Elements {
+				ident, ok := elem.(*ast.Identifier)
+				if !ok {
+					continue // skip non-identifier (wildcard '_' or literal) elements
+				}
+				// Load arr[i]
+				if tmpArrSym.Scope == symbol.GlobalScope {
+					c.emit(code.OpGetGlobal, tmpArrSym.Index)
+				} else {
+					c.emit(code.OpGetLocal, tmpArrSym.Index)
+				}
+				idxConst := c.addConstant(&object.Integer{Value: int64(i)})
+				c.emit(code.OpConstant, idxConst)
+				c.emit(code.OpIndex) // arr[i]
+
+				// Bind to the variable name
+				varSym := c.symbolTable.Define(ident.Value)
+				if varSym.Scope == symbol.GlobalScope {
+					c.emit(code.OpSetGlobal, varSym.Index)
+				} else {
+					c.emit(code.OpSetLocal, varSym.Index)
+				}
+			}
+		}
+
+		for _, s := range matchCase.Statements {
+			if err := c.Compile(s); err != nil {
+				return err
+			}
+		}
+
+		jumpToEnd := c.emit(code.OpJump, 9999)
+		jumpToEnds = append(jumpToEnds, jumpToEnd)
+
+		afterPos := len(c.currentInstructions())
+		c.changeOperand(jumpNotMatch, afterPos)
+	}
+
+	// Handle default case
+	foundDefault := false
+	for _, matchCase := range node.Cases {
+		if matchCase.IsDefault {
+			c.emit(code.OpPop) // Pop subject
+			for _, s := range matchCase.Statements {
+				if err := c.Compile(s); err != nil {
+					return err
+				}
+			}
+			foundDefault = true
+			break
+		}
+	}
+
+	if !foundDefault {
+		c.emit(code.OpPop) // Pop subject if no match
+	}
+
+	afterMatchPos := len(c.currentInstructions())
+	for _, pos := range jumpToEnds {
+		c.changeOperand(pos, afterMatchPos)
 	}
 
 	return nil

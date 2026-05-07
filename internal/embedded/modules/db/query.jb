@@ -1,0 +1,26 @@
+// modules/db/query.jb
+// ORM wrapper — envuelve la conexión nativa con una API limpia.
+
+export fn NewQuery(conn) {
+    if (is_error(conn)) {
+        panic("db: conexión inválida → " + conn["message"]);
+    }
+
+    return {
+        "all": fn(sql, args) {
+            return db_all(conn, sql, args);
+        },
+
+        "get": fn(sql, args) {
+            return db_get(conn, sql, args);
+        },
+
+        "run": fn(sql, args) {
+            return db_run(conn, sql, args);
+        },
+
+        "insert": fn(table, data) {
+            return db_insert(conn, table, data);
+        }
+    };
+}

@@ -1,0 +1,35 @@
+import * as ws from "_websocket";
+
+// Función para inicializar y retornar un cliente de WebSocket
+export fn connect(url) {
+    let connObj = ws["Connect"](url);
+    if (is_error(connObj)) {
+        panic(connObj);
+    }
+    
+    // Devolvemos un objeto estructurado usando closure-based o dictionary-based pattern
+    return {
+        "_conn": connObj,
+        "url": url,
+        
+        "sendText": fn(self, message) {
+            let result = ws["WriteText"](self["_conn"], message);
+            if (is_error(result)) {
+                panic("Failed to send text: " + toString(result));
+            }
+            return true;
+        },
+
+        "receive": fn(self) {
+            let data = ws["Read"](self["_conn"]);
+            if (is_error(data)) {
+                panic("Failed to read from websocket: " + toString(data));
+            }
+            return data;
+        },
+
+        "close": fn(self) {
+            ws["Close"](self["_conn"]);
+        }
+    };
+}

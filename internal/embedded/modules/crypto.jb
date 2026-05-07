@@ -1,0 +1,26 @@
+// Native crypto module for Jabline
+// Provides a high-level API for hashing, encryption and UUID generation.
+
+export fn md5(self, data) {
+    return __native_md5(data);
+}
+
+export fn sha256(self, data) {
+    return __native_sha256(data);
+}
+
+export fn aesEncrypt(self, key, data) {
+    return __native_aesEncrypt(key, data);
+}
+
+export fn aesDecrypt(self, key, data) {
+    return __native_aesDecrypt(key, data);
+}
+
+export fn randomBytes(self, n) {
+    return __native_randomBytes(n);
+}
+
+export fn uuid(self) {
+    return __native_uuid();
+}

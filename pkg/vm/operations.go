@@ -49,13 +49,13 @@ func (vm *VM) executeBinaryFloatOperation(op code.Opcode, left, right object.Obj
 	var result float64
 
 	switch op {
-	case code.OpAdd:
+	case code.OpAdd, code.OpFloatAdd:
 		result = leftVal + rightVal
-	case code.OpSub:
+	case code.OpSub, code.OpFloatSub:
 		result = leftVal - rightVal
-	case code.OpMul:
+	case code.OpMul, code.OpFloatMul:
 		result = leftVal * rightVal
-	case code.OpDiv:
+	case code.OpDiv, code.OpFloatDiv:
 		if rightVal == 0 {
 			return fmt.Errorf("division by zero")
 		}

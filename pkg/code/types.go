@@ -75,4 +75,23 @@ const (
 	OpRecvChannel
 	OpCurrentClosure
 	OpInstantiate
+
+	// Float specific opcodes
+	OpFloatAdd
+	OpFloatSub
+	OpFloatMul
+	OpFloatDiv
+	OpIntToFloat
+	OpIsType
+
+	// Fast-Paths and Compression (Priority 15)
+	OpConstant8
+	OpIncLocal
+	OpDecLocal
+	OpIncGlobal
+	OpDecGlobal
+	OpCallMethodFast
+	OpMetricInc
+	OpTraceStart
+	OpTraceEnd
 )

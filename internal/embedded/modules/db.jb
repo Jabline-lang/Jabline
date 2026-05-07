@@ -1,0 +1,23 @@
+import * as _db from "_db";
+
+export fn open(self, driver, uri) {
+    let conn = _db["open"](driver, uri);
+    
+    return {
+        "query": fn(self, sql, args) { 
+            return _db["query"](conn, sql, args); 
+        },
+        "queryAsync": fn(self, sql, args) { 
+            return async fn() { return _db["query"](conn, sql, args); }(); 
+        },
+        "exec": fn(self, sql, args) { 
+            return _db["exec"](conn, sql, args); 
+        },
+        "execAsync": fn(self, sql, args) { 
+            return async fn() { return _db["exec"](conn, sql, args); }(); 
+        },
+        "close": fn(self) { 
+            return _db["close"](conn); 
+        }
+    };
+}

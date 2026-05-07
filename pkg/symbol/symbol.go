@@ -24,10 +24,11 @@ type Symbol struct {
 }
 
 type SymbolTable struct {
-	Outer          *SymbolTable
-	store          map[string]Symbol
-	numDefinitions int
-	FreeSymbols    []Symbol
+	Outer           *SymbolTable
+	store           map[string]Symbol
+	numDefinitions  int
+	FreeSymbols     []Symbol
+	IsFunctionScope bool
 }
 
 func (s *SymbolTable) MarkExported(name string) {
@@ -55,9 +56,19 @@ func (s *SymbolTable) Define(name string) Symbol {
 	return s.DefineWithType(name, "")
 }
 
+func (s *SymbolTable) IsGlobalScope() bool {
+	if s.IsFunctionScope {
+		return false
+	}
+	if s.Outer == nil {
+		return true
+	}
+	return s.Outer.IsGlobalScope()
+}
+
 func (s *SymbolTable) DefineWithType(name string, dataType string) Symbol {
 	symbol := Symbol{Name: name, Index: s.numDefinitions, DataType: dataType}
-	if s.Outer == nil {
+	if s.IsGlobalScope() {
 		symbol.Scope = GlobalScope
 	} else {
 		symbol.Scope = LocalScope

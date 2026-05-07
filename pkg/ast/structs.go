@@ -9,7 +9,7 @@ import (
 type TypeExpression struct {
 	Token     token.Token
 	Value     string
-	Arguments []*TypeExpression // Para Genéricos: Array[int] -> Base: "Array", Arguments: ["int"]
+	Arguments []*TypeExpression // Para Genéricos: Array<int> -> Base: "Array", Arguments: ["int"]
 }
 
 func (te *TypeExpression) expressionNode()      {}
@@ -20,13 +20,13 @@ func (te *TypeExpression) String() string {
 	}
 	var out strings.Builder
 	out.WriteString(te.Value)
-	out.WriteString("[")
+	out.WriteString("<")
 	args := []string{}
 	for _, arg := range te.Arguments {
 		args = append(args, arg.String())
 	}
 	out.WriteString(strings.Join(args, ", "))
-	out.WriteString("]")
+	out.WriteString(">")
 	return out.String()
 }
 
@@ -45,13 +45,13 @@ func (ss *StructStatement) String() string {
 	out.WriteString(" ")
 	out.WriteString(ss.Name.String())
 	if len(ss.TypeParameters) > 0 {
-		out.WriteString("[")
+		out.WriteString("<")
 		params := []string{}
 		for _, p := range ss.TypeParameters {
 			params = append(params, p.String())
 		}
 		out.WriteString(strings.Join(params, ", "))
-		out.WriteString("]")
+		out.WriteString(">")
 	}
 	out.WriteString(" { ")
 
@@ -85,3 +85,70 @@ func (sl *StructLiteral) String() string {
 	out.WriteString(" }")
 	return out.String()
 }
+
+type FunctionSignature struct {
+	Token      token.Token
+	Name       string
+	Parameters []*Identifier
+	ReturnType *TypeExpression
+}
+
+func (fs *FunctionSignature) String() string {
+	var out strings.Builder
+	out.WriteString("(")
+	params := []string{}
+	for _, p := range fs.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	if fs.ReturnType != nil {
+		out.WriteString(": ")
+		out.WriteString(fs.ReturnType.String())
+	}
+	return out.String()
+}
+
+type InterfaceStatement struct {
+	Token          token.Token
+	Name           *Identifier
+	TypeParameters []*Identifier
+	Methods        map[string]*FunctionSignature
+}
+
+func (is *InterfaceStatement) statementNode()       {}
+func (is *InterfaceStatement) TokenLiteral() string { return is.Token.Literal }
+func (is *InterfaceStatement) String() string {
+	var out strings.Builder
+	out.WriteString(is.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(is.Name.String())
+	if len(is.TypeParameters) > 0 {
+		out.WriteString("<")
+		params := []string{}
+		for _, p := range is.TypeParameters {
+			params = append(params, p.String())
+		}
+		out.WriteString(strings.Join(params, ", "))
+		out.WriteString(">")
+	}
+	out.WriteString(" { ")
+
+	methods := []string{}
+	for name, sig := range is.Methods {
+		methods = append(methods, name+sig.String())
+	}
+	out.WriteString(strings.Join(methods, ", "))
+	out.WriteString(" }")
+	return out.String()
+}
+
+func (node *TypeExpression) GetToken() token.Token { return node.Token }
+
+func (node *StructStatement) GetToken() token.Token { return node.Token }
+
+func (node *StructLiteral) GetToken() token.Token { return node.Token }
+
+func (node *FunctionSignature) GetToken() token.Token { return node.Token }
+
+func (node *InterfaceStatement) GetToken() token.Token { return node.Token }

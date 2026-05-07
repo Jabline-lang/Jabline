@@ -18,16 +18,26 @@ const (
 	BINARY_NAME = "jabline"
 )
 
-const (
-	ColorRed    = "\033[31m"
-	ColorGreen  = "\033[32m"
-	ColorYellow = "\033[33m"
-	ColorBlue   = "\033[34m"
-	ColorPurple = "\033[35m"
-	ColorCyan   = "\033[36m"
-	ColorWhite  = "\033[37m"
-	ColorReset  = "\033[0m"
+var (
+	ColorRed, ColorGreen, ColorYellow, ColorBlue,
+	ColorPurple, ColorCyan, ColorWhite, ColorReset string
 )
+
+func initColors() {
+	if runtime.GOOS == "windows" {
+		ColorRed, ColorGreen, ColorYellow, ColorBlue = "", "", "", ""
+		ColorPurple, ColorCyan, ColorWhite, ColorReset = "", "", "", ""
+	} else {
+		ColorRed = "\033[31m"
+		ColorGreen = "\033[32m"
+		ColorYellow = "\033[33m"
+		ColorBlue = "\033[34m"
+		ColorPurple = "\033[35m"
+		ColorCyan = "\033[36m"
+		ColorWhite = "\033[37m"
+		ColorReset = "\033[0m"
+	}
+}
 
 type Installer struct {
 	OS             string
@@ -40,6 +50,8 @@ type Installer struct {
 }
 
 func main() {
+	initColors()
+
 	installer := &Installer{
 		OS:         runtime.GOOS,
 		Arch:       runtime.GOARCH,
@@ -51,7 +63,7 @@ func main() {
 		installer.BinaryName += ".exe"
 	}
 
-	printBanner()
+	printBanner(installer.IsWindows)
 
 	fmt.Printf("%s🔍 Detecting system...%s\n", ColorBlue, ColorReset)
 	installer.detectSystem()
@@ -103,32 +115,55 @@ func main() {
 		return
 	}
 
+	if err := installer.addToPath(); err != nil {
+		fmt.Printf("%s⚠️  Failed to add to PATH: %v%s\n", ColorYellow, err, ColorReset)
+	}
+
+	fmt.Printf("%s🔌 Setting up IDE support...%s\n", ColorBlue, ColorReset)
+	if err := installer.installVSCodeExtension(); err != nil {
+		fmt.Printf("%s⚠️  Failed to setup VS Code extension: %v%s\n", ColorYellow, err, ColorReset)
+	}
+
 	fmt.Printf("%s✅ Verifying installation...%s\n", ColorBlue, ColorReset)
 	if err := installer.verifyInstallation(); err != nil {
 		fmt.Printf("%s⚠️  Installation completed but verification failed: %v%s\n", ColorYellow, err, ColorReset)
 		fmt.Printf("%sYou may need to add %s to your PATH manually%s\n", ColorYellow, installer.InstallPath, ColorReset)
 	}
 
-	printSuccess(installer)
+	printSuccess(installer, installer.IsWindows)
 }
 
-func printBanner() {
-	fmt.Printf("%s", ColorPurple)
-	fmt.Println("╔═══════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                    🚀 JABLINE INSTALLER 🚀                   ║")
-	fmt.Println("║                                                               ║")
-	fmt.Println("║        Automated installer for Jabline Programming Language  ║")
-	fmt.Println("║                     Version 1.0.0                            ║")
-	fmt.Println("╚═══════════════════════════════════════════════════════════════╝")
-	fmt.Printf("%s\n", ColorReset)
+func printBanner(isWindows bool) {
+	if isWindows {
+		fmt.Println("===================================")
+		fmt.Println("       JABLINE INSTALLER 🚀        ")
+		fmt.Println(" Automated installer for Jabline   ")
+		fmt.Println("            Version 0.2.1         ")
+		fmt.Println("===================================")
+	} else {
+		fmt.Printf("%s", ColorPurple)
+		fmt.Println("╔═══════════════════════════════════════════════════════════════╗")
+		fmt.Println("║                    🚀 JABLINE INSTALLER 🚀                   ║")
+		fmt.Println("║                                                               ║")
+		fmt.Println("║        Automated installer for Jabline Programming Language   ║")
+		fmt.Println("║                     Version 0.2.1                             ║")
+		fmt.Println("╚═══════════════════════════════════════════════════════════════╝")
+		fmt.Printf("%s\n", ColorReset)
+	}
 }
 
-func printSuccess(installer *Installer) {
-	fmt.Printf("\n%s", ColorGreen)
-	fmt.Println("🎉 ═══════════════════════════════════════════════════════════")
-	fmt.Println("🎉  INSTALLATION COMPLETED SUCCESSFULLY!")
-	fmt.Println("🎉 ═══════════════════════════════════════════════════════════")
-	fmt.Printf("%s", ColorReset)
+func printSuccess(installer *Installer, isWindows bool) {
+	if isWindows {
+		fmt.Println("\n===================================")
+		fmt.Println("  INSTALLATION COMPLETED SUCCESSFULLY!")
+		fmt.Println("===================================")
+	} else {
+		fmt.Printf("\n%s", ColorGreen)
+		fmt.Println("🎉 ═══════════════════════════════════════════════════════════")
+		fmt.Println("🎉  INSTALLATION COMPLETED SUCCESSFULLY!")
+		fmt.Println("🎉 ═══════════════════════════════════════════════════════════")
+		fmt.Printf("%s", ColorReset)
+	}
 
 	fmt.Printf("\n%s📍 Binary installed to: %s%s%s\n", ColorCyan, ColorWhite, installer.InstallPath, ColorReset)
 
@@ -177,7 +212,6 @@ func (i *Installer) detectSystem() {
 }
 
 func (i *Installer) checkPrerequisites() error {
-
 	fmt.Print("   Checking Go installation... ")
 	if err := exec.Command("go", "version").Run(); err != nil {
 		fmt.Printf("%s❌%s\n", ColorRed, ColorReset)
@@ -229,8 +263,8 @@ func (i *Installer) cloneRepo() error {
 
 func (i *Installer) buildBinary() error {
 	repoDir := filepath.Join(i.TempDir, "Jabline")
-
 	ldflags := "-s -w"
+
 	cmd := exec.Command("go", "build", "-ldflags", ldflags, "-o", i.BinaryName, "main.go")
 	cmd.Dir = repoDir
 
@@ -250,8 +284,8 @@ func (i *Installer) buildBinary() error {
 
 func (i *Installer) installBinary() error {
 	sourceFile := filepath.Join(i.TempDir, "Jabline", i.BinaryName)
-
 	destDir := filepath.Dir(i.InstallPath)
+
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		if !i.IsWindows && i.NeedsElevation {
 			return i.installWithElevation(sourceFile)
@@ -277,15 +311,12 @@ func (i *Installer) installBinary() error {
 
 func (i *Installer) installWithElevation(sourceFile string) error {
 	fmt.Printf("%s🔑 Installation requires administrator privileges%s\n", ColorYellow, ColorReset)
-
 	destDir := filepath.Dir(i.InstallPath)
-
 	var cmd *exec.Cmd
-	if i.IsWindows {
 
+	if i.IsWindows {
 		return fmt.Errorf("please run this installer as Administrator")
 	} else {
-
 		fmt.Print("   Creating directory with sudo... ")
 		cmd = exec.Command("sudo", "mkdir", "-p", destDir)
 		if err := cmd.Run(); err != nil {
@@ -315,7 +346,6 @@ func (i *Installer) installWithElevation(sourceFile string) error {
 }
 
 func (i *Installer) verifyInstallation() error {
-
 	if _, err := os.Stat(i.InstallPath); os.IsNotExist(err) {
 		return fmt.Errorf("binary not found at %s", i.InstallPath)
 	}
@@ -323,7 +353,6 @@ func (i *Installer) verifyInstallation() error {
 	cmd := exec.Command(i.InstallPath, "--version")
 	output, err := cmd.Output()
 	if err != nil {
-
 		cmd = exec.Command(strings.TrimSuffix(i.BinaryName, ".exe"), "--version")
 		output, err = cmd.Output()
 		if err != nil {
@@ -331,7 +360,7 @@ func (i *Installer) verifyInstallation() error {
 		}
 	}
 
-	fmt.Printf("   Version check: %s", strings.TrimSpace(string(output)))
+	fmt.Printf("   Version check: %s\n", strings.TrimSpace(string(output)))
 	return nil
 }
 
@@ -341,13 +370,166 @@ func (i *Installer) cleanup() {
 	}
 }
 
+func (i *Installer) installVSCodeExtension() error {
+	homeDir, _ := os.UserHomeDir()
+	extDir := filepath.Join(homeDir, ".vscode", "extensions", "jabline-lang-support")
+
+	if err := os.MkdirAll(extDir, 0755); err != nil {
+		return err
+	}
+
+	// 1. package.json
+	pkgJson := `{
+  "name": "jabline-lang-support",
+  "displayName": "Jabline Language Support",
+  "description": "LSP Support for Jabline Programming Language",
+  "version": "0.1.0",
+  "publisher": "jabline",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "jabline",
+      "aliases": ["Jabline", "jabline"],
+      "extensions": [".jb"],
+      "configuration": "./language-configuration.json"
+    }],
+    "configuration": {
+      "type": "object",
+      "title": "Jabline",
+      "properties": {
+        "jabline.lsp.path": {
+          "type": "string",
+          "default": "jabline",
+          "description": "Path to the jabline binary"
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onLanguage:jabline"
+  ],
+  "main": "./extension.js"
+}`
+	if err := os.WriteFile(filepath.Join(extDir, "package.json"), []byte(pkgJson), 0644); err != nil {
+		return err
+	}
+
+	// 2. extension.js (Simple client that spawns 'jabline lsp')
+	extJs := `const vscode = require('vscode');
+const { LanguageClient } = require('vscode-languageclient/node');
+
+let client;
+
+function activate(context) {
+    const serverOptions = {
+        command: vscode.workspace.getConfiguration('jabline').get('lsp.path') || 'jabline',
+        args: ['lsp']
+    };
+
+    const clientOptions = {
+        documentSelector: [{ scheme: 'file', language: 'jabline' }],
+        synchronize: {
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.jb')
+        }
+    };
+
+    client = new LanguageClient('jablineLSP', 'Jabline Language Server', serverOptions, clientOptions);
+    client.start();
+}
+
+function deactivate() {
+    if (!client) return undefined;
+    return client.stop();
+}
+
+module.exports = { activate, deactivate };`
+	if err := os.WriteFile(filepath.Join(extDir, "extension.js"), []byte(extJs), 0644); err != nil {
+		return err
+	}
+
+	// 3. language-configuration.json
+	langCfg := `{
+    "comments": {
+        "lineComment": "//",
+        "blockComment": ["/*", "*/"]
+    },
+    "brackets": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"]
+    ],
+    "autoClosingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"]
+    ],
+    "surroundingPairs": [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+        ["\"", "\""],
+        ["'", "'"]
+    ]
+}`
+	if err := os.WriteFile(filepath.Join(extDir, "language-configuration.json"), []byte(langCfg), 0644); err != nil {
+		return err
+	}
+
+	fmt.Printf("%s✅ VS Code extension installed locally at %s%s\n", ColorGreen, extDir, ColorReset)
+	return nil
+}
+
+func (i *Installer) addToPath() error {
+	if i.IsWindows {
+		dir := filepath.Dir(i.InstallPath)
+		cmd := exec.Command("setx", "PATH", fmt.Sprintf("%s;%s", os.Getenv("PATH"), dir))
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		fmt.Printf("%s✅ Added %s to PATH (restart terminal required)%s\n", ColorGreen, dir, ColorReset)
+		return nil
+	}
+
+	shellFile := ""
+	homeDir, _ := os.UserHomeDir()
+	if _, err := os.Stat(filepath.Join(homeDir, ".bashrc")); err == nil {
+		shellFile = filepath.Join(homeDir, ".bashrc")
+	} else if _, err := os.Stat(filepath.Join(homeDir, ".zshrc")); err == nil {
+		shellFile = filepath.Join(homeDir, ".zshrc")
+	} else {
+		shellFile = filepath.Join(homeDir, ".profile")
+	}
+
+	dir := filepath.Dir(i.InstallPath)
+	line := fmt.Sprintf("\n# Added by Jabline installer\nexport PATH=\"%s:$PATH\"\n", dir)
+
+	f, err := os.OpenFile(shellFile, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(line); err != nil {
+		return err
+	}
+
+	fmt.Printf("%s✅ Added %s to PATH in %s (restart terminal required)%s\n", ColorGreen, dir, shellFile, ColorReset)
+	return nil
+}
+
 func askForConfirmation() bool {
 	reader := bufio.NewReader(os.Stdin)
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		return false
 	}
-
 	response = strings.ToLower(strings.TrimSpace(response))
 	return response == "y" || response == "yes"
 }
@@ -357,7 +539,6 @@ func isRoot() bool {
 }
 
 func isAdmin() bool {
-
 	return false
 }
 

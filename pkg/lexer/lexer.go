@@ -20,6 +20,14 @@ func New(input string) *Lexer {
 		line:   1,
 		column: 0,
 	}
+
+	// Detect and skip BOMs
+	if strings.HasPrefix(l.input, "\xef\xbb\xbf") { // UTF-8
+		l.readPosition = 3
+	} else if strings.HasPrefix(l.input, "\xff\xfe") || strings.HasPrefix(l.input, "\xfe\xff") { // UTF-16
+		l.readPosition = 2
+	}
+
 	l.readChar()
 	return l
 }
@@ -120,6 +128,10 @@ func (l *Lexer) NextToken() token.Token {
 			ch := l.ch
 			l.readChar()
 			tok = l.newToken(token.OR, string(ch)+string(l.ch))
+		} else if l.peekChar() == '>' {
+			ch := l.ch
+			l.readChar()
+			tok = l.newToken(token.PIPE, string(ch)+string(l.ch))
 		} else {
 			tok = l.newToken(token.BIT_OR, string(l.ch))
 		}
@@ -188,22 +200,32 @@ func (l *Lexer) NextToken() token.Token {
 			tok = l.newToken(token.QUESTION, string(l.ch))
 		}
 	case '"':
-		tok = l.newToken(token.STRING, l.readString())
+		line := l.line
+		column := l.column
+		lit := l.readString()
+		tok = token.Token{Type: token.STRING, Literal: lit, Line: line, Column: column}
 	case '`':
-		tok = l.newToken(token.TEMPLATE_LITERAL, l.readTemplateLiteral())
+		line := l.line
+		column := l.column
+		lit := l.readTemplateLiteral()
+		tok = token.Token{Type: token.TEMPLATE_LITERAL, Literal: lit, Line: line, Column: column}
 	case 0:
-		tok = l.newToken(token.EOF, "")
+		return l.newToken(token.EOF, "")
 	default:
 		if isLetter(l.ch) {
+			line := l.line
+			column := l.column
 			lit := l.readIdentifier()
-			return l.newToken(token.LookupIdent(lit), lit)
+			return token.Token{Type: token.LookupIdent(lit), Literal: lit, Line: line, Column: column}
 		} else if isDigit(l.ch) {
+			line := l.line
+			column := l.column
 			numLiteral := l.readNumber()
+			tokenType := token.TokenType(token.INT)
 			if strings.Contains(numLiteral, ".") {
-				return l.newToken(token.FLOAT, numLiteral)
-			} else {
-				return l.newToken(token.INT, numLiteral)
+				tokenType = token.FLOAT
 			}
+			return token.Token{Type: tokenType, Literal: numLiteral, Line: line, Column: column}
 		} else {
 			tok = l.newToken(token.ILLEGAL, string(l.ch))
 		}

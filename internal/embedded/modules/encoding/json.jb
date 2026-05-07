@@ -1,0 +1,5 @@
+import * as native from "_json"
+
+export let parse = fn(self, input) { return native["parse"](input); };
+export let stringify = fn(self, obj) { return native["stringify"](obj); };
+export let prettyStringify = fn(self, obj) { return native["pretty"](obj); };

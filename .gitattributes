@@ -1,1 +1,2 @@
-* text=auto
+# Mark all .jb files as Jabline language for GitHub Linguist
+*.jb linguist-language=Jabline

@@ -1,3 +1,5 @@
+//go:build !runner || runner_http
+
 package stdlib
 
 import (
@@ -5,11 +7,11 @@ import (
 	"io"
 	"jabline/pkg/object"
 	"net/http"
+	"os"
 	"strings"
 )
 
-// Executor is injected by the VM to allow running closures from stdlib
-var Executor object.VMExecutor
+
 
 var HTTPBuiltins = []struct {
 	Name   string
@@ -18,6 +20,20 @@ var HTTPBuiltins = []struct {
 	{"http_get", &object.Builtin{Fn: httpGet}},
 	{"http_post", &object.Builtin{Fn: httpPost}},
 	{"http_serve", &object.Builtin{Fn: httpServe}},
+}
+
+func init() {
+	NativeModuleRegistry["_http"] = HTTPBuiltins
+	
+	Registry = append(Registry, []struct {
+		Name   string
+		Object object.Object
+	}{
+		{"http_serve", &object.Builtin{Fn: httpServe}},
+		{"path_segments", &object.Builtin{Fn: pathSegmentsFunc}},
+		{"path_param", &object.Builtin{Fn: pathParamFunc}},
+		{"render_template", &object.Builtin{Fn: renderTemplateFunc}},
+	}...)
 }
 
 func httpGet(args ...object.Object) object.Object {
@@ -95,7 +111,8 @@ func httpServe(args ...object.Object) object.Object {
 		return newError("VM Executor not initialized")
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// 1. Build Request Object (Hash)
 		reqHash := &object.Hash{Pairs: make(map[object.HashKey]object.HashPair)}
 
@@ -114,9 +131,23 @@ func httpServe(args ...object.Object) object.Object {
 
 		// 2. Execute Jabline Handler
 		// We expect the handler to return a Hash: { status: 200, body: "...", headers: {...} }
+		if os.Getenv("JABLINE_DEBUG_HTTP") == "1" {
+			fmt.Printf("[DEBUG] Dispatching %s %s to Jabline handler\n", r.Method, r.URL.String())
+		}
 		result := Executor(handlerClosure, []object.Object{reqHash})
+		if os.Getenv("JABLINE_DEBUG_HTTP") == "1" {
+			fmt.Printf("[DEBUG] Handler returned: %s\n", result.Inspect())
+		}
 
-		// 3. Process Response
+		// 3. Process Response — resolve any nested async channels
+		for {
+			chanObj, isChan := result.(*object.Channel)
+			if !isChan {
+				break
+			}
+			result = <-chanObj.Value
+		}
+
 		if result.Type() == object.ERROR_OBJ {
 			http.Error(w, result.Inspect(), http.StatusInternalServerError)
 			return
@@ -152,17 +183,78 @@ func httpServe(args ...object.Object) object.Object {
 			}
 		}
 
-		// Headers (Optional implementation later)
+		// Headers
+		headersKey := &object.String{Value: "headers"}
+		if pair, ok := respHash.Pairs[headersKey.HashKey()]; ok {
+			if headersHash, ok := pair.Value.(*object.Hash); ok {
+				for _, hpair := range headersHash.Pairs {
+					if k, ok := hpair.Key.(*object.String); ok {
+						if v, ok := hpair.Value.(*object.String); ok {
+							w.Header().Set(k.Value, v.Value)
+						}
+					}
+				}
+			}
+		}
 
 		w.WriteHeader(status)
 		w.Write([]byte(body))
 	})
 
 	fmt.Printf("Jabline HTTP Server listening on %s\n", port)
-	err := http.ListenAndServe(port, nil)
-	if err != nil {
+	server := &http.Server{Addr: port, Handler: mux}
+	if err := server.ListenAndServe(); err != nil {
 		return newError("server error: %s", err)
 	}
-
 	return &object.Null{}
 }
+
+// pathSegmentsFunc splits a URL path into non-empty segments.
+// path_segments("/users/:id") → ["users", ":id"]
+// path_segments("/users/1?foo=bar") → ["users", "1"]
+func pathSegmentsFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("path_segments expects 1 argument (path)")
+	}
+	pathStr, ok := args[0].(*object.String)
+	if !ok {
+		return newError("path_segments: argument must be a string")
+	}
+
+	// Strip query string
+	rawPath := pathStr.Value
+	if idx := strings.Index(rawPath, "?"); idx != -1 {
+		rawPath = rawPath[:idx]
+	}
+
+	parts := strings.Split(rawPath, "/")
+	var elements []object.Object
+	for _, p := range parts {
+		if p != "" {
+			elements = append(elements, &object.String{Value: p})
+		}
+	}
+	if elements == nil {
+		elements = []object.Object{}
+	}
+	return &object.Array{Elements: elements}
+}
+
+// pathParamFunc extracts a named param from a pattern segment.
+// path_param(":id") → "id"   (strips leading ":")
+// path_param("users") → ""   (not a param → empty string)
+func pathParamFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("path_param expects 1 argument")
+	}
+	seg, ok := args[0].(*object.String)
+	if !ok {
+		return newError("path_param: argument must be a string")
+	}
+	if strings.HasPrefix(seg.Value, ":") {
+		return &object.String{Value: seg.Value[1:]}
+	}
+	return &object.String{Value: ""}
+}
+
+

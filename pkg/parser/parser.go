@@ -65,16 +65,19 @@ func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
 	// Register specific numeric type keywords as type cast expressions
-	p.registerPrefix(token.INT8_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.INT16_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.INT32_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.INT64_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.UINT8_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.UINT16_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.UINT32_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.UINT64_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.FLOAT32_TYPE, p.parseTypeCastExpression)
-	p.registerPrefix(token.FLOAT64_TYPE, p.parseTypeCastExpression)
+	p.registerPrefix(token.INT8_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.INT16_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.INT32_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.INT64_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.UINT8_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.UINT16_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.UINT32_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.UINT64_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.FLOAT32_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.FLOAT64_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.INT_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.STRING_TYPE, p.parseTypeKeywordExpression)
+	p.registerPrefix(token.BOOL_TYPE, p.parseTypeKeywordExpression)
 }
 
 func (p *Parser) registerInfixFunctions() {
@@ -96,7 +99,7 @@ func (p *Parser) registerInfixFunctions() {
 	p.registerInfix(token.SHIFT_RIGHT, p.parseInfixExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
-	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseGenericOrComparison)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LT_EQ, p.parseInfixExpression)
 	p.registerInfix(token.GT_EQ, p.parseInfixExpression)
@@ -106,6 +109,7 @@ func (p *Parser) registerInfixFunctions() {
 	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
 	p.registerInfix(token.DECREMENT, p.parsePostfixExpression)
 	p.registerInfix(token.LBRACE, p.parseStructLiteralInfix)
+	p.registerInfix(token.PIPE, p.parsePipeExpression)
 }
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {

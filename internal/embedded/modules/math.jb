@@ -1,0 +1,63 @@
+import * as native from "_math"
+
+export let PI = 3.141592653589793;
+export let E = 2.718281828459045;
+
+// Native Exports
+export fn abs(self, x) { return native["abs"](x); }
+export fn sqrt(self, x) { return native["sqrt"](x); }
+export fn pow(self, x, y) { return native["pow"](x, y); }
+export fn sin(self, x) { return native["sin"](x); }
+export fn cos(self, x) { return native["cos"](x); }
+export fn tan(self, x) { return native["tan"](x); }
+export fn max(self, x, y) { return native["max"](x, y); }
+export fn min(self, x, y) { return native["min"](x, y); }
+export fn floor(self, x) { return native["floor"](x); }
+export fn ceil(self, x) { return native["ceil"](x); }
+export fn round(self, x) { return native["round"](x); }
+export fn random(self) { return native["random"](); }
+export fn log(self, x) { return native["log"](x); }
+export fn log10(self, x) { return native["log10"](x); }
+export fn exp(self, x) { return native["exp"](x); }
+export fn atan2(self, y, x) { return native["atan2"](y, x); }
+export fn asin(self, x) { return native["asin"](x); }
+export fn acos(self, x) { return native["acos"](x); }
+export fn hypot(self, x, y) { return native["hypot"](x, y); }
+
+// Jabline Implementation
+export fn factorial(self, n) {
+    if (n <= 1) { return 1; }
+    return n * self.factorial(n - 1);
+}
+
+export let gcd = fn(self, a, b) {
+    while (b != 0) {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+};
+
+export let lcm = fn(self, a, b) {
+    if (a == 0 || b == 0) { return 0; }
+    return self.abs(a * b) / self.gcd(a, b);
+};
+
+export let degrees = fn(self, rad) {
+    return rad * (180.0 / PI);
+};
+
+export let radians = fn(self, deg) {
+    return deg * (PI / 180.0);
+};
+
+export let clamp = fn(self, val, min_val, max_val) {
+    if (val < min_val) { return min_val; }
+    if (val > max_val) { return max_val; }
+    return val;
+};
+
+export let lerp = fn(self, a, b, t) {
+    return a + (b - a) * t;
+};

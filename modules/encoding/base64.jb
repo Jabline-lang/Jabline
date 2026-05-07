@@ -1,4 +1,0 @@
-import * as native from "_encoding"
-
-export let encode = native.base64Encode
-export let decode = native.base64Decode

@@ -1,0 +1,77 @@
+import * as encoding from "_encoding";
+
+/**
+ * RPC Server - Gestiona el registro y ejecución de funciones remotas
+ */
+export fn server() {
+    let registry = {};
+
+    return {
+        "register": fn(self, name, handler) {
+            registry[name] = handler;
+            return true;
+        },
+
+        // Handler compatible con net/http/router
+        "handle": fn(self, req) {
+            echo("   [RPC-Server] Recibida petición: " + req["method"] + " " + req["url"] + " (body len: " + toString(len(req["body"])) + ")");
+            if (req["method"] != "POST") {
+                return { "status": 405, "body": "Method Not Allowed" };
+            }
+
+            // Desempaquetar la solicitud (esperamos binary pack)
+            let payload = encoding["unpack"](req["body"]);
+            if (is_error(payload)) {
+                return { "status": 400, "body": "Bad Request: Invalid encoding" };
+            }
+
+            let methodName = payload["method"];
+            let args = payload["args"];
+
+            if (!registry[methodName]) {
+                return { "status": 404, "body": "RPC Method Not Found: " + methodName };
+            }
+
+            // Ejecutar la función
+            let result = registry[methodName](args);
+            
+            // Empaquetar resultado
+            let responseBody = encoding["pack"](result);
+            
+            return {
+                "status": 200,
+                "body": responseBody
+            };
+        }
+    };
+}
+
+/**
+ * RPC Client - Realiza llamadas remotas
+ */
+export fn client(url) {
+    return {
+        "url": url,
+        
+        "call": fn(self, methodName, args) {
+            let payload = {
+                "method": methodName,
+                "args": args
+            };
+
+            // Serializar solicitud
+            let body = encoding["pack"](payload);
+            
+            // Realizar petición HTTP POST
+            import * as _http from "_http";
+            let response = _http["post"](self["url"], body, "application/octet-stream");
+            
+            if (is_error(response)) {
+                return response;
+            }
+
+            // Deserializar respuesta
+            return encoding["unpack"](response);
+        }
+    };
+}
