@@ -42,6 +42,9 @@ func (vm *VM) opSetProperty() error {
 		if !ok {
 			return fmt.Errorf("property name must be string, got %s", index.Type())
 		}
+		if obj.Fields == nil {
+			obj.Fields = make(map[string]object.Object)
+		}
 		obj.Fields[key.Value] = val
 		return nil
 
@@ -50,9 +53,8 @@ func (vm *VM) opSetProperty() error {
 		if !ok {
 			return fmt.Errorf("property name must be string, got %s", index.Type())
 		}
-		if _, exists := obj.Config[key.Value]; !exists {
-			// You can decide whether to allow adding new properties or just updating existing ones.
-			// Let's allow updating/adding to Config.
+		if obj.Config == nil {
+			obj.Config = make(map[string]object.Object)
 		}
 		obj.Config[key.Value] = val
 		return nil
@@ -61,6 +63,9 @@ func (vm *VM) opSetProperty() error {
 		key, ok := index.(object.Hashable)
 		if !ok {
 			return fmt.Errorf("unusable as hash key: %s", index.Type())
+		}
+		if obj.Pairs == nil {
+			obj.Pairs = make(map[object.HashKey]object.HashPair)
 		}
 		obj.Pairs[key.HashKey()] = object.HashPair{Key: index, Value: val}
 		return nil

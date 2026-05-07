@@ -194,3 +194,56 @@ func (dc *DefaultClause) String() string {
 	}
 	return out
 }
+
+type MatchStatement struct {
+	Token      token.Token
+	Expression Expression
+	Cases      []*MatchCase
+}
+
+func (ms *MatchStatement) statementNode()       {}
+func (ms *MatchStatement) TokenLiteral() string { return ms.Token.Literal }
+func (ms *MatchStatement) String() string {
+	out := "match (" + ms.Expression.String() + ") {"
+	for _, c := range ms.Cases {
+		out += c.String()
+	}
+	out += "}"
+	return out
+}
+
+type MatchCase struct {
+	Token      token.Token
+	Pattern    Expression // Can be literal, identifier (type), or array (structural)
+	IsDefault  bool
+	Statements []Statement
+}
+
+func (mc *MatchCase) statementNode()       {}
+func (mc *MatchCase) TokenLiteral() string { return mc.Token.Literal }
+func (mc *MatchCase) String() string {
+	out := ""
+	if mc.IsDefault {
+		out += "default"
+	} else {
+		out += "case " + mc.Pattern.String()
+	}
+	out += ":"
+	for _, stmt := range mc.Statements {
+	out += stmt.String()
+	}
+	return out
+}
+
+func (node *RetryStatement) GetToken() token.Token { return node.Token }
+func (node *IfExpression) GetToken() token.Token { return node.Token }
+func (node *WhileStatement) GetToken() token.Token { return node.Token }
+func (node *ForStatement) GetToken() token.Token { return node.Token }
+func (node *ForEachStatement) GetToken() token.Token { return node.Token }
+func (node *TryStatement) GetToken() token.Token { return node.Token }
+func (node *ThrowStatement) GetToken() token.Token { return node.Token }
+func (node *SwitchStatement) GetToken() token.Token { return node.Token }
+func (node *CaseClause) GetToken() token.Token { return node.Token }
+func (node *DefaultClause) GetToken() token.Token { return node.Token }
+func (node *MatchStatement) GetToken() token.Token { return node.Token }
+func (node *MatchCase) GetToken() token.Token { return node.Token }

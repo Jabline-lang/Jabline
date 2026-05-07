@@ -51,13 +51,16 @@ func Deserialize(data []byte) (*Bytecode, error) {
 }
 
 func registerTypes() {
-
 	gob.Register(&object.Integer{})
+	gob.Register(&object.Float{})
 	gob.Register(&object.String{})
 	gob.Register(&object.Boolean{})
 	gob.Register(&object.Null{})
 	gob.Register(&object.CompiledFunction{})
 	gob.Register(&object.Closure{})
 	gob.Register(&object.Channel{})
-
+	gob.Register(&object.Array{})
+	gob.Register(&object.Hash{})
+	gob.Register(&object.Struct{})
+	gob.Register(&object.Instance{})
 }

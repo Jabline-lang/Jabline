@@ -1,0 +1,16 @@
+// Native FFI module for Jabline
+// Allows calling functions from dynamic libraries (.dll, .so, .dylib).
+
+export fn load(path) {
+    let handle = __native_ffi_load(path);
+    
+    return {
+        "handle": handle,
+        "path": path,
+        "call": fn(self, funcName, retType, args) {
+            // El primer argumento 'self' es pasado automáticamente por Jabline
+            // al usar la sintaxis de punto (objeto.metodo)
+            return __native_ffi_call_array(handle, funcName, retType, args);
+        }
+    };
+}

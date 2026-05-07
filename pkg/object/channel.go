@@ -1,9 +1,13 @@
 package object
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 type Channel struct {
-	Value chan Object
+	Value  chan Object
+	Cancel context.CancelFunc
 }
 
 func (c *Channel) Type() ObjectType { return CHANNEL_OBJ }

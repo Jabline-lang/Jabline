@@ -1,10 +1,25 @@
 package stdlib
 
 import (
+	"bufio"
 	"fmt"
 	"jabline/pkg/object"
+	"os"
 	"strconv"
 )
+
+// Global test stats for the current test run
+var (
+	TestPassed = 0
+	TestFailed = 0
+	TestTotal  = 0
+)
+
+func ResetTestResults() {
+	TestPassed = 0
+	TestFailed = 0
+	TestTotal = 0
+}
 
 var Registry = []struct {
 	Name   string
@@ -41,6 +56,27 @@ var Registry = []struct {
 	{"values", &object.Builtin{Fn: valuesFunc}},
 	{"is_error", &object.Builtin{Fn: isErrorFunc}},
 	{"Error", &object.Builtin{Fn: errorFunc}}, // Native Constructor
+	{"panic", &object.Builtin{Fn: panicFunc}},
+	{"cancel", &object.Builtin{Fn: cancelProcessFunc}},
+	{"input", &object.Builtin{Fn: inputFunc}},
+	{"__register_test_results", &object.Builtin{Fn: registerTestResultsFunc}},
+	// JSON globals (always available)
+	{"parse",           &object.Builtin{Fn: jsonParse}},
+	{"stringify",       &object.Builtin{Fn: jsonStringify}},
+}
+
+func cancelProcessFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments. got=%d, want=1", len(args))
+	}
+	ch, ok := args[0].(*object.Channel)
+	if !ok {
+		return newError("argument to `cancel` must be a process, got %s", args[0].Type())
+	}
+	if ch.Cancel != nil {
+		ch.Cancel()
+	}
+	return &object.Null{}
 }
 
 func errorFunc(args ...object.Object) object.Object {
@@ -63,11 +99,48 @@ func isErrorFunc(args ...object.Object) object.Object {
 	return &object.Boolean{Value: ok}
 }
 
+func recoverFunc(args ...object.Object) object.Object {
+	return &object.Null{} // Placeholder, VM handles this by name
+}
+
 func init() {
-	// ... (rest is same)
+	for i := range Registry {
+		if b, ok := Registry[i].Object.(*object.Builtin); ok {
+			b.Name = Registry[i].Name
+		}
+	}
+
+	// Register Concurrency builtins globally (channels, etc.)
+	Registry = append(Registry, ConcurrencyBuiltins...)
+	Registry = append(Registry, CryptoBuiltins...)
+	Registry = append(Registry, FFIBuiltins...)
+
+	GlobalModules = make(map[string]*object.Hash)
+	nativeModules := []string{"_strings", "_math", "_json", "_os", "_fs", "_http", "_db"}
+	for _, modName := range nativeModules {
+		if modHash := GetNativeModule(modName); modHash != nil {
+			globalName := modName[1:]
+			GlobalModules[globalName] = modHash
+		}
+	}
+
+	// Register Global Modules (like fs, math, os, etc.) in the global Registry
+	for name, obj := range GlobalModules {
+		Registry = append(Registry, struct {
+			Name   string
+			Object object.Object
+		}{name, obj})
+	}
 }
 
 // ... (other funcs)
+
+func panicFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return &object.Panic{Message: "panic called with wrong number of arguments"}
+	}
+	return &object.Panic{Message: args[0].Inspect()}
+}
 
 func setFunc(args ...object.Object) object.Object {
 	if len(args) != 3 {
@@ -203,6 +276,27 @@ func printlnFunc(args ...object.Object) object.Object {
 		fmt.Print(arg.Inspect())
 	}
 	fmt.Println()
+	return &object.Null{}
+}
+
+func inputFunc(args ...object.Object) object.Object {
+	if len(args) > 1 {
+		return newError("wrong number of arguments. got=%d, want=0 or 1", len(args))
+	}
+
+	if len(args) == 1 {
+		fmt.Print(args[0].Inspect())
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return &object.String{Value: scanner.Text()}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return newError("error reading from stdin: %s", err)
+	}
+
 	return &object.Null{}
 }
 
@@ -466,4 +560,22 @@ func valuesFunc(args ...object.Object) object.Object {
 	}
 
 	return &object.Array{Elements: elements}
+}
+func registerTestResultsFunc(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return newError("wrong number of arguments. got=%d, want=2", len(args))
+	}
+
+	passed, ok1 := args[0].(*object.Integer)
+	failed, ok2 := args[1].(*object.Integer)
+
+	if !ok1 || !ok2 {
+		return newError("arguments to `__register_test_results` must be integers")
+	}
+
+	TestPassed = int(passed.Value)
+	TestFailed = int(failed.Value)
+	TestTotal = TestPassed + TestFailed
+
+	return &object.Null{}
 }

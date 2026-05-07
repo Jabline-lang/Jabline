@@ -38,5 +38,35 @@ func (i *Instance) Inspect() string {
 		out += "  " + name + ": " + value.Inspect() + ",\n"
 	}
 	out += "}"
+	out += "}\n"
+	return out
+}
+
+type InterfaceMethod struct {
+	Name       string
+	Parameters []string // We only keep param names for now
+	ReturnType string   // Expected return type name
+}
+
+type Interface struct {
+	Name           string
+	TypeParameters []string
+	Methods        map[string]*InterfaceMethod
+}
+
+func (i *Interface) Type() ObjectType { return INTERFACE_OBJ }
+func (i *Interface) Inspect() string {
+	out := "interface " + i.Name + " {\n"
+	for name, method := range i.Methods {
+		out += "  " + name + "("
+		for j, p := range method.Parameters {
+			out += p
+			if j < len(method.Parameters)-1 {
+				out += ", "
+			}
+		}
+		out += "): " + method.ReturnType + "\n"
+	}
+	out += "}"
 	return out
 }

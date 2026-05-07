@@ -36,7 +36,7 @@ func (p *Parser) parseFunctionStatement() ast.Statement {
 
 	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
-	if p.peekTokenIs(token.LBRACKET) {
+	if p.peekTokenIs(token.LT) {
 		p.nextToken()
 		stmt.TypeParameters = p.parseTypeParameters()
 	}
@@ -66,7 +66,7 @@ func (p *Parser) parseFunctionStatement() ast.Statement {
 func (p *Parser) parseFunctionLiteral() ast.Expression {
 	lit := &ast.FunctionLiteral{Token: p.curTok}
 
-	if p.peekTokenIs(token.LBRACKET) {
+	if p.peekTokenIs(token.LT) {
 		p.nextToken()
 		lit.TypeParameters = p.parseTypeParameters()
 	}
@@ -187,7 +187,7 @@ func (p *Parser) parseStructStatement() ast.Statement {
 
 	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
-	if p.peekTokenIs(token.LBRACKET) {
+	if p.peekTokenIs(token.LT) {
 		p.nextToken()
 		stmt.TypeParameters = p.parseTypeParameters()
 	}
@@ -199,6 +199,76 @@ func (p *Parser) parseStructStatement() ast.Statement {
 	stmt.Fields = p.parseStructFields()
 
 	return stmt
+}
+
+func (p *Parser) parseInterfaceStatement() ast.Statement {
+	stmt := &ast.InterfaceStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	if p.peekTokenIs(token.LT) {
+		p.nextToken()
+		stmt.TypeParameters = p.parseTypeParameters()
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.Methods = p.parseInterfaceMethods()
+
+	return stmt
+}
+
+func (p *Parser) parseInterfaceMethods() map[string]*ast.FunctionSignature {
+	methods := make(map[string]*ast.FunctionSignature)
+
+	if p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		return methods
+	}
+
+	p.nextToken()
+
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		if p.curTok.Type != token.IDENT {
+			p.addError("expected method name identifier, got %s", p.curTok.Literal)
+			return nil
+		}
+
+		sig := &ast.FunctionSignature{
+			Token: p.curTok,
+			Name:  p.curTok.Literal,
+		}
+
+		if p.peekTokenIs(token.LPAREN) {
+			p.nextToken() // avanza al (
+			sig.Parameters = p.parseFunctionParameters()
+		} else {
+			p.addError("expected '(' after method name in interface, got %s", p.peekTok.Literal)
+			return nil
+		}
+
+		if p.peekTokenIs(token.COLON) {
+			p.nextToken() // avanza a :
+			p.nextToken() // avanza al tipo
+			sig.ReturnType = p.parseTypeExpression()
+		}
+
+		methods[sig.Name] = sig
+
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+		}
+
+		p.nextToken()
+	}
+
+	return methods
 }
 
 func (p *Parser) parseStructFields() map[string]*ast.TypeExpression {
@@ -351,8 +421,8 @@ func (p *Parser) parseTypeExpression() *ast.TypeExpression {
 		return &ast.TypeExpression{Token: p.curTok, Value: "bool"}
 	case token.IDENT:
 		te := &ast.TypeExpression{Token: p.curTok, Value: p.curTok.Literal}
-		if p.peekTokenIs(token.LBRACKET) {
-			p.nextToken() // move to [
+		if p.peekTokenIs(token.LT) {
+			p.nextToken() // move to <
 			te.Arguments = p.parseTypeArguments()
 		}
 		return te
@@ -365,7 +435,7 @@ func (p *Parser) parseTypeExpression() *ast.TypeExpression {
 func (p *Parser) parseTypeArguments() []*ast.TypeExpression {
 	args := []*ast.TypeExpression{}
 
-	if p.peekTokenIs(token.RBRACKET) {
+	if p.peekTokenIs(token.GT) {
 		p.nextToken()
 		return args
 	}
@@ -379,7 +449,7 @@ func (p *Parser) parseTypeArguments() []*ast.TypeExpression {
 		args = append(args, p.parseTypeExpression())
 	}
 
-	if !p.expectPeek(token.RBRACKET) {
+	if !p.expectPeek(token.GT) {
 		return nil
 	}
 
@@ -389,7 +459,7 @@ func (p *Parser) parseTypeArguments() []*ast.TypeExpression {
 func (p *Parser) parseTypeParameters() []*ast.Identifier {
 	identifiers := []*ast.Identifier{}
 
-	if p.peekTokenIs(token.RBRACKET) {
+	if p.peekTokenIs(token.GT) {
 		p.nextToken()
 		return identifiers
 	}
@@ -405,7 +475,7 @@ func (p *Parser) parseTypeParameters() []*ast.Identifier {
 		identifiers = append(identifiers, ident)
 	}
 
-	if !p.expectPeek(token.RBRACKET) {
+	if !p.expectPeek(token.GT) {
 		return nil
 	}
 

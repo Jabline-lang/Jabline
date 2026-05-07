@@ -24,13 +24,13 @@ func (fl *FunctionLiteral) String() string {
 	}
 	out.WriteString(fl.TokenLiteral())
 	if len(fl.TypeParameters) > 0 {
-		out.WriteString("[")
+		out.WriteString("<")
 		tparams := []string{}
 		for _, tp := range fl.TypeParameters {
 			tparams = append(tparams, tp.String())
 		}
 		out.WriteString(strings.Join(tparams, ", "))
-		out.WriteString("]")
+		out.WriteString(">")
 	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
@@ -61,13 +61,13 @@ func (ce *CallExpression) String() string {
 	}
 	out.WriteString(ce.Function.String())
 	if len(ce.TypeArguments) > 0 {
-		out.WriteString("[")
+		out.WriteString("<")
 		targs := []string{}
 		for _, ta := range ce.TypeArguments {
 			targs = append(targs, ta.String())
 		}
 		out.WriteString(strings.Join(targs, ", "))
-		out.WriteString("]")
+		out.WriteString(">")
 	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(args, ", "))
@@ -107,13 +107,13 @@ func (fs *FunctionStatement) String() string {
 
 	out.WriteString(fs.Name.String())
 	if len(fs.TypeParameters) > 0 {
-		out.WriteString("[")
+		out.WriteString("<")
 		tparams := []string{}
 		for _, tp := range fs.TypeParameters {
 			tparams = append(tparams, tp.String())
 		}
 		out.WriteString(strings.Join(tparams, ", "))
-		out.WriteString("]")
+		out.WriteString(">")
 	}
 	out.WriteString("(")
 	out.WriteString(strings.Join(params, ", "))
@@ -251,3 +251,17 @@ func (ae *AwaitExpression) TokenLiteral() string { return ae.Token.Literal }
 func (ae *AwaitExpression) String() string {
 	return "await " + ae.Value.String()
 }
+
+func (node *FunctionLiteral) GetToken() token.Token { return node.Token }
+
+func (node *CallExpression) GetToken() token.Token { return node.Token }
+
+func (node *FunctionStatement) GetToken() token.Token { return node.Token }
+
+func (node *ArrowFunction) GetToken() token.Token { return node.Token }
+
+func (node *AsyncFunctionStatement) GetToken() token.Token { return node.Token }
+
+func (node *AsyncFunctionLiteral) GetToken() token.Token { return node.Token }
+
+func (node *AwaitExpression) GetToken() token.Token { return node.Token }

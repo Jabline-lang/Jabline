@@ -1,13 +1,26 @@
 package vm
 
 import (
+	"context"
 	"fmt"
+	"io/fs"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
 	"jabline/pkg/stdlib"
 )
 
+// EmbeddedModules can be set from main to bundle the standard library into the binary.
+// It is checked before the OS filesystem when loading modules.
+var EmbeddedModules fs.FS
+
+var GlobalLoader *ModuleLoader
+
+// GlobalVM apunta al VM principal en ejecución.
+// Los forks (HTTP, async, spawn) heredan de él.
+var GlobalVM *VM
+
 func init() {
+	GlobalLoader = NewModuleLoaderWithEmbed(EmbeddedModules)
 	stdlib.Executor = ExecuteClosureBridge
 }
 
@@ -35,6 +48,15 @@ type VM struct {
 	loader   *ModuleLoader
 
 	methods map[string]map[string]*object.Closure
+	Types   map[string]object.Object
+
+	LastError object.Object // Store last encountered error for recover()
+
+	Ctx    context.Context
+	Cancel context.CancelFunc
+
+	Telemetry *Telemetry
+	Debug     *DebugSession
 }
 
 type ExceptionHandler struct {
@@ -44,29 +66,41 @@ type ExceptionHandler struct {
 }
 
 func New(instructions code.Instructions, constants []object.Object, filename string) *VM {
-	return NewWithLoader(instructions, constants, filename, NewModuleLoader())
+	return NewWithLoader(instructions, constants, filename, NewModuleLoaderWithEmbed(EmbeddedModules))
 }
 
 func NewWithLoader(instructions code.Instructions, constants []object.Object, filename string, loader *ModuleLoader) *VM {
 	mainFn := &object.CompiledFunction{Instructions: instructions}
 	mainClosure := &object.Closure{Fn: mainFn}
 	mainFrame := NewFrame(mainClosure, 0)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	frames := make([]*Frame, MaxFrames)
-	frames[0] = mainFrame
-
-	return &VM{
+	vm := &VM{
 		constants:   constants,
 		stack:       make([]object.Object, StackSize),
 		sp:          0,
 		globals:     make([]object.Object, GlobalsSize),
-		frames:      frames,
+		frames:      make([]*Frame, MaxFrames),
 		framesIndex: 1,
 		handlers:    []ExceptionHandler{},
 		filename:    filename,
 		loader:      loader,
 		methods:     make(map[string]map[string]*object.Closure),
+		Types:       make(map[string]object.Object),
+		Ctx:         ctx,
+		Cancel:      cancel,
 	}
+	vm.frames[0] = mainFrame
+
+	// Populate the Types registry with Structs and Interfaces from constants
+	for _, c := range constants {
+		if s, ok := c.(*object.Struct); ok {
+			vm.Types[s.Name] = s
+		} else if i, ok := c.(*object.Interface); ok {
+			vm.Types[i.Name] = i
+		}
+	}
+	return vm
 }
 
 func NewWithGlobalsStore(instructions code.Instructions, constants []object.Object, globals []object.Object, filename string) *VM {
@@ -86,7 +120,16 @@ func (vm *VM) newRuntimeError(format string, a ...interface{}) *RuntimeError {
 
 		if frm.cl != nil && frm.cl.Fn != nil {
 			if frm.cl.Fn.SourceMap != nil {
-				pos = frm.cl.Fn.SourceMap[frm.ip]
+				// Fuzzy lookup: Find the nearest position <= current IP
+				bestIP := -1
+				for ip := range frm.cl.Fn.SourceMap {
+					if ip <= frm.ip && ip > bestIP {
+						bestIP = ip
+					}
+				}
+				if bestIP != -1 {
+					pos = frm.cl.Fn.SourceMap[bestIP]
+				}
 			}
 			if frm.cl.Fn.Name != "" {
 				fnName = frm.cl.Fn.Name
@@ -122,7 +165,9 @@ func (vm *VM) handleNativeError(msg string) error {
 	vm.framesIndex = handler.FrameIndex
 
 	// Convert msg to Error object and push to stack for catch
-	vm.stack[vm.sp] = &object.Error{Message: msg}
+	errObj := &object.Error{Message: msg}
+	vm.LastError = errObj
+	vm.stack[vm.sp] = errObj
 	vm.sp++
 
 	// Jump to catch block (offset by -1 because Run loop increments it)
@@ -151,6 +196,16 @@ func (vm *VM) Run() (err error) {
 	}()
 
 	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
+		// Debug hook
+		if vm.Debug != nil {
+			vm.Debug.OnInstruction(vm)
+		}
+
+		// Context cancellation check
+		if err := vm.Ctx.Err(); err != nil {
+			return vm.newRuntimeError("process explicitly cancelled by context")
+		}
+
 		vm.currentFrame().ip++
 
 		ip = vm.currentFrame().ip
@@ -162,6 +217,10 @@ func (vm *VM) Run() (err error) {
 			if err := vm.opConstant(ins, &ip); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
+		case code.OpConstant8:
+			if err := vm.opConstant8(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
 		case code.OpPop:
 			vm.opPop()
 		case code.OpDup:
@@ -170,6 +229,14 @@ func (vm *VM) Run() (err error) {
 			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod, code.OpBitAnd, code.OpBitOr, code.OpBitXor, code.OpShiftLeft, code.OpShiftRight:
 			if err := vm.opBinary(op); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpFloatAdd, code.OpFloatSub, code.OpFloatMul, code.OpFloatDiv:
+			if err := vm.opFloatBinary(op); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpIntToFloat:
+			if err := vm.opIntToFloat(); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
 		case code.OpTrue:
@@ -212,10 +279,26 @@ func (vm *VM) Run() (err error) {
 			if err := vm.opGetGlobal(ins, &ip); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
+		case code.OpIncGlobal:
+			if err := vm.opIncGlobal(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpDecGlobal:
+			if err := vm.opDecGlobal(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
 		case code.OpSetLocal:
 			vm.opSetLocal(ins, &ip)
 		case code.OpGetLocal:
 			if err := vm.opGetLocal(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpIncLocal:
+			if err := vm.opIncLocal(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpDecLocal:
+			if err := vm.opDecLocal(ins, &ip); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
 		case code.OpGetBuiltin:
@@ -255,6 +338,75 @@ func (vm *VM) Run() (err error) {
 			}
 			continue // Continue loop with the new frame (callee)
 
+		case code.OpCallMethodFast:
+			// methodNameIdx (2 bytes), numArgs (1 byte)
+			methodNameIdx := int(code.ReadUint16(ins[ip+1:]))
+			numArgs := int(ins[ip+3])
+			ip += 3                   // Advance IP past operands
+			vm.currentFrame().ip = ip // Save the updated IP
+
+			methodNameObj := vm.constants[methodNameIdx]
+			receiver := vm.stack[vm.sp-numArgs-1]
+
+			callable, err := vm.getProperty(receiver, methodNameObj)
+			if err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+
+			// Extract closure from BoundMethod or use as is
+			var fn *object.Closure
+			var builtin *object.Builtin
+			switch c := callable.(type) {
+			case *object.BoundMethod:
+				fn = c.Function
+			case *object.Closure:
+				fn = c
+			case *object.Builtin:
+				builtin = c
+			default:
+				var tType string
+				if callable != nil {
+					tType = string(callable.Type())
+				} else {
+					tType = "nil"
+				}
+				return vm.handleNativeError(fmt.Sprintf("method %s is not a function (got %s)", methodNameObj.Inspect(), tType))
+			}
+
+			// Stack Shuffle:
+			// We have [Receiver, Arg1, ..., ArgN]
+			// We need [Callable, Receiver, Arg1, ..., ArgN]
+			// Shift everything up by 1 position
+
+			for len(vm.stack) <= vm.sp {
+				vm.stack = append(vm.stack, nil)
+			}
+
+			for i := vm.sp; i > vm.sp-numArgs-1; i-- {
+				vm.stack[i] = vm.stack[i-1]
+			}
+			
+			if builtin != nil {
+				vm.stack[vm.sp-numArgs-1] = builtin
+			} else {
+				vm.stack[vm.sp-numArgs-1] = fn
+			}
+			vm.sp++
+
+			if builtin != nil {
+				// Execute the builtin directly (numArgs + 1 incorporates self)
+				if err := vm.executeCallBuiltin(builtin, numArgs+1); err != nil {
+					return vm.handleNativeError(err.Error())
+				}
+				continue
+			}
+
+			// Now call executeCallClosure
+			if err := vm.executeCallClosure(fn, numArgs+1, nil); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+			continue // Continue loop with the new frame (callee)
+
 		case code.OpReturnValue:
 			if err := vm.opReturnValue(); err != nil {
 				return vm.handleNativeError(err.Error())
@@ -280,9 +432,16 @@ func (vm *VM) Run() (err error) {
 			if err := vm.opIndex(); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
+		case code.OpIsType:
+			if err := vm.opIsType(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
 		case code.OpCheckType:
 			if err := vm.opCheckType(ins, &ip); err != nil {
-				return vm.handleNativeError(err.Error())
+				if err := vm.handleNativeError(err.Error()); err != nil {
+					return err
+				}
+				continue
 			}
 		case code.OpSendChannel:
 			if err := vm.opSendChannel(); err != nil {
@@ -330,6 +489,18 @@ func (vm *VM) Run() (err error) {
 		case code.OpService:
 			if err := vm.opService(ins, &ip); err != nil {
 				return vm.newRuntimeError("%s", err.Error())
+			}
+		case code.OpMetricInc:
+			if err := vm.opMetricInc(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpTraceStart:
+			if err := vm.opTraceStart(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpTraceEnd:
+			if err := vm.opTraceEnd(); err != nil {
+				return vm.handleNativeError(err.Error())
 			}
 		}
 

@@ -1,0 +1,12 @@
+// Wrapper puro de Jabline de alto nivel para GC stats
+import * as runtime from "_runtime";
+
+// Fuerza la ejecución del Garbage Collector
+export fn gc() {
+    return runtime["gc"]();
+}
+
+// Retorna información detallada de memoria de la VM
+export fn memoryStats() {
+    return runtime["memoryStats"]();
+}

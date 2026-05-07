@@ -31,3 +31,5 @@ func (ss *ServiceStatement) String() string {
 	out.WriteString("}")
 	return out.String()
 }
+
+func (node *ServiceStatement) GetToken() token.Token { return node.Token }

@@ -29,3 +29,5 @@ func (es *EnumStatement) String() string {
 	out.WriteString(" }")
 	return out.String()
 }
+
+func (node *EnumStatement) GetToken() token.Token { return node.Token }

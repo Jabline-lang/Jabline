@@ -1,0 +1,60 @@
+import * as native from "_strings"
+
+// Native Exports
+export let upper = fn(s, str) { return native["upper"](str); };
+export let lower = fn(s, str) { return native["lower"](str); };
+export let contains = fn(s, str, substr) { return native["contains"](str, substr); };
+export let trim = fn(s, str) { return native["trim"](str); };
+export let split = fn(s, str, delim) { return native["split"](str, delim); };
+export let regMatch = fn(s, patt, text) { return native["match"](patt, text); };
+export let replace = fn(s, text, patt, rep) { return native["replace"](text, patt, rep); };
+export let regex_replace = fn(s, text, patt, rep) { return native["regex_replace"](text, patt, rep); };
+export let startsWith = fn(s, str, prefix) { return native["startsWith"](str, prefix); };
+export let endsWith = fn(s, str, suffix) { return native["endsWith"](str, suffix); };
+export let join = fn(s, arr, sep) { return native["join"](arr, sep); };
+export let slice = fn(s, str, start, end) { 
+    if (end == null) { return native["slice"](str, start); }
+    return native["slice"](str, start, end); 
+};
+export let indexOf = fn(s, str, sub) { return native["indexOf"](str, sub); };
+
+// Jabline Implementation
+export fn capitalize(self, s) {
+    if (len(s) == 0) { return s; }
+    let first = self.upper(s[0]);
+    
+    let result = first;
+    let i = 1;
+    while (i < len(s)) {
+        result = result + self.lower(s[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn title(self, s) {
+    let words = self.split(s, " ");
+    let i = 0;
+    while (i < len(words)) {
+        words[i] = self.capitalize(words[i]);
+        i = i + 1;
+    }
+    return self.join(words, " ");
+}
+
+export fn camelCase(self, s) {
+    let words = self.split(self.replace(s, "_", " "), " ");
+    let result = self.lower(words[0]);
+    let i = 1;
+    while (i < len(words)) {
+        result = result + self.capitalize(words[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn snake_case(self, s) {
+    // Basic implementation: replace spaces and hyphens with underscores, then lowercase.
+    let result = self.lower(self.replace(self.replace(s, " ", "_"), "-", "_"));
+    return result;
+}

@@ -200,3 +200,17 @@ func (res *ReExportStatement) String() string {
 	out += " } from " + res.ModuleName.String()
 	return out
 }
+
+func (node *ImportItem) GetToken() token.Token { return token.Token{} }
+
+func (node *ImportStatement) GetToken() token.Token { return node.Token }
+
+func (node *ExportItem) GetToken() token.Token { return token.Token{} }
+
+func (node *ExportStatement) GetToken() token.Token { return node.Token }
+
+func (node *ModuleResolver) GetToken() token.Token { return token.Token{} }
+
+func (node *Module) GetToken() token.Token { return token.Token{} }
+
+func (node *ReExportStatement) GetToken() token.Token { return node.Token }

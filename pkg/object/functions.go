@@ -68,7 +68,8 @@ func (f *Function) UpdateCapturedVar(name string, value Object) {
 type BuiltinFunction func(args ...Object) Object
 
 type Builtin struct {
-	Fn BuiltinFunction
+	Fn   BuiltinFunction
+	Name string
 }
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }

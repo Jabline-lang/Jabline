@@ -9,8 +9,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "jabline",
-	Short: "Jabline - A simple programming language",
-	Long: `Jabline is a simple and easy-to-use interpreted programming language.
+	Short: "Jabline - A compiled, cloud-native programming language",
+	Long: `Jabline is a simple and easy-to-use VM-based programming language.
 
 This is the command-line interpreter for Jabline that allows you to:
 - Execute .jb code files
@@ -18,7 +18,7 @@ This is the command-line interpreter for Jabline that allows you to:
 
 To start, try running a file:
   jabline run my_file.jb`,
-	Version: "0.0.1",
+	Version: "0.6.0",
 }
 
 func Execute() {
@@ -30,4 +30,6 @@ func Execute() {
 
 func init() {
 	rootCmd.SetVersionTemplate(`{{printf "%s version %s\n" .Name .Version}}`)
+	// Disable the auto-generated 'completion' command — not needed for end users
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 }

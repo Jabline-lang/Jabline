@@ -7,11 +7,15 @@ import (
 	"os"
 
 	"jabline/cmd"
+	"jabline/internal/embedded"
 	"jabline/pkg/compiler"
 	"jabline/pkg/vm"
 )
 
 func main() {
+	// Wire the embedded standard modules into the VM
+	vm.EmbeddedModules = embedded.Modules
+
 	if tryRunStandalone() {
 		return
 	}
@@ -42,23 +46,31 @@ func tryRunStandalone() bool {
 	}
 
 	_, err = f.Seek(-markerLen, 2)
-	if err != nil { return false }
-	
+	if err != nil {
+		return false
+	}
+
 	markerBuf := make([]byte, markerLen)
 	_, err = f.Read(markerBuf)
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 
 	if !bytes.Equal(markerBuf, cmd.MagicMarker) {
 		return false
 	}
 
 	_, err = f.Seek(-(markerLen + 8), 2)
-	if err != nil { return false }
-	
+	if err != nil {
+		return false
+	}
+
 	sizeBuf := make([]byte, 8)
 	_, err = f.Read(sizeBuf)
-	if err != nil { return false }
-	
+	if err != nil {
+		return false
+	}
+
 	bytecodeSize := int64(binary.LittleEndian.Uint64(sizeBuf))
 
 	bytecodeStart := fileSize - markerLen - 8 - bytecodeSize
@@ -67,11 +79,15 @@ func tryRunStandalone() bool {
 	}
 
 	_, err = f.Seek(bytecodeStart, 0)
-	if err != nil { return false }
-	
+	if err != nil {
+		return false
+	}
+
 	bytecodeData := make([]byte, bytecodeSize)
 	_, err = f.Read(bytecodeData)
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 
 	bytecode, err := compiler.Deserialize(bytecodeData)
 	if err != nil {

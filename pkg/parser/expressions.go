@@ -186,6 +186,52 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return expression
 }
 
+// parseGenericOrComparison disambiguates `<` as either the start of generic
+// type arguments (e.g. Array<string>) or a less-than comparison operator.
+func (p *Parser) parseGenericOrComparison(left ast.Expression) ast.Expression {
+	_, isIdent := left.(*ast.Identifier)
+	if isIdent && p.isTypeStart(p.peekTok) {
+		// This looks like generic type arguments: Ident<Type...>
+		ltTok := p.curTok
+		typeArgs := p.parseTypeArguments()
+		if typeArgs == nil {
+			return nil
+		}
+
+		// If followed by (, it's a generic call: Array<string>()
+		if p.peekTokenIs(token.LPAREN) {
+			p.nextToken() // move to (
+			call := &ast.CallExpression{
+				Token:         p.curTok,
+				Function:      left,
+				TypeArguments: typeArgs,
+			}
+			call.Arguments = p.parseExpressionList(token.RPAREN)
+			return call
+		}
+
+		// If followed by {, it's a generic struct literal: Point<int>{x: 1}
+		if p.peekTokenIs(token.LBRACE) {
+			exp := &ast.InstantiatedExpression{
+				Token:         ltTok,
+				Left:          left,
+				TypeArguments: typeArgs,
+			}
+			return exp
+		}
+
+		// Otherwise just return the instantiated expression
+		return &ast.InstantiatedExpression{
+			Token:         ltTok,
+			Left:          left,
+			TypeArguments: typeArgs,
+		}
+	}
+
+	// Fall back to normal comparison: left < right
+	return p.parseInfixExpression(left)
+}
+
 func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.nextToken()
 
@@ -363,14 +409,6 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 }
 
 func (p *Parser) parseArrayIndexExpression(left ast.Expression) ast.Expression {
-	// Si el token actual es [, el peek podría ser un tipo
-	if p.isTypeStart(p.peekTok.Type) {
-		exp := &ast.InstantiatedExpression{Token: p.curTok, Left: left}
-		// No avanzamos aquí, parseTypeArguments se encarga de saltar el [
-		exp.TypeArguments = p.parseTypeArguments()
-		return exp
-	}
-
 	exp := &ast.ArrayIndexExpression{Token: p.curTok, Left: left}
 	p.nextToken()
 	exp.Index = p.parseExpression(LOWEST)
@@ -382,13 +420,20 @@ func (p *Parser) parseArrayIndexExpression(left ast.Expression) ast.Expression {
 	return exp
 }
 
-func (p *Parser) isTypeStart(t token.TokenType) bool {
-	switch t {
+func (p *Parser) isTypeStart(tok token.Token) bool {
+	switch tok.Type {
 	case token.STRING_TYPE, token.INT_TYPE, token.INT8_TYPE, token.INT16_TYPE,
 		token.INT32_TYPE, token.INT64_TYPE, token.UINT8_TYPE, token.UINT16_TYPE,
 		token.UINT32_TYPE, token.UINT64_TYPE, token.FLOAT_TYPE, token.FLOAT32_TYPE,
-		token.FLOAT64_TYPE, token.BOOL_TYPE, token.IDENT:
+		token.FLOAT64_TYPE, token.BOOL_TYPE:
 		return true
+	case token.IDENT:
+		if len(tok.Literal) > 0 {
+			firstChar := rune(tok.Literal[0])
+			if firstChar >= 'A' && firstChar <= 'Z' {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -587,6 +632,16 @@ func (p *Parser) parseAwaitExpression() ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseTypeKeywordExpression() ast.Expression {
+	tok := p.curTok
+
+	if p.peekTokenIs(token.LPAREN) {
+		return p.parseTypeCastExpression()
+	}
+
+	return &ast.Identifier{Token: tok, Value: tok.Literal}
+}
+
 func (p *Parser) parseTypeCastExpression() ast.Expression {
 	tok := p.curTok // Current token is INT8_TYPE, UINT16_TYPE, etc.
 
@@ -610,4 +665,30 @@ func (p *Parser) parseTypeCastExpression() ast.Expression {
 	}
 
 	return callExp
+}
+
+// parsePipeExpression transforms `x |> f` into `f(x)`.
+// For chaining: `x |> f |> g` becomes `g(f(x))` via left-to-right parsing.
+// The right-hand side must be a callable expression (identifier or function literal).
+func (p *Parser) parsePipeExpression(left ast.Expression) ast.Expression {
+	tok := p.curTok // |> token
+	p.nextToken()   // move past |>
+
+	// Parse the right side (the function to call) at a higher precedence
+	// so that `x |> f(a)` isn't ambiguous — the pipe binds more loosely.
+	right := p.parseExpression(PIPE)
+
+	// If right is already a CallExpression like `f(a, b)`, we inject left
+	// as the FIRST argument: `x |> f(a, b)` → `f(x, a, b)`.
+	if call, ok := right.(*ast.CallExpression); ok {
+		call.Arguments = append([]ast.Expression{left}, call.Arguments...)
+		return call
+	}
+
+	// Otherwise, treat right as a function and call it with left: `f(x)`
+	return &ast.CallExpression{
+		Token:     tok,
+		Function:  right,
+		Arguments: []ast.Expression{left},
+	}
 }

@@ -4,9 +4,9 @@ import (
 	"jabline/pkg/ast"
 	"jabline/pkg/lexer"
 	"jabline/pkg/parser"
-	"sync"
-	"strconv"
 	"regexp"
+	"strconv"
+	"sync"
 
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
@@ -18,18 +18,19 @@ type DocumentSemanticInfo struct {
 	Program     *ast.Program
 	SymbolTable *SymbolTable
 	URI         string
+	Content     string
 }
 
 type WorkspaceSymbolStore struct {
 	Documents map[string]*DocumentSemanticInfo
 	Mutex     sync.RWMutex
-	
+
 	analyzingDocuments map[string]bool
-	analysisMutex sync.Mutex
+	analysisMutex      sync.Mutex
 }
 
 var workspaceStore = &WorkspaceSymbolStore{
-	Documents: make(map[string]*DocumentSemanticInfo),
+	Documents:          make(map[string]*DocumentSemanticInfo),
 	analyzingDocuments: make(map[string]bool),
 }
 
@@ -51,7 +52,6 @@ func (ws *WorkspaceSymbolStore) IsAnalyzingDocument(uri string) bool {
 	return ws.analyzingDocuments[uri]
 }
 
-
 func (ws *WorkspaceSymbolStore) UpdateDocument(uri string, content string, context *glsp.Context) {
 
 	l := lexer.New(content)
@@ -66,6 +66,7 @@ func (ws *WorkspaceSymbolStore) UpdateDocument(uri string, content string, conte
 		Program:     program,
 		SymbolTable: sa.Symbols,
 		URI:         uri,
+		Content:     content,
 	}
 	ws.Mutex.Unlock()
 
