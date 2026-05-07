@@ -13,6 +13,7 @@
 
 # Dependency directories
 vendor/
+node_modules/
 
 # Go workspace file
 go.work
@@ -68,8 +69,13 @@ test_output/
 # Documentation build
 docs/_build/
 
+# Jabline cache and dependencies
+.jb_cache/
+lib/
 
-# Ignore modules directories for maintenance
+# Temporary test/debug scripts
+test_*.go
+test_*.jb
 
-# Modify REAMDE.md
-README1.md
+# Ignore scripts directory
+scripts

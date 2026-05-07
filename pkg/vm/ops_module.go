@@ -2,6 +2,9 @@ package vm
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"jabline/pkg/code"
 	"jabline/pkg/object"
 )
@@ -14,9 +17,21 @@ func (vm *VM) opImport(ins code.Instructions, ip *int) error {
 		return fmt.Errorf("import path must be a string. got=%T", pathObj)
 	}
 
-	module, err := vm.loader.Load(pathStr.Value)
+	moduleName := pathStr.Value
+
+	// Internal module encapsulation: programmers should not use _modules.
+	// Only the Jabline Standard Library can consume and wrap them.
+	if strings.HasPrefix(moduleName, "_") {
+		isInternal := strings.HasPrefix(vm.filename, "std/") ||
+			strings.Contains(filepath.ToSlash(vm.filename), "internal/embedded")
+
+		if !isInternal {
+			return fmt.Errorf("import error: The module '%s' is internal and private to Jabline. Please use the modules in 'std/*'", moduleName)
+		}
+	}
+
+	module, err := vm.loader.Load(moduleName)
 	if err != nil {
-		fmt.Println("DEBUG: Import Error:", err) // <--- Debug
 		return err
 	}
 

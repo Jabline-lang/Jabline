@@ -5,6 +5,7 @@ import "jabline/pkg/token"
 const (
 	_ int = iota
 	LOWEST
+	PIPE
 	NULLISH_COALESCING
 	TERNARY
 	CHANNEL_SEND
@@ -22,6 +23,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.PIPE:               PIPE,
 	token.ARROW_LEFT:         CHANNEL_SEND,
 	token.NULLISH_COALESCING: NULLISH_COALESCING,
 	token.QUESTION:           TERNARY,

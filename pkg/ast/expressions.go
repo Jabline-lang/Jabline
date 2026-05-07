@@ -125,12 +125,32 @@ func (ie *InstantiatedExpression) TokenLiteral() string { return ie.Token.Litera
 func (ie *InstantiatedExpression) String() string {
 	var out strings.Builder
 	out.WriteString(ie.Left.String())
-	out.WriteString("[")
+	out.WriteString("<")
 	args := []string{}
 	for _, arg := range ie.TypeArguments {
 		args = append(args, arg.String())
 	}
 	out.WriteString(strings.Join(args, ", "))
-	out.WriteString("]")
+	out.WriteString(">")
 	return out.String()
 }
+
+func (node *PrefixExpression) GetToken() token.Token { return node.Token }
+
+func (node *InfixExpression) GetToken() token.Token { return node.Token }
+
+func (node *PostfixExpression) GetToken() token.Token { return node.Token }
+
+func (node *ArrayIndexExpression) GetToken() token.Token { return node.Token }
+
+func (node *IndexExpression) GetToken() token.Token { return node.Token }
+
+func (node *TernaryExpression) GetToken() token.Token { return node.Token }
+
+func (node *NullishCoalescingExpression) GetToken() token.Token { return node.Token }
+
+func (node *OptionalChainingExpression) GetToken() token.Token { return node.Token }
+
+func (node *SpawnExpression) GetToken() token.Token { return node.Token }
+
+func (node *InstantiatedExpression) GetToken() token.Token { return node.Token }

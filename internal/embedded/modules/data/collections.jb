@@ -1,0 +1,57 @@
+export struct Stack {
+    items: array
+}
+
+export fn createStack(self) {
+    return Stack{ items: [] };
+}
+
+export fn pushStack(self, s, item) {
+    s.items = push(s.items, item);
+}
+
+export fn popStack(self, s) {
+    if (len(s.items) == 0) { return null; }
+    let lastIdx = len(s.items) - 1;
+    let item = s.items[lastIdx];
+    // Jabline doesn't have an easy way to slice native arrays yet? 
+    // We can use data/arrays.slice if we import it.
+    // For now, let's just use our internal knowledge.
+    
+    // Actually, pop() builtin might remove? No, it usually just returns.
+    // Let's implement pop properly.
+    let newItems = [];
+    let i = 0;
+    while (i < lastIdx) {
+        newItems = push(newItems, s.items[i]);
+        i = i + 1;
+    }
+    s.items = newItems;
+    return item;
+}
+
+export struct Queue {
+    items: array
+}
+
+export fn createQueue(self) {
+    return Queue{ items: [] };
+}
+
+export fn enqueue(self, q, item) {
+    q.items = push(q.items, item);
+}
+
+export fn dequeue(self, q) {
+    if (len(q.items) == 0) { return null; }
+    let item = q.items[0];
+    
+    let newItems = [];
+    let i = 1;
+    while (i < len(q.items)) {
+        newItems = push(newItems, q.items[i]);
+        i = i + 1;
+    }
+    q.items = newItems;
+    return item;
+}

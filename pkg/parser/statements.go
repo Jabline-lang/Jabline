@@ -34,7 +34,10 @@ func (p *Parser) parseStatement() ast.Statement {
 
 	case token.STRUCT:
 		return p.parseStructStatement()
+	case token.INTERFACE:
+		return p.parseInterfaceStatement()
 	case token.BREAK:
+
 		return p.parseBreakStatement()
 	case token.CONTINUE:
 		return p.parseContinueStatement()
@@ -54,6 +57,12 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseExportStatement()
 	case token.ENUM:
 		return p.parseEnumStatement()
+	case token.MATCH:
+		return p.parseMatchStatement()
+	case token.METER:
+		return p.parseMeterStatement()
+	case token.TRACE:
+		return p.parseTraceStatement()
 	default:
 		if p.isAssignmentStatement() {
 			return p.parseFieldAssignmentStatement()
@@ -131,6 +140,10 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curTok}
 
 	p.nextToken()
+
+	if p.curTokenIs(token.SEMICOLON) {
+		return stmt
+	}
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
 
@@ -999,6 +1012,118 @@ func (p *Parser) parseEnumStatement() *ast.EnumStatement {
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+
+	return stmt
+}
+func (p *Parser) parseMatchStatement() *ast.MatchStatement {
+	stmt := &ast.MatchStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+		p.nextToken()
+
+		if p.curTok.Type == token.CASE {
+			matchCase := p.parseMatchCase()
+			if matchCase != nil {
+				stmt.Cases = append(stmt.Cases, matchCase)
+			}
+		} else if p.curTok.Type == token.DEFAULT {
+			matchCase := p.parseMatchCase() // Reusing the same function as it handles default
+			if matchCase != nil {
+				stmt.Cases = append(stmt.Cases, matchCase)
+			}
+		} else {
+			p.addError("expected 'case' or 'default' in match body, got %s", p.curTok.Literal)
+			return nil
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseMatchCase() *ast.MatchCase {
+	clause := &ast.MatchCase{Token: p.curTok}
+
+	if p.curTokenIs(token.DEFAULT) {
+		clause.IsDefault = true
+	} else {
+		p.nextToken()
+		clause.Pattern = p.parseExpression(LOWEST)
+	}
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	// Support optional braced block body: case X: { ... }
+	if p.peekTokenIs(token.LBRACE) {
+		p.nextToken() // consume '{'
+		block := p.parseBlockStatement()
+		if block != nil {
+			clause.Statements = block.Statements
+		}
+	} else {
+		// Unbraced: collect statements until next case/default/closing brace
+		for !p.peekTokenIs(token.CASE) && !p.peekTokenIs(token.DEFAULT) && !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+			p.nextToken()
+			if stmt := p.parseStatement(); stmt != nil {
+				clause.Statements = append(clause.Statements, stmt)
+			}
+		}
+	}
+
+	return clause
+}
+func (p *Parser) parseMeterStatement() *ast.MeterStatement {
+	stmt := &ast.MeterStatement{Token: p.curTok}
+
+	p.nextToken()
+	stmt.Name = p.parseExpression(POSTFIX)
+
+	if p.peekTokenIs(token.INCREMENT) {
+		p.nextToken()
+		stmt.Operator = "++"
+	} else if p.peekTokenIs(token.DECREMENT) {
+		p.nextToken()
+		stmt.Operator = "--"
+	}
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseTraceStatement() *ast.TraceStatement {
+	stmt := &ast.TraceStatement{Token: p.curTok}
+
+	p.nextToken()
+	stmt.Name = p.parseExpression(POSTFIX)
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
 
 	return stmt
 }

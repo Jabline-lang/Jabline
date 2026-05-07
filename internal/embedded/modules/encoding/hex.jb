@@ -1,0 +1,4 @@
+import * as native from "_encoding"
+
+export fn encode(self, x) { return native["hexEncode"](x); }
+export fn decode(self, x) { return native["hexDecode"](x); }

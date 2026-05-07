@@ -65,4 +65,23 @@ var definitions = map[Opcode]*Definition{
 	OpRecvChannel:       {"OpRecvChannel", []int{}},
 	OpCurrentClosure:    {"OpCurrentClosure", []int{}},
 	OpInstantiate:       {"OpInstantiate", []int{1}},
+
+	// Float specific opcodes
+	OpFloatAdd:   {"OpFloatAdd", []int{}},
+	OpFloatSub:   {"OpFloatSub", []int{}},
+	OpFloatMul:   {"OpFloatMul", []int{}},
+	OpFloatDiv:   {"OpFloatDiv", []int{}},
+	OpIntToFloat: {"OpIntToFloat", []int{}},
+	OpIsType:     {"OpIsType", []int{2}},
+
+	// Fast-paths and compression
+	OpConstant8:      {"OpConstant8", []int{1}},
+	OpIncLocal:       {"OpIncLocal", []int{1}},
+	OpDecLocal:       {"OpDecLocal", []int{1}},
+	OpIncGlobal:      {"OpIncGlobal", []int{2}},
+	OpDecGlobal:      {"OpDecGlobal", []int{2}},
+	OpCallMethodFast: {"OpCallMethodFast", []int{2, 1}},
+	OpMetricInc:      {"OpMetricInc", []int{2}},
+	OpTraceStart:     {"OpTraceStart", []int{2}},
+	OpTraceEnd:       {"OpTraceEnd", []int{}},
 }

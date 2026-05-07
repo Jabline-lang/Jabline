@@ -22,6 +22,13 @@ var MathBuiltins = []struct {
 	{"floor", &object.Builtin{Fn: mathFloor}},
 	{"ceil", &object.Builtin{Fn: mathCeil}},
 	{"round", &object.Builtin{Fn: mathRound}},
+	{"log", &object.Builtin{Fn: mathLog}},
+	{"log10", &object.Builtin{Fn: mathLog10}},
+	{"exp", &object.Builtin{Fn: mathExp}},
+	{"atan2", &object.Builtin{Fn: mathAtan2}},
+	{"asin", &object.Builtin{Fn: mathAsin}},
+	{"acos", &object.Builtin{Fn: mathAcos}},
+	{"hypot", &object.Builtin{Fn: mathHypot}},
 }
 
 func mathAbs(args ...object.Object) object.Object {
@@ -194,4 +201,83 @@ func mathRound(args ...object.Object) object.Object {
 		return newError("arg must be number")
 	}
 	return &object.Integer{Value: int64(math.Round(*val))}
+}
+
+func mathLog(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of args")
+	}
+	val := toFloat(args[0])
+	if val == nil {
+		return newError("arg must be number")
+	}
+	return &object.Float{Value: math.Log(*val)}
+}
+
+func mathLog10(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of args")
+	}
+	val := toFloat(args[0])
+	if val == nil {
+		return newError("arg must be number")
+	}
+	return &object.Float{Value: math.Log10(*val)}
+}
+
+func mathExp(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of args")
+	}
+	val := toFloat(args[0])
+	if val == nil {
+		return newError("arg must be number")
+	}
+	return &object.Float{Value: math.Exp(*val)}
+}
+
+func mathAtan2(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return newError("wrong number of args")
+	}
+	y := toFloat(args[0])
+	x := toFloat(args[1])
+	if y == nil || x == nil {
+		return newError("args must be numbers")
+	}
+	return &object.Float{Value: math.Atan2(*y, *x)}
+}
+
+func mathAsin(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of args")
+	}
+	val := toFloat(args[0])
+	if val == nil {
+		return newError("arg must be number")
+	}
+	return &object.Float{Value: math.Asin(*val)}
+}
+
+func mathAcos(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of args")
+	}
+	val := toFloat(args[0])
+	if val == nil {
+		return newError("arg must be number")
+	}
+	return &object.Float{Value: math.Acos(*val)}
+}
+
+func mathHypot(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return newError("wrong number of args")
+	}
+	p := toFloat(args[0])
+	q := toFloat(args[1])
+	if p == nil || q == nil {
+		return newError("args must be numbers")
+	}
+	return &object.Float{Value: math.Hypot(*p, *q)}
 }

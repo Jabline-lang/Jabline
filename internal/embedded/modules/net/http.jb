@@ -1,0 +1,33 @@
+import * as native from "_http"
+import * as router from "net/http/router"
+import * as status from "net/http/status"
+
+// Export native low-level functions
+export let get = fn(self, url) { return native["get"](url); };
+export let post = fn(self, url, body, contentType) { return native["post"](url, body, contentType); };
+
+export let getAsync = fn(self, url) { return async fn() { return native["get"](url); }(); };
+export let postAsync = fn(self, url, body, contentType) { return async fn() { return native["post"](url, body, contentType); }(); };
+
+// Export high-level Router factory
+export let NewRouter = router.createRouter;
+
+// Export Status Codes
+export let Status = status;
+
+// High-level server start function
+// Usage: http.ListenAndServe(8080, r)
+export let ListenAndServe = fn(self, port, handler) {
+    let srv = native["serve"];
+    if (type(handler) == "HASH" && handler["serveHTTP"] != null) {
+        return srv(port, fn(req) {
+            return handler.serveHTTP(req);
+        });
+    }
+    if (type(handler) == "HASH" && handler["dispatch"] != null) {
+        return srv(port, fn(req) {
+            return handler.dispatch(req);
+        });
+    }
+    return srv(port, handler);
+};

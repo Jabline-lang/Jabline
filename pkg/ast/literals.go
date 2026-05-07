@@ -112,3 +112,19 @@ func (hl *HashLiteral) String() string {
 	out.WriteString("}")
 	return out.String()
 }
+
+func (node *IntegerLiteral) GetToken() token.Token { return node.Token }
+
+func (node *FloatLiteral) GetToken() token.Token { return node.Token }
+
+func (node *StringLiteral) GetToken() token.Token { return node.Token }
+
+func (node *TemplateLiteral) GetToken() token.Token { return node.Token }
+
+func (node *Boolean) GetToken() token.Token { return node.Token }
+
+func (node *ArrayLiteral) GetToken() token.Token { return node.Token }
+
+func (node *Null) GetToken() token.Token { return node.Token }
+
+func (node *HashLiteral) GetToken() token.Token { return node.Token }

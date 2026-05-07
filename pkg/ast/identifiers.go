@@ -16,3 +16,5 @@ func (i *Identifier) String() string {
 	}
 	return i.Value
 }
+
+func (node *Identifier) GetToken() token.Token { return node.Token }

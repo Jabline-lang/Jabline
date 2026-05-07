@@ -24,7 +24,7 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 
 	outerSym := c.symbolTable.DefineWithType(fnName, returnType) // Define the function name in the outer scope.
 
-	c.enterScopeWithType(returnType) // Enter the function's new scope
+	c.enterScopeWithType(returnType, true) // Enter the function's new scope
 	c.symbolTable.DefineFunctionName(fnName)
 
 	// Define type parameters in the scope so they are recognized as types
@@ -67,7 +67,7 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions() // Access via getter
-	instructions := c.leaveScope()              // Exit the function's scope
+	instructions, sourceMap := c.leaveScope()   // Exit the function's scope
 
 	for _, s := range freeSymbols {
 		switch s.Scope {
@@ -96,6 +96,7 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 		Instructions:   instructions,
 		NumLocals:      numLocals,
 		NumParameters:  numParams,
+		SourceMap:      sourceMap,
 		Name:           fnName,
 		TypeParameters: typeParams,
 	}
@@ -126,7 +127,7 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 
 	outerSym := c.symbolTable.DefineWithType(node.Name.Value, returnType)
 
-	c.enterScopeWithType(returnType)
+	c.enterScopeWithType(returnType, true)
 	c.symbolTable.DefineFunctionName(node.Name.Value)
 
 	for _, tp := range node.TypeParameters {
@@ -161,7 +162,7 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
-	instructions := c.leaveScope()
+	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
 		c.emit(code.OpGetFree, s.Index)
@@ -176,6 +177,7 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 		Instructions:   instructions,
 		NumLocals:      numLocals,
 		NumParameters:  len(node.Parameters),
+		SourceMap:      sourceMap,
 		IsAsync:        true,
 		Name:           node.Name.Value,
 		TypeParameters: typeParams,

@@ -17,5 +17,6 @@ var lspCmd = &cobra.Command{
 }
 
 func init() {
+	lspCmd.Flags().Bool("stdio", false, "Use stdio (default, kept for compatibility with VSCode LanguageClient)")
 	rootCmd.AddCommand(lspCmd)
 }

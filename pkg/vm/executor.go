@@ -28,19 +28,52 @@ func (vm *VM) executeCall(numArgs int) error {
 	case *object.InstantiatedFunction:
 		return vm.executeCallClosure(callee.Closure, numArgs, callee.TypeArgs)
 	case *object.Builtin:
-		args := vm.stack[vm.sp-numArgs : vm.sp]
+		return vm.executeCallBuiltin(callee, numArgs)
+	default:
+		return fmt.Errorf("calling non-function: %T", callee)
+	}
+}
 
-		result := callee.Fn(args...)
+func (vm *VM) executeCallBuiltin(callee *object.Builtin, numArgs int) error {
+	args := vm.stack[vm.sp-numArgs : vm.sp]
+
+	if callee.Name == "recover" {
+		result := vm.LastError
+		vm.LastError = nil // Clear after recover
 		vm.sp = vm.sp - numArgs - 1
-
 		if result != nil {
 			vm.push(result)
 		} else {
 			vm.push(Null)
 		}
+		return nil
+	}
 
-	default:
-		return fmt.Errorf("calling non-function: %T", callee)
+	result := callee.Fn(args...)
+	
+	// Error handling
+	if errObj, ok := result.(*object.Error); ok {
+		// Builtins returning explicitly Error() objects means we throw natively
+		err := vm.handleNativeError(errObj.Message)
+		if err == nil {
+			return nil
+		}
+		return err
+	}
+
+	if p, ok := result.(*object.Panic); ok {
+		err := vm.handleNativeError(p.Message)
+		if err == nil {
+			return nil // Exception handled, IP already updated
+		}
+		return err
+	}
+	vm.sp = vm.sp - numArgs - 1
+
+	if result != nil {
+		vm.push(result)
+	} else {
+		vm.push(Null)
 	}
 	return nil
 }
@@ -58,11 +91,8 @@ func (vm *VM) executeCallClosure(cl *object.Closure, numArgs int, typeArgs map[s
 	}
 
 	frame := NewFrame(cl, vm.sp-numArgs)
-	if typeArgs != nil {
-		fmt.Printf("DEBUG: executeCallClosure with typeArgs: %+v\n", typeArgs)
-		for k, v := range typeArgs {
-			frame.TypeArgs[k] = v
-		}
+	for k, v := range typeArgs {
+		frame.TypeArgs[k] = v
 	}
 	if cl.Globals != nil {
 		frame.savedGlobals = vm.globals
@@ -72,14 +102,8 @@ func (vm *VM) executeCallClosure(cl *object.Closure, numArgs int, typeArgs map[s
 		frame.savedConstants = vm.constants
 		vm.constants = cl.Constants
 	}
-	vm.pushFrame(frame)
-
-	fmt.Printf("DEBUG: New Frame pushed. BP:%d, SP:%d, NumLocals:%d\n", frame.basePointer, vm.sp, cl.Fn.NumLocals)
-	for i := 0; i < 5; i++ {
-		idx := frame.basePointer + i
-		if idx < vm.sp {
-			fmt.Printf("  stack[%d]: %s\n", idx, vm.stack[idx].Inspect())
-		}
+	if err := vm.pushFrame(frame); err != nil {
+		return err
 	}
 
 	vm.sp = frame.basePointer + cl.Fn.NumLocals
@@ -109,70 +133,84 @@ func (vm *VM) pushClosure(constIndex, numFree int) error {
 }
 
 func (vm *VM) executeIndexExpression(left, index object.Object) error {
-	if left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ {
-		return vm.executeArrayIndex(left, index)
+	obj, err := vm.getProperty(left, index)
+	if err != nil {
+		return err
 	}
-	if left.Type() == object.HASH_OBJ {
-		return vm.executeHashIndex(left, index)
-	}
-	if left.Type() == object.STRING_OBJ && index.Type() == object.INTEGER_OBJ {
-		return vm.executeStringIndex(left, index)
-	}
-	if left.Type() == object.INSTANCE_OBJ && index.Type() == object.STRING_OBJ {
-		return vm.executeInstanceIndex(left, index)
-	}
-	if left.Type() == object.SERVICE_OBJ && index.Type() == object.STRING_OBJ {
-		return vm.executeServiceIndex(left, index)
-	}
-	return fmt.Errorf("index operator not supported: %s", left.Type())
+	return vm.push(obj)
 }
 
-func (vm *VM) executeStringIndex(str, index object.Object) error {
+func (vm *VM) getProperty(left, index object.Object) (object.Object, error) {
+	if left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ {
+		return vm.getArrayIndex(left, index)
+	}
+	if left.Type() == object.HASH_OBJ {
+		return vm.getHashIndex(left, index)
+	}
+	if left.Type() == object.STRING_OBJ && index.Type() == object.INTEGER_OBJ {
+		return vm.getStringIndex(left, index)
+	}
+	if left.Type() == object.INSTANCE_OBJ && index.Type() == object.STRING_OBJ {
+		return vm.getInstanceIndex(left, index)
+	}
+	if left.Type() == object.SERVICE_OBJ && index.Type() == object.STRING_OBJ {
+		return vm.getServiceIndex(left, index)
+	}
+	if left.Type() == object.ERROR_OBJ && index.Type() == object.STRING_OBJ {
+		return vm.getErrorIndex(left, index)
+	}
+	if left.Type() == object.PANIC_OBJ && index.Type() == object.STRING_OBJ {
+		return vm.getPanicIndex(left, index)
+	}
+	return nil, fmt.Errorf("index operator not supported: %s", left.Type())
+}
+
+func (vm *VM) getStringIndex(str, index object.Object) (object.Object, error) {
 	s := str.(*object.String).Value
 	idx := index.(*object.Integer).Value
 	max := int64(len(s) - 1)
 
 	if idx < 0 || idx > max {
-		return vm.push(Null)
+		return nil, fmt.Errorf("runtime error: index out of bounds: %d for string of length %d", idx, len(s))
 	}
 
-	return vm.push(&object.String{Value: string(s[idx])})
+	return &object.String{Value: string(s[idx])}, nil
 }
 
-func (vm *VM) executeArrayIndex(array, index object.Object) error {
+func (vm *VM) getArrayIndex(array, index object.Object) (object.Object, error) {
 	arrayObj := array.(*object.Array)
 	idx := index.(*object.Integer).Value
 	max := int64(len(arrayObj.Elements) - 1)
 
 	if idx < 0 || idx > max {
-		return vm.push(Null)
+		return nil, fmt.Errorf("runtime error: index out of bounds: %d for array of length %d", idx, len(arrayObj.Elements))
 	}
 
-	return vm.push(arrayObj.Elements[idx])
+	return arrayObj.Elements[idx], nil
 }
 
-func (vm *VM) executeHashIndex(hash, index object.Object) error {
+func (vm *VM) getHashIndex(hash, index object.Object) (object.Object, error) {
 	hashObject := hash.(*object.Hash)
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return fmt.Errorf("unusable as hash key: %s", index.Type())
+		return nil, fmt.Errorf("unusable as hash key: %s", index.Type())
 	}
 
 	pair, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
-		return vm.push(Null)
+		return Null, nil
 	}
 
-	return vm.push(pair.Value)
+	return pair.Value, nil
 }
 
-func (vm *VM) executeInstanceIndex(instance, index object.Object) error {
+func (vm *VM) getInstanceIndex(instance, index object.Object) (object.Object, error) {
 	instObj := instance.(*object.Instance)
 	fieldName := index.(*object.String).Value
 
 	val, ok := instObj.Fields[fieldName]
 	if ok {
-		return vm.push(val)
+		return val, nil
 	}
 
 	// Try Method Lookup
@@ -182,28 +220,28 @@ func (vm *VM) executeInstanceIndex(instance, index object.Object) error {
 				Receiver: instance,
 				Function: methodClosure,
 			}
-			return vm.push(boundMethod)
+			return boundMethod, nil
 		}
 	}
 
-	return fmt.Errorf("field or method '%s' not found in instance of '%s'", fieldName, instObj.StructName)
+	return nil, fmt.Errorf("field or method '%s' not found in instance of '%s'", fieldName, instObj.StructName)
 }
 
-func (vm *VM) executeServiceIndex(service, index object.Object) error {
+func (vm *VM) getServiceIndex(service, index object.Object) (object.Object, error) {
 	serviceObj := service.(*object.Service)
 	fieldName := index.(*object.String).Value
 
 	if fieldName == "start" {
-		return vm.push(&object.Builtin{
+		return &object.Builtin{
 			Fn: func(args ...object.Object) object.Object {
 				return vm.StartService(serviceObj)
 			},
-		})
+		}, nil
 	}
 
 	val, ok := serviceObj.Config[fieldName]
 	if ok {
-		return vm.push(val)
+		return val, nil
 	}
 
 	if methods, ok := vm.methods[serviceObj.Name]; ok {
@@ -212,11 +250,33 @@ func (vm *VM) executeServiceIndex(service, index object.Object) error {
 				Receiver: service,
 				Function: methodClosure,
 			}
-			return vm.push(boundMethod)
+			return boundMethod, nil
 		}
 	}
 
-	return fmt.Errorf("field or method '%s' not found in service '%s'", fieldName, serviceObj.Name)
+	return nil, fmt.Errorf("field or method '%s' not found in service '%s'", fieldName, serviceObj.Name)
+}
+
+func (vm *VM) getErrorIndex(errObj, index object.Object) (object.Object, error) {
+	e := errObj.(*object.Error)
+	fieldName := index.(*object.String).Value
+
+	if fieldName == "Message" {
+		return &object.String{Value: e.Message}, nil
+	}
+
+	return nil, fmt.Errorf("field '%s' not found in Error object", fieldName)
+}
+
+func (vm *VM) getPanicIndex(panicObj, index object.Object) (object.Object, error) {
+	p := panicObj.(*object.Panic)
+	fieldName := index.(*object.String).Value
+
+	if fieldName == "Message" {
+		return &object.String{Value: p.Message}, nil
+	}
+
+	return nil, fmt.Errorf("field '%s' not found in Panic object", fieldName)
 }
 
 func (vm *VM) buildArray(startIndex, endIndex int) object.Object {
@@ -263,7 +323,6 @@ func (vm *VM) opInstantiate(ins code.Instructions, ip *int) error {
 	switch o := obj.(type) {
 	case *object.Struct:
 		typeArgsMap := make(map[string]string)
-		fmt.Printf("DEBUG: opInstantiate Struct %s with typeArgs: %+v\n", o.Name, typeArgs)
 		for i, tp := range o.TypeParameters {
 			if i < len(typeArgs) {
 				typeArgsMap[tp] = typeArgs[i]
@@ -276,7 +335,6 @@ func (vm *VM) opInstantiate(ins code.Instructions, ip *int) error {
 		})
 	case *object.Closure:
 		typeArgsMap := make(map[string]string)
-		fmt.Printf("DEBUG: opInstantiate Closure %s with typeArgs: %+v. Fn.TypeParameters: %+v\n", o.Fn.Name, typeArgs, o.Fn.TypeParameters)
 		for i, tp := range o.Fn.TypeParameters {
 			if i < len(typeArgs) {
 				typeArgsMap[tp] = typeArgs[i]
@@ -302,16 +360,18 @@ func (vm *VM) opCheckType(ins code.Instructions, ip *int) error {
 
 	expectedTypeStr := vm.constants[typeIdx].(*object.String).Value
 	frame := vm.currentFrame()
-	fmt.Printf("DEBUG: opCheckType expected:%s actual_val:%s BP:%d\n", expectedTypeStr, val.Inspect(), frame.basePointer)
 
 	// Resolver tipo si es un parámetro genérico
 	if frame.TypeArgs != nil {
 		if resolved, ok := frame.TypeArgs[expectedTypeStr]; ok {
-			fmt.Printf("DEBUG: Resolved %s to %s\n", expectedTypeStr, resolved)
 			expectedTypeStr = resolved
 		}
 	}
 
+	return vm.executeIsType(val, expectedTypeStr)
+}
+
+func (vm *VM) executeIsType(val object.Object, expectedTypeStr string) error {
 	actualTypeStr := string(val.Type())
 
 	// Special mapping for standard names vs internal ObjectType
@@ -328,6 +388,16 @@ func (vm *VM) opCheckType(ins code.Instructions, ip *int) error {
 		return nil
 	}
 
+	// Dynamic Interface Duck Typing Check
+	if typeObj, isType := vm.Types[expectedTypeStr]; isType {
+		if iface, isInterface := typeObj.(*object.Interface); isInterface {
+			if err := vm.checkInterfaceCompliance(val, iface); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
 	// Complex types like Arrays, Maps, Functions could be checked further.
 	// For basic struct instance checking:
 	if actualTypeStr == "INSTANCE" {
@@ -340,6 +410,35 @@ func (vm *VM) opCheckType(ins code.Instructions, ip *int) error {
 
 	if expectedTypeStr != string(actualTypeStr) {
 		return fmt.Errorf("type error: expected type %s, got %s", expectedTypeStr, actualTypeStr)
+	}
+
+	return nil
+}
+
+func (vm *VM) checkInterfaceCompliance(val object.Object, iface *object.Interface) error {
+	inst, ok := val.(*object.Instance)
+	if !ok {
+		return fmt.Errorf("type error: expected object implementing interface '%s', but got base type %s", iface.Name, val.Type())
+	}
+
+	methods, hasMethods := vm.methods[inst.StructName]
+
+	for methodName, requiredMethod := range iface.Methods {
+		// Ensure the method exists
+		if !hasMethods {
+			return fmt.Errorf("type error: object '%s' implements no methods, missing '%s' for interface '%s'", inst.StructName, methodName, iface.Name)
+		}
+		actualClosure, methodExists := methods[methodName]
+		if !methodExists {
+			return fmt.Errorf("type error: object '%s' missing required method '%s' for interface '%s'", inst.StructName, methodName, iface.Name)
+		}
+
+		// Ensure parameter count matches (methods implicitly have 'self' as first param, so subtract 1)
+		actualParams := actualClosure.Fn.NumParameters - 1
+		requiredParams := len(requiredMethod.Parameters)
+		if actualParams != requiredParams {
+			return fmt.Errorf("type error: method '%s' in '%s' requires %d explicit parameters, but interface '%s' expects %d", methodName, inst.StructName, actualParams, iface.Name, requiredParams)
+		}
 	}
 
 	return nil

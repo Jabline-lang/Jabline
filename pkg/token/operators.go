@@ -40,4 +40,6 @@ const (
 
 	NULLISH_COALESCING = "??"
 	OPTIONAL_CHAINING  = "?."
+
+	PIPE = "|>" // Pipe operator: x |> f |> g  =>  g(f(x))
 )

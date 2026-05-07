@@ -135,3 +135,21 @@ type ContinueStatement struct {
 func (cs *ContinueStatement) statementNode()       {}
 func (cs *ContinueStatement) TokenLiteral() string { return cs.Token.Literal }
 func (cs *ContinueStatement) String() string       { return "continue;" }
+
+func (node *LetStatement) GetToken() token.Token { return node.Token }
+
+func (node *ConstStatement) GetToken() token.Token { return node.Token }
+
+func (node *EchoStatement) GetToken() token.Token { return node.Token }
+
+func (node *ExpressionStatement) GetToken() token.Token { return node.Token }
+
+func (node *BlockStatement) GetToken() token.Token { return node.Token }
+
+func (node *ReturnStatement) GetToken() token.Token { return node.Token }
+
+func (node *AssignmentStatement) GetToken() token.Token { return node.Token }
+
+func (node *BreakStatement) GetToken() token.Token { return node.Token }
+
+func (node *ContinueStatement) GetToken() token.Token { return node.Token }

@@ -8,7 +8,26 @@ import (
 	"jabline/pkg/symbol" // New import
 )
 
-func (c *Compiler) compileTemplateLiteral(node *ast.TemplateLiteral) error { return nil }
+func (c *Compiler) compileTemplateLiteral(node *ast.TemplateLiteral) error {
+	for i, part := range node.Parts {
+		// Emit the string part
+		c.emit(code.OpConstant, c.addConstant(&object.String{Value: part}))
+
+		// If this is not the first part, concatenate with previous
+		if i > 0 {
+			c.emit(code.OpAdd)
+		}
+
+		// If there's a corresponding expression, compile and concatenate it
+		if i < len(node.Expressions) {
+			if err := c.Compile(node.Expressions[i]); err != nil {
+				return err
+			}
+			c.emit(code.OpAdd)
+		}
+	}
+	return nil
+}
 func (c *Compiler) compileNullishCoalescingExpression(node *ast.NullishCoalescingExpression) error {
 	if err := c.Compile(node.Left); err != nil {
 		return err
@@ -161,7 +180,152 @@ func (c *Compiler) compilePrefixExpression(node *ast.PrefixExpression) error {
 	return nil
 }
 
+// tryFoldConstants attempts to evaluate a constant expression at compile-time.
+// Returns (result, true) if the fold was successful, (nil, false) otherwise.
+func tryFoldConstants(node *ast.InfixExpression) (object.Object, bool) {
+	left, leftOk := literalToObject(node.Left)
+	right, rightOk := literalToObject(node.Right)
+	if !leftOk || !rightOk {
+		return nil, false
+	}
+
+	switch l := left.(type) {
+	case *object.Integer:
+		r, ok := right.(*object.Integer)
+		if !ok {
+			return nil, false
+		}
+		switch node.Operator {
+		case "+":
+			return &object.Integer{Value: l.Value + r.Value}, true
+		case "-":
+			return &object.Integer{Value: l.Value - r.Value}, true
+		case "*":
+			return &object.Integer{Value: l.Value * r.Value}, true
+		case "/":
+			if r.Value == 0 {
+				return nil, false // Don't fold division by zero
+			}
+			return &object.Integer{Value: l.Value / r.Value}, true
+		case "%":
+			if r.Value == 0 {
+				return nil, false
+			}
+			return &object.Integer{Value: l.Value % r.Value}, true
+		case ">":
+			return &object.Boolean{Value: l.Value > r.Value}, true
+		case "<":
+			return &object.Boolean{Value: l.Value < r.Value}, true
+		case ">=":
+			return &object.Boolean{Value: l.Value >= r.Value}, true
+		case "<=":
+			return &object.Boolean{Value: l.Value <= r.Value}, true
+		case "==":
+			return &object.Boolean{Value: l.Value == r.Value}, true
+		case "!=":
+			return &object.Boolean{Value: l.Value != r.Value}, true
+		case "&":
+			return &object.Integer{Value: l.Value & r.Value}, true
+		case "|":
+			return &object.Integer{Value: l.Value | r.Value}, true
+		case "^":
+			return &object.Integer{Value: l.Value ^ r.Value}, true
+		case "<<":
+			return &object.Integer{Value: l.Value << r.Value}, true
+		case ">>":
+			return &object.Integer{Value: l.Value >> r.Value}, true
+		}
+
+	case *object.Float:
+		var rVal float64
+		switch r := right.(type) {
+		case *object.Float:
+			rVal = r.Value
+		case *object.Integer:
+			rVal = float64(r.Value)
+		default:
+			return nil, false
+		}
+		switch node.Operator {
+		case "+":
+			return &object.Float{Value: l.Value + rVal}, true
+		case "-":
+			return &object.Float{Value: l.Value - rVal}, true
+		case "*":
+			return &object.Float{Value: l.Value * rVal}, true
+		case "/":
+			if rVal == 0 {
+				return nil, false
+			}
+			return &object.Float{Value: l.Value / rVal}, true
+		case ">":
+			return &object.Boolean{Value: l.Value > rVal}, true
+		case "<":
+			return &object.Boolean{Value: l.Value < rVal}, true
+		case ">=":
+			return &object.Boolean{Value: l.Value >= rVal}, true
+		case "<=":
+			return &object.Boolean{Value: l.Value <= rVal}, true
+		case "==":
+			return &object.Boolean{Value: l.Value == rVal}, true
+		case "!=":
+			return &object.Boolean{Value: l.Value != rVal}, true
+		}
+
+	case *object.String:
+		r, ok := right.(*object.String)
+		if !ok {
+			return nil, false
+		}
+		if node.Operator == "+" {
+			return &object.String{Value: l.Value + r.Value}, true
+		}
+		if node.Operator == "==" {
+			return &object.Boolean{Value: l.Value == r.Value}, true
+		}
+		if node.Operator == "!=" {
+			return &object.Boolean{Value: l.Value != r.Value}, true
+		}
+
+	case *object.Boolean:
+		r, ok := right.(*object.Boolean)
+		if !ok {
+			return nil, false
+		}
+		if node.Operator == "==" {
+			return &object.Boolean{Value: l.Value == r.Value}, true
+		}
+		if node.Operator == "!=" {
+			return &object.Boolean{Value: l.Value != r.Value}, true
+		}
+	}
+
+	return nil, false
+}
+
+// literalToObject converts simple AST literal nodes to object values for constant folding.
+func literalToObject(node ast.Node) (object.Object, bool) {
+	switch n := node.(type) {
+	case *ast.IntegerLiteral:
+		return &object.Integer{Value: n.Value}, true
+	case *ast.FloatLiteral:
+		return &object.Float{Value: n.Value}, true
+	case *ast.StringLiteral:
+		return &object.String{Value: n.Value}, true
+	case *ast.Boolean:
+		return &object.Boolean{Value: n.Value}, true
+	}
+	return nil, false
+}
+
 func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
+	// === CONSTANT FOLDING OPTIMIZATION ===
+	// If both sides are compile-time constants, fold them into a single OpConstant.
+	if folded, ok := tryFoldConstants(node); ok {
+		c.emit(code.OpConstant, c.addConstant(folded))
+		return nil
+	}
+
 	if node.Operator == "<" {
 		// Reorder operands for < because we only have OpGreaterThan
 		if err := c.Compile(node.Right); err != nil {
@@ -231,19 +395,51 @@ func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
 	if err := c.Compile(node.Left); err != nil {
 		return err
 	}
+
+	leftType := c.inferType(node.Left)
+	rightType := c.inferType(node.Right)
+
+	// Explicitly promote left if needed
+	if leftType == "int" && rightType == "float" {
+		c.emit(code.OpIntToFloat)
+	}
+
 	if err := c.Compile(node.Right); err != nil {
 		return err
 	}
 
+	// Explicitly promote right if needed
+	if leftType == "float" && rightType == "int" {
+		c.emit(code.OpIntToFloat)
+	}
+
+	isFloatOp := (leftType == "float" || rightType == "float")
+
 	switch node.Operator {
 	case "+":
-		c.emit(code.OpAdd)
+		if isFloatOp {
+			c.emit(code.OpFloatAdd)
+		} else {
+			c.emit(code.OpAdd)
+		}
 	case "-":
-		c.emit(code.OpSub)
+		if isFloatOp {
+			c.emit(code.OpFloatSub)
+		} else {
+			c.emit(code.OpSub)
+		}
 	case "*":
-		c.emit(code.OpMul)
+		if isFloatOp {
+			c.emit(code.OpFloatMul)
+		} else {
+			c.emit(code.OpMul)
+		}
 	case "/":
-		c.emit(code.OpDiv)
+		if isFloatOp {
+			c.emit(code.OpFloatDiv)
+		} else {
+			c.emit(code.OpDiv)
+		}
 	case "%":
 		c.emit(code.OpMod)
 	case ">":
@@ -271,7 +467,24 @@ func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
 	return nil
 }
 
+
 func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
+	// === DEAD CODE ELIMINATION ===
+	// If the condition is a compile-time boolean constant, only emit the live branch.
+	if boolLit, ok := node.Condition.(*ast.Boolean); ok {
+		if boolLit.Value {
+			// Condition is always true: only compile consequence
+			return c.Compile(node.Consequence)
+		}
+		// Condition is always false: only compile alternative (if it exists)
+		if node.Alternative != nil {
+			return c.Compile(node.Alternative)
+		}
+		// No alternative, emit Null
+		c.emit(code.OpNull)
+		return nil
+	}
+
 	if err := c.Compile(node.Condition); err != nil {
 		return err
 	}
@@ -286,6 +499,8 @@ func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
 	// If there is an `else`, we need to jump over it if the `if` was true
 	if c.lastInstructionIs(code.OpPop) {
 		c.removeLastPop()
+	} else if !c.lastInstructionIs(code.OpReturnValue) && !c.lastInstructionIs(code.OpReturn) && !c.lastInstructionIs(code.OpThrow) {
+		c.emit(code.OpNull)
 	}
 
 	// Emit an `OpJump` with a bogus value
@@ -303,6 +518,8 @@ func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
 		}
 		if c.lastInstructionIs(code.OpPop) {
 			c.removeLastPop()
+		} else if !c.lastInstructionIs(code.OpReturnValue) && !c.lastInstructionIs(code.OpReturn) && !c.lastInstructionIs(code.OpThrow) {
+			c.emit(code.OpNull)
 		}
 	}
 
@@ -313,6 +530,35 @@ func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
 }
 
 func (c *Compiler) compileCallExpression(node *ast.CallExpression) error {
+	// Optimization: Detect obj.method(args) and use OpCallMethodFast
+	if indexExpr, ok := node.Function.(*ast.IndexExpression); ok {
+		var methodName string
+		if ident, ok := indexExpr.Index.(*ast.Identifier); ok {
+			methodName = ident.Value
+		} else if lit, ok := indexExpr.Index.(*ast.StringLiteral); ok {
+			methodName = lit.Value
+		}
+
+		if methodName != "" {
+			// 1. Compile the object (receiver)
+			if err := c.Compile(indexExpr.Left); err != nil {
+				return err
+			}
+
+			// 2. Compile arguments
+			for _, arg := range node.Arguments {
+				if err := c.Compile(arg); err != nil {
+					return err
+				}
+			}
+
+			// 3. Emit OpCallMethodFast (methodNameIdx [2 bytes], numArgs [1 byte])
+			methodNameIdx := c.addConstant(&object.String{Value: methodName})
+			c.emit(code.OpCallMethodFast, methodNameIdx, len(node.Arguments))
+			return nil
+		}
+	}
+
 	if err := c.Compile(node.Function); err != nil {
 		return err
 	}
@@ -324,10 +570,6 @@ func (c *Compiler) compileCallExpression(node *ast.CallExpression) error {
 	}
 
 	c.emit(code.OpCall, len(node.Arguments))
-	// c.emit(code.OpPop) // Removed to prevent stack underflow if needed, but standard is to keep it if it's expression statement.
-	// Actually, CallExpression is an expression. It pushes a value.
-	// If it is used as a statement, compileExpressionStatement emits OpPop.
-	// So compileCallExpression should NOT emit OpPop.
 	return nil
 }
 
@@ -337,7 +579,7 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 		returnType = node.ReturnType.Value
 	}
 
-	c.enterScopeWithType(returnType)
+	c.enterScopeWithType(returnType, true)
 
 	for _, tp := range node.TypeParameters {
 		c.symbolTable.DefineType(tp.Value)
@@ -364,7 +606,7 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions() // Access via getter // Corrected
-	instructions := c.leaveScope()
+	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
 		switch s.Scope {
@@ -379,10 +621,17 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 		}
 	}
 
+	typeParams := []string{}
+	for _, tp := range node.TypeParameters {
+		typeParams = append(typeParams, tp.Value)
+	}
+
 	compiledFn := &object.CompiledFunction{
-		Instructions:  instructions,
-		NumLocals:     numLocals,
-		NumParameters: len(node.Parameters),
+		Instructions:   instructions,
+		NumLocals:      numLocals,
+		NumParameters:  len(node.Parameters),
+		SourceMap:      sourceMap,
+		TypeParameters: typeParams,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -395,7 +644,7 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 		returnType = node.ReturnType.Value
 	}
 
-	c.enterScopeWithType(returnType)
+	c.enterScopeWithType(returnType, true)
 
 	for _, tp := range node.TypeParameters {
 		c.symbolTable.DefineType(tp.Value)
@@ -422,7 +671,7 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
-	instructions := c.leaveScope()
+	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
 		switch s.Scope {
@@ -446,6 +695,7 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 		Instructions:   instructions,
 		NumLocals:      numLocals,
 		NumParameters:  len(node.Parameters),
+		SourceMap:      sourceMap,
 		IsAsync:        true,
 		TypeParameters: typeParams,
 	}
@@ -460,7 +710,7 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 		returnType = node.ReturnType.Value
 	}
 
-	c.enterScopeWithType(returnType)
+	c.enterScopeWithType(returnType, true)
 
 	for _, p := range node.Parameters {
 		paramType := ""
@@ -485,7 +735,7 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
-	instructions := c.leaveScope()
+	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
 		switch s.Scope {
@@ -504,6 +754,7 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 		Instructions:  instructions,
 		NumLocals:     numLocals,
 		NumParameters: len(node.Parameters),
+		SourceMap:     sourceMap,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -558,6 +809,46 @@ func (c *Compiler) compileStructLiteral(node *ast.StructLiteral) error {
 
 	// Emit OpInstance with the number of fields as the operand
 	c.emit(code.OpInstance, len(node.Fields))
+
+	return nil
+}
+
+func (c *Compiler) compilePostfixExpression(node *ast.PostfixExpression) error {
+	ident, ok := node.Left.(*ast.Identifier)
+	if !ok {
+		return fmt.Errorf("postfix operator only supported for identifiers")
+	}
+
+	sym, ok := c.symbolTable.Resolve(ident.Value)
+	if !ok {
+		return fmt.Errorf("undefined variable %s", ident.Value)
+	}
+
+	// For postfix, we usually need to return the OLD value if used in an expression.
+	// But if it's a statement, we don't.
+	// However, my OpIncLocal doesn't push anything.
+	// So to maintain correctness as an expression:
+	// 1. Get old value (push to stack)
+	// 2. Inc/Dec in place
+
+	// Compilation:
+	if sym.Scope == symbol.LocalScope {
+		c.emit(code.OpGetLocal, sym.Index) // Push old value
+		if node.Operator == "++" {
+			c.emit(code.OpIncLocal, sym.Index)
+		} else {
+			c.emit(code.OpDecLocal, sym.Index)
+		}
+	} else if sym.Scope == symbol.GlobalScope {
+		c.emit(code.OpGetGlobal, sym.Index) // Push old value
+		if node.Operator == "++" {
+			c.emit(code.OpIncGlobal, sym.Index)
+		} else {
+			c.emit(code.OpDecGlobal, sym.Index)
+		}
+	} else {
+		return fmt.Errorf("postfix operator not supported for scope %s", sym.Scope)
+	}
 
 	return nil
 }

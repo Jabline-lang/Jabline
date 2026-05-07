@@ -3,6 +3,7 @@ package lsp
 import (
 	"fmt"
 	"jabline/pkg/ast"
+	jfmt "jabline/pkg/fmt"
 	"jabline/pkg/token"
 	"os"
 	"strings"
@@ -30,29 +31,130 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	node := path[len(path)-1]
 
 	var content string
+	currentScope := FindCurrentScope(docInfo, path)
+
 	switch n := node.(type) {
 	case *ast.Identifier:
-
-		symbol := docInfo.SymbolTable.RootScope.Get(n.Value)
-		if symbol != nil {
-			content = fmt.Sprintf("**Identifier**: `%s` (Type: `%s`, Kind: `%v`)", symbol.Name, symbol.Type, symbol.Kind)
-		} else {
-			content = fmt.Sprintf("**Identifier**: `%s` (Undefined)", n.Value)
+		if currentScope != nil {
+			symbol := currentScope.Get(n.Value)
+			if symbol != nil {
+				switch symbol.Kind {
+				case protocol.SymbolKindFunction:
+					doc := ""
+					if bd, ok := BuiltinDocs[symbol.Name]; ok {
+						doc = "\n\n" + bd.Description
+					}
+					content = fmt.Sprintf("```jabline\n%s\n```\n_Function_%s", symbol.Type, doc)
+				case protocol.SymbolKindConstant:
+					content = fmt.Sprintf("```jabline\nconst %s: %s\n```", symbol.Name, symbol.Type)
+				case protocol.SymbolKindModule:
+					content = fmt.Sprintf("```jabline\nmodule %s\n```\n_Imported module_", symbol.Name)
+				case protocol.SymbolKindStruct:
+					content = fmt.Sprintf("```jabline\nstruct %s\n```\n_Struct type_", symbol.Name)
+				case protocol.SymbolKindInterface:
+					content = fmt.Sprintf("```jabline\ninterface %s\n```\n_Interface type_", symbol.Name)
+				default:
+					content = fmt.Sprintf("```jabline\nlet %s: %s\n```", symbol.Name, symbol.Type)
+				}
+			} else {
+				content = fmt.Sprintf("⚠️ **Undefined**: `%s`", n.Value)
+			}
 		}
-	case *ast.IntegerLiteral:
-		content = fmt.Sprintf("**Integer**: `%d`", n.Value)
-	case *ast.Boolean:
-		content = fmt.Sprintf("**Boolean**: `%t`", n.Value)
-	case *ast.FunctionLiteral:
-		content = "**Function Definition**"
 	case *ast.LetStatement:
-		content = fmt.Sprintf("**Variable Declaration**: `%s`", n.Name.Value)
+		sym := currentScope.Get(n.Name.Value)
+		doc := "any"
+		if sym != nil {
+			doc = sym.Type
+		}
+		content = fmt.Sprintf("```jabline\nlet %s: %s\n```", n.Name.Value, doc)
 	case *ast.ConstStatement:
-		content = fmt.Sprintf("**Constant Declaration**: `%s`", n.Name.Value)
+		sym := currentScope.Get(n.Name.Value)
+		doc := "any"
+		if sym != nil {
+			doc = sym.Type
+		}
+		content = fmt.Sprintf("```jabline\nconst %s: %s\n```", n.Name.Value, doc)
+	case *ast.FunctionStatement:
+		sig := buildFnSignature(n.Name.Value, n.Parameters, n.ReturnType, false)
+		content = fmt.Sprintf("```jabline\n%s\n```\n_Function declaration_", sig)
+	case *ast.AsyncFunctionStatement:
+		sig := buildFnSignature(n.Name.Value, n.Parameters, n.ReturnType, true)
+		content = fmt.Sprintf("```jabline\n%s\n```\n_Async function declaration_", sig)
+	case *ast.FunctionLiteral:
+		varName := ""
+		for i := len(path) - 2; i >= 0; i-- {
+			if ls, ok2 := path[i].(*ast.LetStatement); ok2 {
+				varName = ls.Name.Value
+				break
+			}
+			if cs, ok2 := path[i].(*ast.ConstStatement); ok2 {
+				varName = cs.Name.Value
+				break
+			}
+		}
+		sig := buildFnSignature(varName, n.Parameters, n.ReturnType, false)
+		label := "_Anonymous function_"
+		if varName != "" {
+			label = "_Function assigned to `" + varName + "`_"
+		}
+		content = fmt.Sprintf("```jabline\n%s\n```\n%s", sig, label)
+	case *ast.AsyncFunctionLiteral:
+		varName := ""
+		for i := len(path) - 2; i >= 0; i-- {
+			if ls, ok2 := path[i].(*ast.LetStatement); ok2 {
+				varName = ls.Name.Value
+				break
+			}
+		}
+		sig := buildFnSignature(varName, n.Parameters, n.ReturnType, true)
+		content = fmt.Sprintf("```jabline\n%s\n```\n_Async function_", sig)
+	case *ast.ArrowFunction:
+		sig := buildFnSignature("", n.Parameters, n.ReturnType, false)
+		content = fmt.Sprintf("```jabline\n%s => ...\n```\n_Arrow function_", sig)
 	case *ast.StructStatement:
-		content = fmt.Sprintf("**Struct Definition**: `%s`", n.Name.Value)
+		fieldLines := ""
+		for fname, typeExpr := range n.Fields {
+			fieldLines += fmt.Sprintf("\n    %s: %s", fname, typeExpr.String())
+		}
+		content = fmt.Sprintf("```jabline\nstruct %s {%s\n}\n```\n_Struct definition_", n.Name.Value, fieldLines)
+	case *ast.InterfaceStatement:
+		content = fmt.Sprintf("```jabline\ninterface %s\n```\n_Interface definition_", n.Name.Value)
+	case *ast.IntegerLiteral:
+		content = fmt.Sprintf("```jabline\n%d\n```\n_int_", n.Value)
+	case *ast.FloatLiteral:
+		content = fmt.Sprintf("```jabline\n%g\n```\n_float_", n.Value)
+	case *ast.Boolean:
+		content = fmt.Sprintf("```jabline\n%t\n```\n_bool_", n.Value)
+	case *ast.StringLiteral:
+		preview := n.Value
+		if len(preview) > 60 {
+			preview = preview[:57] + "..."
+		}
+		content = fmt.Sprintf("```jabline\n\"%s\"\n```\n_string_", preview)
+	case *ast.TemplateLiteral:
+		content = "```jabline\n`...`\n```\n_template string_"
+	case *ast.Null:
+		content = "```jabline\nnull\n```\n_null value_"
+	case *ast.ArrayLiteral:
+		elemCount := len(n.Elements)
+		content = fmt.Sprintf("```jabline\nArray[%d]\n```\n_Array literal with %d element(s)_", elemCount, elemCount)
+	case *ast.HashLiteral:
+		pairCount := len(n.Pairs)
+		content = fmt.Sprintf("```jabline\nHash { %d pair(s) }\n```\n_Hash/object literal_", pairCount)
+	case *ast.ArrayIndexExpression:
+		content = "```jabline\nexpr[index]\n```\n_Array index access_"
+	case *ast.IndexExpression:
+		content = "```jabline\nexpr.member\n```\n_Member access_"
+	case *ast.AwaitExpression:
+		content = "```jabline\nawait expr\n```\n_Awaits a Promise result_"
+	case *ast.SpawnExpression:
+		content = "```jabline\nspawn fn(...)\n```\n_Spawns an async process_"
 	default:
-		content = fmt.Sprintf("**Node**: %T\n`%s`", n, n.TokenLiteral())
+		return nil, nil
+	}
+
+	if content == "" {
+		return nil, nil
 	}
 
 	return &protocol.Hover{
@@ -62,6 +164,7 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 		},
 	}, nil
 }
+
 
 func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionParams) (any, error) {
 	workspaceStore.Mutex.RLock()
@@ -87,7 +190,12 @@ func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionPa
 		return nil, nil
 	}
 
-	symbol := docInfo.SymbolTable.RootScope.Get(ident.Value)
+	currentScope := FindCurrentScope(docInfo, path)
+	if currentScope == nil {
+		return nil, nil
+	}
+
+	symbol := currentScope.Get(ident.Value)
 	if symbol == nil || symbol.Definition == nil {
 		return nil, nil
 	}
@@ -96,21 +204,21 @@ func textDocumentDefinition(context *glsp.Context, params *protocol.DefinitionPa
 
 	switch d := symbol.Definition.(type) {
 	case *ast.Identifier:
-	
-declToken = d.Token
+
+		declToken = d.Token
 
 	case *ast.FunctionStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 	case *ast.LetStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 	case *ast.ConstStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 	case *ast.StructStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 	default:
 		return nil, nil
 	}
@@ -141,7 +249,7 @@ func textDocumentDocumentSymbol(context *glsp.Context, params *protocol.Document
 	var walkScope func(scope *Scope) []protocol.DocumentSymbol
 	walkScope = func(scope *Scope) []protocol.DocumentSymbol {
 		var currentSymbols []protocol.DocumentSymbol
-		
+
 		for _, sym := range scope.Symbols {
 
 			var startTok, endTok token.Token
@@ -158,7 +266,13 @@ func textDocumentDocumentSymbol(context *glsp.Context, params *protocol.Document
 			case *ast.FunctionStatement:
 				startTok = n.Token
 				endTok = n.Body.Token
+			case *ast.AsyncFunctionStatement:
+				startTok = n.Token
+				endTok = n.Body.Token
 			case *ast.StructStatement:
+				startTok = n.Token
+				endTok = n.Name.Token
+			case *ast.InterfaceStatement:
 				startTok = n.Token
 				endTok = n.Name.Token
 			default:
@@ -168,22 +282,45 @@ func textDocumentDocumentSymbol(context *glsp.Context, params *protocol.Document
 			startLine := uint32(startTok.Line - 1)
 			startCol := uint32(startTok.Column - 1)
 			endLine := uint32(endTok.Line - 1)
-			endCol := uint32(endTok.Column + len(endTok.Literal))
+			endCol := uint32(endTok.Column - 1 + len(endTok.Literal))
 
 			rng := protocol.Range{
 				Start: protocol.Position{Line: startLine, Character: startCol},
 				End:   protocol.Position{Line: endLine, Character: endCol},
 			}
-			selectionRng := protocol.Range{
-				Start: protocol.Position{Line: uint32(sym.Location.Start.Line), Character: uint32(sym.Location.Start.Character)},
-				End:   protocol.Position{Line: uint32(sym.Location.End.Line), Character: uint32(sym.Location.End.Character)},
+
+			selectionStartLine := uint32(sym.Location.Start.Line)
+			selectionStartCol := uint32(sym.Location.Start.Character)
+			selectionEndLine := uint32(sym.Location.End.Line)
+			selectionEndCol := uint32(sym.Location.End.Character)
+
+			// Safety check: ensure selectionRange is within rng
+			if selectionStartLine < startLine || (selectionStartLine == startLine && selectionStartCol < startCol) {
+				rng.Start.Line = selectionStartLine
+				rng.Start.Character = selectionStartCol
 			}
-			
+			if selectionEndLine > endLine || (selectionEndLine == endLine && selectionEndCol > endCol) {
+				rng.End.Line = selectionEndLine
+				rng.End.Character = selectionEndCol
+			}
+
+			selectionRng := protocol.Range{
+				Start: protocol.Position{Line: selectionStartLine, Character: selectionStartCol},
+				End:   protocol.Position{Line: selectionEndLine, Character: selectionEndCol},
+			}
+
 			children := []protocol.DocumentSymbol{}
 
 			for _, childScope := range scope.Children {
-
-				if childScope.Node == sym.Definition || (sym.Kind == protocol.SymbolKindFunction && childScope.Node == sym.Definition.(*ast.FunctionStatement).Body) {
+				isChildOfSym := childScope.Node == sym.Definition
+				if !isChildOfSym && sym.Kind == protocol.SymbolKindFunction {
+					if fs, ok := sym.Definition.(*ast.FunctionStatement); ok {
+						isChildOfSym = childScope.Node == fs.Body
+					} else if afs, ok := sym.Definition.(*ast.AsyncFunctionStatement); ok {
+						isChildOfSym = childScope.Node == afs.Body
+					}
+				}
+				if isChildOfSym {
 					children = append(children, walkScope(childScope)...)
 				}
 			}
@@ -196,7 +333,7 @@ func textDocumentDocumentSymbol(context *glsp.Context, params *protocol.Document
 				Children:       children,
 			})
 		}
-		
+
 		for _, childScope := range scope.Children {
 
 			isHandledByParentSymbol := false
@@ -219,18 +356,18 @@ func textDocumentDocumentSymbol(context *glsp.Context, params *protocol.Document
 }
 
 func textDocumentCompletion(context *glsp.Context, params *protocol.CompletionParams) (any, error) {
-
-	keywords := []string{
-		"fn", "let", "const", "return", "if", "else", "true", "false", "for", "while",
-		"struct", "import", "export", "null", "async", "await", "try", "catch", "throw",
-	}
-
 	var items []protocol.CompletionItem
-	for _, kw := range keywords {
-		k := kw
+	snippetFormat := protocol.InsertTextFormatSnippet
+
+	// 1. Keyword/structure snippets with tab stops
+	for _, snip := range KeywordSnippets {
+		s := snip
 		items = append(items, protocol.CompletionItem{
-			Label: k,
-			Kind:  ptr(protocol.CompletionItemKindKeyword),
+			Label:            s.Label,
+			Kind:             ptr(protocol.CompletionItemKindKeyword),
+			Detail:           ptr(s.Detail),
+			InsertText:       ptr(s.InsertText),
+			InsertTextFormat: &snippetFormat,
 		})
 	}
 
@@ -241,60 +378,52 @@ func textDocumentCompletion(context *glsp.Context, params *protocol.CompletionPa
 	if ok && docInfo != nil && docInfo.Program != nil && docInfo.SymbolTable != nil {
 		line := int(params.Position.Line) + 1
 		col := int(params.Position.Character) + 1
-		
-		var currentScope *Scope
 		path := FindPathToNode(docInfo.Program, line, col)
-
-		for i := len(path) - 1; i >= 0; i-- {
-			node := path[i]
-			
-			var foundScope *Scope
-			var findScopeByNode func(s *Scope, target ast.Node) *Scope
-			findScopeByNode = func(s *Scope, target ast.Node) *Scope {
-				if s.Node == target {
-					return s
-				}
-				for _, child := range s.Children {
-					if found := findScopeByNode(child, target); found != nil {
-						return found
-					}
-				}
-				return nil
-			}
-
-			if docInfo.SymbolTable.RootScope.Node == node {
-				foundScope = docInfo.SymbolTable.RootScope
-			} else {
-				foundScope = findScopeByNode(docInfo.SymbolTable.RootScope, node)
-			}
-			
-			if foundScope != nil {
-				currentScope = foundScope
-				break
-			}
-		}
-		
-		if currentScope == nil {
-			currentScope = docInfo.SymbolTable.RootScope
-		}
+		currentScope := FindCurrentScope(docInfo, path)
 
 		visitedSymbols := make(map[string]bool)
 		for scope := currentScope; scope != nil; scope = scope.Parent {
 			for _, sym := range scope.Symbols {
-				if !visitedSymbols[sym.Name] {
-					items = append(items, protocol.CompletionItem{
-						Label: sym.Name,
-						Kind:  ptr(protocol.CompletionItemKind(sym.Kind)),
-						Detail: ptr(sym.Type),
-					})
-					visitedSymbols[sym.Name] = true
+				if visitedSymbols[sym.Name] {
+					continue
 				}
+				visitedSymbols[sym.Name] = true
+
+				item := protocol.CompletionItem{
+					Label:  sym.Name,
+					Kind:   ptr(protocol.CompletionItemKind(sym.Kind)),
+					Detail: ptr(sym.Type),
+				}
+
+				// Add documentation for builtins
+				if doc, isBuiltin := BuiltinDocs[sym.Name]; isBuiltin {
+					item.Documentation = &protocol.MarkupContent{
+						Kind:  protocol.MarkupKindMarkdown,
+						Value: fmt.Sprintf("**%s**\n\n%s", doc.Signature, doc.Description),
+					}
+					// Functions get a snippet with ()
+					if sym.Kind == protocol.SymbolKindFunction {
+						item.InsertText = ptr(sym.Name + "($1)")
+						item.InsertTextFormat = &snippetFormat
+					}
+				} else if sym.Kind == protocol.SymbolKindFunction && sym.Definition != nil {
+					// User-defined function: add signature as doc
+					item.Documentation = &protocol.MarkupContent{
+						Kind:  protocol.MarkupKindMarkdown,
+						Value: fmt.Sprintf("```jabline\n%s\n```", sym.Type),
+					}
+					item.InsertText = ptr(sym.Name + "($1)")
+					item.InsertTextFormat = &snippetFormat
+				}
+
+				items = append(items, item)
 			}
 		}
 	}
 
 	return items, nil
 }
+
 
 func textDocumentSignatureHelp(context *glsp.Context, params *protocol.SignatureHelpParams) (*protocol.SignatureHelp, error) {
 
@@ -306,8 +435,7 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 		return nil, nil
 	}
 
-	content, err := os.ReadFile(params.TextDocument.URI[len("file://"):
-	])
+	content, err := os.ReadFile(params.TextDocument.URI[len("file://"):])
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to read file for signature help: %v", err))
 		return nil, nil
@@ -316,18 +444,18 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 
 	line := int(params.Position.Line) + 1
 	col := int(params.Position.Character) + 1
-	
+
 	path := FindPathToNode(docInfo.Program, line, col)
-	
+
 	var callExpr *ast.CallExpression
-	
+
 	for i := len(path) - 1; i >= 0; i-- {
 		if ce, ok := path[i].(*ast.CallExpression); ok {
 			callExpr = ce
 			break
 		}
 	}
-	
+
 	if callExpr == nil {
 		return nil, nil
 	}
@@ -336,7 +464,7 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 	if !ok {
 		return nil, nil
 	}
-	
+
 	symbol := docInfo.SymbolTable.RootScope.Get(ident.Value)
 	if symbol == nil || symbol.Definition == nil {
 		return nil, nil
@@ -344,7 +472,7 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 
 	var label string
 	var paramsInfo []protocol.ParameterInformation
-	
+
 	switch f := symbol.Definition.(type) {
 	case *ast.FunctionStatement:
 		label = "fn " + f.Name.Value + "("
@@ -371,13 +499,13 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 			})
 		}
 		label += ")"
-	
+
 	default:
 		return nil, nil
 	}
 
 	activeParameter := uint32(0)
-	
+
 	funcIdentifierStartOffset := getTokenByteOffset(funcContent, ident.Token.Line, ident.Token.Column)
 	if funcIdentifierStartOffset == -1 {
 		return nil, nil
@@ -408,16 +536,16 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 
 	if label != "" {
 		return &protocol.SignatureHelp{
-			Signatures: []protocol.SignatureInformation{
-				{
-					Label: label,
-					Parameters: paramsInfo,
+				Signatures: []protocol.SignatureInformation{
+					{
+						Label:      label,
+						Parameters: paramsInfo,
+					},
 				},
+				ActiveSignature: ptr(uint32(0)),
+				ActiveParameter: ptr(activeParameter),
 			},
-			ActiveSignature: ptr(uint32(0)),
-			ActiveParameter: ptr(activeParameter),
-		},
-		nil
+			nil
 	}
 
 	return nil, nil
@@ -459,24 +587,24 @@ func textDocumentReferences(context *glsp.Context, params *protocol.ReferencePar
 		hasDecl := false
 		switch d := symbol.Definition.(type) {
 		case *ast.Identifier:
-		
-declToken = d.Token
+
+			declToken = d.Token
 			hasDecl = true
 		case *ast.FunctionStatement:
-		
-declToken = d.Name.Token
+
+			declToken = d.Name.Token
 			hasDecl = true
 		case *ast.LetStatement:
-		
-declToken = d.Name.Token
+
+			declToken = d.Name.Token
 			hasDecl = true
 		case *ast.ConstStatement:
-		
-declToken = d.Name.Token
+
+			declToken = d.Name.Token
 			hasDecl = true
 		case *ast.StructStatement:
-		
-declToken = d.Name.Token
+
+			declToken = d.Name.Token
 			hasDecl = true
 		}
 
@@ -529,29 +657,29 @@ func textDocumentRename(context *glsp.Context, params *protocol.RenameParams) (*
 	}
 
 	changes := make(map[string][]protocol.TextEdit)
-	
+
 	var declToken token.Token
 	hasDecl := false
 	switch d := symbol.Definition.(type) {
 	case *ast.Identifier:
-	
-declToken = d.Token
+
+		declToken = d.Token
 		hasDecl = true
 	case *ast.FunctionStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 		hasDecl = true
 	case *ast.LetStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 		hasDecl = true
 	case *ast.ConstStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 		hasDecl = true
 	case *ast.StructStatement:
-	
-declToken = d.Name.Token
+
+		declToken = d.Name.Token
 		hasDecl = true
 	}
 
@@ -577,7 +705,36 @@ declToken = d.Name.Token
 	}
 
 	return &protocol.WorkspaceEdit{
-		Changes: changes,
-	},
-	nil
+			Changes: changes,
+		},
+		nil
+}
+func textDocumentFormatting(context *glsp.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
+	workspaceStore.Mutex.RLock()
+	docInfo, ok := workspaceStore.Documents[params.TextDocument.URI]
+	workspaceStore.Mutex.RUnlock()
+
+	if !ok || docInfo == nil || docInfo.Program == nil {
+		return nil, nil
+	}
+
+	formatted := jfmt.Format(docInfo.Program)
+
+	// Calculate range of entire document
+	lines := strings.Split(docInfo.Content, "\n")
+	lineCount := len(lines)
+	lastLineLen := 0
+	if lineCount > 0 {
+		lastLineLen = len(lines[lineCount-1])
+	}
+
+	return []protocol.TextEdit{
+		{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: uint32(lineCount - 1), Character: uint32(lastLineLen)},
+			},
+			NewText: formatted,
+		},
+	}, nil
 }

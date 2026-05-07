@@ -1,0 +1,322 @@
+let testStats = {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": []
+};
+
+export fn resetStats() {
+    testStats["total"] = 0;
+    testStats["passed"] = 0;
+    testStats["failed"] = 0;
+    testStats["errors"] = [];
+}
+
+export fn getStats() {
+    return testStats;
+}
+
+fn reportPass(message) {
+    testStats["total"] = testStats["total"] + 1;
+    testStats["passed"] = testStats["passed"] + 1;
+    echo("✅ PASS: " + message);
+}
+
+fn reportFail(message, expected, actual) {
+    testStats["total"] = testStats["total"] + 1;
+    testStats["failed"] = testStats["failed"] + 1;
+
+    let errorMsg = "❌ FAIL: " + message;
+    errorMsg = errorMsg + " | Expected: " + expected;
+    errorMsg = errorMsg + " | Actual: " + actual;
+
+    echo(errorMsg);
+
+    let errorObj = {
+        "message": message,
+        "expected": expected,
+        "actual": actual
+    };
+    testStats["errors"] = push(testStats["errors"], errorObj);
+}
+
+export fn assertTrue(condition, message) {
+    if (message == null) {
+        message = "Expected true";
+    }
+
+    if (condition) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "true", "false");
+        return false;
+    }
+}
+
+export fn assertFalse(condition, message) {
+    if (message == null) {
+        message = "Expected false";
+    }
+
+    if (!condition) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "false", "true");
+        return false;
+    }
+}
+
+export fn assertEqual(actual, expected, message) {
+    if (message == null) {
+        message = "Values should be equal";
+    }
+
+    if (actual == expected) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, expected, actual);
+        return false;
+    }
+}
+
+export fn assertNotEqual(actual, expected, message) {
+    if (message == null) {
+        message = "Values should not be equal";
+    }
+
+    if (actual != expected) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "not " + expected, actual);
+        return false;
+    }
+}
+
+export fn assertGreaterThan(actual, expected, message) {
+    if (message == null) {
+        message = "Value should be greater than expected";
+    }
+
+    if (actual > expected) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "> " + expected, actual);
+        return false;
+    }
+}
+
+export fn assertLessThan(actual, expected, message) {
+    if (message == null) {
+        message = "Value should be less than expected";
+    }
+
+    if (actual < expected) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "< " + expected, actual);
+        return false;
+    }
+}
+
+export fn assertNull(value, message) {
+    if (message == null) {
+        message = "Value should be null";
+    }
+
+    if (value == null) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "null", value);
+        return false;
+    }
+}
+
+export fn assertNotNull(value, message) {
+    if (message == null) {
+        message = "Value should not be null";
+    }
+
+    if (value != null) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "not null", "null");
+        return false;
+    }
+}
+
+export fn assertType(value, expectedType, message) {
+    if (message == null) {
+        message = "Value should be of expected type";
+    }
+
+    let actualType = type(value);
+
+    if (actualType == expectedType) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, expectedType, actualType);
+        return false;
+    }
+}
+
+export fn assertLength(value, expectedLength, message) {
+    if (message == null) {
+        message = "Value should have expected length";
+    }
+
+    let actualLength = len(value);
+
+    if (actualLength == expectedLength) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "length " + expectedLength, "length " + actualLength);
+        return false;
+    }
+}
+
+export fn describe(suiteName, testFunction) {
+    echo("");
+    echo("🧪 Test Suite: " + suiteName);
+    echo("==============================================");
+
+    let initialStats = {
+        "total": testStats["total"],
+        "passed": testStats["passed"],
+        "failed": testStats["failed"]
+    };
+
+    testFunction();
+
+    let suiteTotal = testStats["total"] - initialStats["total"];
+    let suitePassed = testStats["passed"] - initialStats["passed"];
+    let suiteFailed = testStats["failed"] - initialStats["failed"];
+
+    echo("");
+    echo("📊 Suite Results:");
+    echo("   Total: " + suiteTotal);
+    echo("   Passed: " + suitePassed + " ✅");
+    echo("   Failed: " + suiteFailed + " ❌");
+
+    if (suiteFailed == 0) {
+        echo("🎉 All tests passed!");
+    } else {
+        echo("⚠️  Some tests failed");
+    }
+
+    echo("");
+}
+
+export fn it(testName, testFunction) {
+    echo("");
+    echo("🔬 Test: " + testName);
+    testFunction();
+}
+
+export fn fails(testFn, message) {
+    if (message == null) {
+        message = "Function should fail";
+    }
+
+    let result = is_error(testFn());
+    if (result) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "error", "success");
+        return false;
+    }
+}
+
+export fn roughlyEqual(actual, expected, delta, message) {
+    if (message == null) {
+        message = "Values should be roughly equal";
+    }
+
+    let diff = actual - expected;
+    if (diff < 0) { diff = -diff; }
+
+    if (diff <= delta) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, expected + " (+/- " + delta + ")", actual);
+        return false;
+    }
+}
+
+export fn includes(container, item, message) {
+    if (message == null) {
+        message = "Container should include item";
+    }
+
+    let found = false;
+    if (type(container) == "ARRAY") {
+        for (x in container) {
+            if (x == item) { found = true; }
+        }
+    } else if (type(container) == "STRING") {
+        // Simple search if Jabline supports it or use index
+        let i = 0;
+        while (i <= len(container) - len(item)) {
+            // This is complex in Jabline without slice.
+            // Let's assume we can use the new native strings/slice 
+            // once we have a way to call it here.
+            // For now, let's keep it simple.
+            i = i + 1;
+        }
+    }
+
+    if (found) {
+        reportPass(message);
+        return true;
+    } else {
+        reportFail(message, "to include " + item, container);
+        return false;
+    }
+}
+
+export fn showFinalReport() {
+    echo("");
+    echo("📋 FINAL TEST REPORT");
+    echo("============================");
+    echo("Total Tests: " + testStats["total"]);
+    echo("Passed: " + testStats["passed"] + " ✅");
+    echo("Failed: " + testStats["failed"] + " ❌");
+
+    if (testStats["failed"] > 0) {
+        echo("");
+        echo("❌ Failed Tests Details:");
+        let i = 0;
+        while (i < len(testStats["errors"])) {
+            let error = testStats["errors"][i];
+            echo("  " + (i + 1) + ". " + error["message"]);
+            echo("     Expected: " + error["expected"]);
+            echo("     Actual: " + error["actual"]);
+            i = i + 1;
+        }
+    }
+
+    echo("");
+    if (testStats["failed"] == 0) {
+        echo("🎉 ALL TESTS PASSED! 🎉");
+    } else {
+        let passCount = testStats["passed"];
+        let totalCount = testStats["total"];
+        let percentage = (passCount * 100) / totalCount;
+        echo("📈 Success Rate: " + percentage + "%");
+    }
+    echo("");
+
+    // Sync stats with native Go test runner
+    __register_test_results(testStats["passed"], testStats["failed"]);
+}

@@ -38,6 +38,7 @@ func NewServer() *server.Server {
 		TextDocumentSignatureHelp:  withRecovery("TextDocumentSignatureHelp", textDocumentSignatureHelp),
 		TextDocumentReferences:     withRecovery("TextDocumentReferences", textDocumentReferences),
 		TextDocumentRename:         withRecovery("TextDocumentRename", textDocumentRename),
+		TextDocumentFormatting:     withRecovery("TextDocumentFormatting", textDocumentFormatting),
 	}
 
 	return server.NewServer(&handler, lsName, true)
@@ -93,6 +94,7 @@ func initialize(context *glsp.Context, params *protocol.InitializeParams) (any, 
 	}
 	capabilities.ReferencesProvider = true
 	capabilities.RenameProvider = true
+	capabilities.DocumentFormattingProvider = true
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,

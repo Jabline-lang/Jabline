@@ -1,0 +1,6 @@
+import * as native from "_io"
+
+export fn readFile(self, path) { return native["readFile"](path); }
+export fn writeFile(self, path, content) { return native["writeFile"](path, content); }
+export fn readLines(self, path) { return native["readLines"](path); }
+export fn input(self) { return native["echoUser"](); }

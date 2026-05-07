@@ -111,8 +111,22 @@ func (c *Compiler) addConstant(obj object.Object) int {
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
+	// Fast-Path Compression: If OpConstant operand is < 256, use 1-byte OpConstant8
+	if op == code.OpConstant && len(operands) > 0 && operands[0] < 256 {
+		op = code.OpConstant8
+	}
+
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
+
+	// Register in SourceMap
+	if c.currentNode != nil {
+		t := c.currentNode.GetToken()
+		c.scopes[c.scopeIndex].sourceMap[pos] = code.SourcePos{
+			Line:   t.Line,
+			Column: t.Column,
+		}
+	}
 
 	c.setLastInstruction(op, pos)
 
@@ -172,10 +186,10 @@ func (c *Compiler) replaceLastPopWithReturn() {
 }
 
 func (c *Compiler) enterScope() {
-	c.enterScopeWithType("")
+	c.enterScopeWithType("", false)
 }
 
-func (c *Compiler) enterScopeWithType(expectedReturn string) {
+func (c *Compiler) enterScopeWithType(expectedReturn string, isFunction bool) {
 	scope := CompilationScope{
 		instructions:        code.Instructions{},
 		sourceMap:           make(code.SourceMap),
@@ -186,11 +200,13 @@ func (c *Compiler) enterScopeWithType(expectedReturn string) {
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 	c.expectedReturnType = expectedReturn
-	c.symbolTable = symbol.NewEnclosedSymbolTable(c.symbolTable) // Corrected
+	c.symbolTable = symbol.NewEnclosedSymbolTable(c.symbolTable)
+	c.symbolTable.IsFunctionScope = isFunction
 }
 
-func (c *Compiler) leaveScope() code.Instructions {
+func (c *Compiler) leaveScope() (code.Instructions, code.SourceMap) {
 	instructions := c.currentInstructions()
+	sourceMap := c.scopes[c.scopeIndex].sourceMap
 
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIndex--
@@ -202,7 +218,7 @@ func (c *Compiler) leaveScope() code.Instructions {
 		c.expectedReturnType = ""
 	}
 
-	return instructions
+	return instructions, sourceMap
 }
 
 func (c *Compiler) enterLoop(continuePos int) {
@@ -239,6 +255,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		return nil
 
+	case *ast.InterfaceStatement:
+		return c.compileInterfaceStatement(node)
 	case *ast.FunctionStatement:
 		return c.compileFunctionStatement(node)
 	case *ast.LetStatement:
@@ -273,6 +291,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileServiceStatement(node)
 	case *ast.SwitchStatement:
 		return c.compileSwitchStatement(node)
+	case *ast.MatchStatement:
+		return c.compileMatchStatement(node)
 	case *ast.EnumStatement:
 		return c.compileEnumStatement(node)
 	case *ast.ConstStatement:
@@ -320,6 +340,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compilePrefixExpression(node)
 	case *ast.InfixExpression:
 		return c.compileInfixExpression(node)
+	case *ast.PostfixExpression:
+		return c.compilePostfixExpression(node)
 	case *ast.InstantiatedExpression:
 		return c.compileInstantiatedExpression(node)
 	case *ast.IfExpression:
@@ -336,6 +358,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileAwaitExpression(node)
 	case *ast.SpawnExpression:
 		return c.compileSpawnExpression(node)
+	case *ast.MeterStatement:
+		return c.compileMeterStatement(node)
+	case *ast.TraceStatement:
+		return c.compileTraceStatement(node)
 
 	default:
 		return fmt.Errorf("unknown node type: %T", node)

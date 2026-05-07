@@ -38,9 +38,13 @@ func (vm *VM) currentFrame() *Frame {
 	return vm.frames[vm.framesIndex-1]
 }
 
-func (vm *VM) pushFrame(f *Frame) {
+func (vm *VM) pushFrame(f *Frame) error {
+	if vm.framesIndex >= MaxFrames {
+		return fmt.Errorf("stack overflow: maximum recursion depth exceeded")
+	}
 	vm.frames[vm.framesIndex] = f
 	vm.framesIndex++
+	return nil
 }
 
 func (vm *VM) popFrame() *Frame {
