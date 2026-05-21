@@ -6,8 +6,18 @@ import (
 )
 
 func (vm *VM) push(o object.Object) error {
-	if vm.sp >= StackSize {
-		return fmt.Errorf("stack overflow")
+	// Grow the stack dynamically if needed (doubles capacity each time)
+	if vm.sp >= len(vm.stack) {
+		if len(vm.stack) >= MaxStackSize {
+			return fmt.Errorf("stack overflow: exceeded maximum stack depth of %d", MaxStackSize)
+		}
+		newSize := len(vm.stack) * 2
+		if newSize > MaxStackSize {
+			newSize = MaxStackSize
+		}
+		newStack := make([]object.Object, newSize)
+		copy(newStack, vm.stack)
+		vm.stack = newStack
 	}
 	vm.stack[vm.sp] = o
 	vm.sp++
@@ -39,8 +49,18 @@ func (vm *VM) currentFrame() *Frame {
 }
 
 func (vm *VM) pushFrame(f *Frame) error {
-	if vm.framesIndex >= MaxFrames {
-		return fmt.Errorf("stack overflow: maximum recursion depth exceeded")
+	// Grow the frame slice dynamically if needed
+	if vm.framesIndex >= len(vm.frames) {
+		if len(vm.frames) >= MaxFrames {
+			return fmt.Errorf("stack overflow: maximum recursion depth of %d exceeded", MaxFrames)
+		}
+		newSize := len(vm.frames) * 2
+		if newSize > MaxFrames {
+			newSize = MaxFrames
+		}
+		newFrames := make([]*Frame, newSize)
+		copy(newFrames, vm.frames)
+		vm.frames = newFrames
 	}
 	vm.frames[vm.framesIndex] = f
 	vm.framesIndex++
@@ -56,7 +76,7 @@ func (vm *VM) popFrame() *Frame {
 	if frame.savedConstants != nil {
 		vm.constants = frame.savedConstants
 	}
-	return frame
+	return frame // We will let the caller ReleaseFrame
 }
 
 func (vm *VM) pushHandler(catchIP int) {

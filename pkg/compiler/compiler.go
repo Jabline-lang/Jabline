@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -103,6 +104,17 @@ func (c *Compiler) Bytecode() *Bytecode {
 
 func (c *Compiler) GetSymbolTable() *symbol.SymbolTable {
 	return c.symbolTable
+}
+
+func (c *Compiler) errorPos(format string, args ...interface{}) error {
+	pos := ""
+	if c.currentNode != nil {
+		t := c.currentNode.GetToken()
+		if t.Line > 0 || t.Column > 0 {
+			pos = fmt.Sprintf("line %d, column %d: ", t.Line, t.Column)
+		}
+	}
+	return fmt.Errorf(pos+format, args...)
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
@@ -364,6 +376,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileTraceStatement(node)
 
 	default:
-		return fmt.Errorf("unknown node type: %T", node)
+		return c.errorPos("unknown node type: %T", node)
 	}
 }

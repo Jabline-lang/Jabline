@@ -21,10 +21,10 @@ func (parent *VM) Fork() *VM {
 		filename:  parent.filename,
 		Telemetry: parent.Telemetry,
 
-		// Privado del fork
-		stack:       make([]object.Object, StackSize),
+		// Privado del fork — empieza pequeño y crece bajo demanda
+		stack:       make([]object.Object, InitialStackSize),
 		sp:          0,
-		frames:      make([]*Frame, MaxFrames),
+		frames:      make([]*Frame, InitialFrames),
 		framesIndex: 0,
 		handlers:    []ExceptionHandler{},
 		Ctx:         ctx,
@@ -50,7 +50,7 @@ func (vm *VM) RunClosure(cl *object.Closure, args []object.Object) object.Object
 	frame := NewFrame(cl, vm.sp-len(args))
 	if cl.Globals != nil {
 		frame.savedGlobals = vm.globals
-		vm.globals = cl.Globals
+		vm.globals = GlobalStoreFromSlice(cl.Globals)
 	}
 	if cl.Constants != nil {
 		frame.savedConstants = vm.constants

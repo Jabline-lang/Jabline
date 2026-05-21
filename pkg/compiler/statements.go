@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object" // New import
@@ -133,17 +132,17 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 	// We only support assignment to identifiers for now (e.g. x = 5)
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
-		return fmt.Errorf("assignment target must be an identifier")
+		return c.errorPos("assignment target must be an identifier")
 	}
 
 	// Reject assignments to constants
 	if c.symbolTable.IsConstant(ident.Value) {
-		return fmt.Errorf("cannot assign to constant '%s'", ident.Value)
+		return c.errorPos("cannot assign to constant '%s'", ident.Value)
 	}
 
 	sym, ok := c.symbolTable.Resolve(ident.Value)
 	if !ok {
-		return fmt.Errorf("undefined variable %s", ident.Value)
+		return c.errorPos("undefined variable %s", ident.Value)
 	}
 
 	// Optimization: Detect i = i + 1 or i = i - 1
@@ -184,7 +183,7 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 	case symbol.FreeScope:
 		c.emit(code.OpSetFree, sym.Index)
 	default:
-		return fmt.Errorf("cannot assign to %s scope", sym.Scope)
+		return c.errorPos("cannot assign to %s scope", sym.Scope)
 	}
 
 	return nil
@@ -322,7 +321,7 @@ func (c *Compiler) compileForStatement(node *ast.ForStatement) error {
 func (c *Compiler) compileBreakStatement(node *ast.BreakStatement) error {
 	jumpPos := c.emit(code.OpJump, 9999)
 	if c.loopIndex < 0 {
-		return fmt.Errorf("break statement outside of loop")
+		return c.errorPos("break statement outside of loop")
 	}
 	c.loops[c.loopIndex].BreakPos = append(c.loops[c.loopIndex].BreakPos, jumpPos)
 	return nil
@@ -330,7 +329,7 @@ func (c *Compiler) compileBreakStatement(node *ast.BreakStatement) error {
 
 func (c *Compiler) compileContinueStatement(node *ast.ContinueStatement) error {
 	if c.loopIndex < 0 {
-		return fmt.Errorf("continue statement outside of loop")
+		return c.errorPos("continue statement outside of loop")
 	}
 	pos := c.loops[c.loopIndex].ContinuePos
 	if pos == -1 {
@@ -721,7 +720,7 @@ func (c *Compiler) compileEnumStatement(node *ast.EnumStatement) error {
 func (c *Compiler) compileEchoStatement(node *ast.EchoStatement) error {
 	sym, ok := c.symbolTable.Resolve("echo") // Renamed variable
 	if !ok {
-		return fmt.Errorf("builtin 'echo' not found")
+		return c.errorPos("builtin 'echo' not found")
 	}
 
 	c.emit(code.OpGetBuiltin, sym.Index) // Use sym.Index
@@ -853,7 +852,7 @@ func (c *Compiler) compileForEachStatement(node *ast.ForEachStatement) error {
 	// Get length of iterable
 	lenSym, ok := c.symbolTable.Resolve("len") // Assume 'len' builtin is available
 	if !ok {
-		return fmt.Errorf("builtin 'len' not found for ForEachStatement")
+		return c.errorPos("builtin 'len' not found for ForEachStatement")
 	}
 	c.emit(code.OpGetBuiltin, lenSym.Index)
 
@@ -987,7 +986,7 @@ func (c *Compiler) compileMatchStatement(node *ast.MatchStatement) error {
 			// Call len($$match_arr$$) and compare with pattern element count.
 			lenSym, ok := c.symbolTable.Resolve("len")
 			if !ok {
-				return fmt.Errorf("builtin 'len' not found for structural match")
+				return c.errorPos("builtin 'len' not found for structural match")
 			}
 			c.emit(code.OpGetBuiltin, lenSym.Index)
 			if tmpArrSym.Scope == symbol.GlobalScope {

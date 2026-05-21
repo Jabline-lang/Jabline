@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -198,7 +197,7 @@ func (c *Compiler) compileReturnStatement(node *ast.ReturnStatement) error {
 		// Static type validation
 		valType := c.inferType(node.ReturnValue)
 		if err := c.checkTypeMatch(c.expectedReturnType, valType, node.ReturnValue); err != nil {
-			return fmt.Errorf("compile error: return type mismatch - %s", err)
+			return c.errorPos("compile error: return type mismatch - %s", err)
 		}
 
 		if err := c.Compile(node.ReturnValue); err != nil {
@@ -208,7 +207,7 @@ func (c *Compiler) compileReturnStatement(node *ast.ReturnStatement) error {
 	} else {
 		// If return type is expected but no value provided
 		if c.expectedReturnType != "" && c.expectedReturnType != "any" {
-			return fmt.Errorf("compile error: return type mismatch - expected %s, got void", c.expectedReturnType)
+			return c.errorPos("compile error: return type mismatch - expected %s, got void", c.expectedReturnType)
 		}
 		c.emit(code.OpReturn)
 	}

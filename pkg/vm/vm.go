@@ -24,8 +24,21 @@ func init() {
 	stdlib.Executor = ExecuteClosureBridge
 }
 
-const StackSize = 2048
+// InitialStackSize is the starting capacity of the VM stack.
+// It grows automatically up to MaxStackSize, so forks start cheap.
+const InitialStackSize = 256
+
+// MaxStackSize is the hard cap for the VM stack.
+// A stack overflow error is returned when this limit is reached.
+const MaxStackSize = 65536
+
+// StackSize is kept for backward compatibility in tests and direct VM construction.
+const StackSize = InitialStackSize
+
 const GlobalsSize = 65536
+
+// InitialFrames is the starting number of call frames. Grows up to MaxFrames.
+const InitialFrames = 64
 const MaxFrames = 1024
 
 var (
@@ -38,7 +51,7 @@ type VM struct {
 	constants []object.Object
 	stack     []object.Object
 	sp        int
-	globals   []object.Object
+	globals   *GlobalStore
 
 	frames      []*Frame
 	framesIndex int
@@ -77,10 +90,10 @@ func NewWithLoader(instructions code.Instructions, constants []object.Object, fi
 
 	vm := &VM{
 		constants:   constants,
-		stack:       make([]object.Object, StackSize),
+		stack:       make([]object.Object, InitialStackSize),
 		sp:          0,
-		globals:     make([]object.Object, GlobalsSize),
-		frames:      make([]*Frame, MaxFrames),
+		globals:     NewGlobalStore(GlobalsSize),
+		frames:      make([]*Frame, InitialFrames),
 		framesIndex: 1,
 		handlers:    []ExceptionHandler{},
 		filename:    filename,
@@ -105,7 +118,7 @@ func NewWithLoader(instructions code.Instructions, constants []object.Object, fi
 
 func NewWithGlobalsStore(instructions code.Instructions, constants []object.Object, globals []object.Object, filename string) *VM {
 	vm := New(instructions, constants, filename)
-	vm.globals = globals
+	vm.globals = GlobalStoreFromSlice(globals)
 	return vm
 }
 

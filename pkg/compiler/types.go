@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 )
 
@@ -94,7 +93,7 @@ func (c *Compiler) checkTypeMatch(expected, actual string, node ast.Node) error 
 		if expected == "float" && actual == "int" {
 			return nil
 		}
-		return fmt.Errorf("type mismatch: expected %s, got %s", expected, actual)
+		return c.errorPos("type mismatch: expected %s, got %s", expected, actual)
 	}
 
 	return nil

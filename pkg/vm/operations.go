@@ -104,7 +104,7 @@ func (vm *VM) executeBinaryIntegerOperation(op code.Opcode, left, right object.O
 		return fmt.Errorf("unknown integer operator: %d", op)
 	}
 
-	return vm.push(&object.Integer{Value: result})
+	return vm.push(object.NewInteger(result))
 }
 
 func (vm *VM) executeBinaryStringOperation(op code.Opcode, left, right object.Object) error {
@@ -126,7 +126,7 @@ func (vm *VM) executeBinaryStringOperation(op code.Opcode, left, right object.Ob
 		rightVal = right.Inspect()
 	}
 
-	return vm.push(&object.String{Value: leftVal + rightVal})
+	return vm.push(object.NewString(leftVal + rightVal))
 }
 
 func (vm *VM) executeComparison(op code.Opcode) error {
@@ -225,7 +225,7 @@ func (vm *VM) executeMinusOperator() error {
 
 	switch op := operand.(type) {
 	case *object.Integer:
-		return vm.push(&object.Integer{Value: -op.Value})
+		return vm.push(object.NewInteger(-op.Value))
 	case *object.Float:
 		return vm.push(&object.Float{Value: -op.Value})
 	default:
@@ -242,7 +242,7 @@ func (vm *VM) executeBitNotOperator() error {
 
 	value := operand.(*object.Integer).Value
 	// In Go, ^x is bitwise not (complement).
-	return vm.push(&object.Integer{Value: ^value})
+	return vm.push(object.NewInteger(^value))
 }
 
 func isTruthy(obj object.Object) bool {

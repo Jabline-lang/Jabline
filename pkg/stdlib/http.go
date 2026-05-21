@@ -3,12 +3,16 @@
 package stdlib
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"jabline/pkg/object"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 )
 
 
@@ -112,7 +116,12 @@ func httpServe(args ...object.Object) object.Object {
 	}
 
 	mux := http.NewServeMux()
+	httpLimiter := make(chan struct{}, 10000)
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		httpLimiter <- struct{}{}
+		defer func() { <-httpLimiter }()
+
 		// 1. Build Request Object (Hash)
 		reqHash := &object.Hash{Pairs: make(map[object.HashKey]object.HashPair)}
 
@@ -202,10 +211,36 @@ func httpServe(args ...object.Object) object.Object {
 	})
 
 	fmt.Printf("Jabline HTTP Server listening on %s\n", port)
-	server := &http.Server{Addr: port, Handler: mux}
-	if err := server.ListenAndServe(); err != nil {
-		return newError("server error: %s", err)
+	server := &http.Server{
+		Addr:           port,
+		Handler:        mux,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   30 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
+
+	// Graceful shutdown on SIGINT / SIGTERM
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Fprintf(os.Stderr, "[HTTP] Server error: %s\n", err)
+		}
+	}()
+
+	<-quit
+	fmt.Println("\n[HTTP] Shutting down gracefully...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		return newError("graceful shutdown failed: %s", err)
+	}
+
+	fmt.Println("[HTTP] Server stopped.")
 	return &object.Null{}
 }
 

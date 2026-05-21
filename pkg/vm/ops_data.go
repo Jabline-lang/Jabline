@@ -133,23 +133,23 @@ func (vm *VM) opCall(ins code.Instructions, ip *int) error {
 
 func (vm *VM) opReturnValue() error {
 
-	returnValue := vm.pop()
-
 	frame := vm.popFrame()
 
-	// Restore globals and constants if this frame had swapped them
-	if frame.savedGlobals != nil {
-		vm.globals = frame.savedGlobals
+	// If this was the last (top-level) frame, leave the return value where it is on the stack.
+	if vm.framesIndex == 0 {
+		ReleaseFrame(frame)
+		return nil
 	}
-	if frame.savedConstants != nil {
-		vm.constants = frame.savedConstants
-	}
+
+	returnValue := vm.pop()
 
 	vm.sp = frame.basePointer - 1
 
 	vm.stack[vm.sp] = returnValue
 
 	vm.sp++
+
+	ReleaseFrame(frame)
 
 	return nil
 
@@ -159,12 +159,9 @@ func (vm *VM) opReturn() error {
 
 	frame := vm.popFrame()
 
-	// Restore globals and constants if this frame had swapped them
-	if frame.savedGlobals != nil {
-		vm.globals = frame.savedGlobals
-	}
-	if frame.savedConstants != nil {
-		vm.constants = frame.savedConstants
+	if vm.framesIndex == 0 {
+		ReleaseFrame(frame)
+		return nil
 	}
 
 	vm.sp = frame.basePointer - 1
@@ -172,6 +169,8 @@ func (vm *VM) opReturn() error {
 	vm.stack[vm.sp] = Null
 
 	vm.sp++
+
+	ReleaseFrame(frame)
 
 	return nil
 

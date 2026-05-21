@@ -1,0 +1,30 @@
+import * as time from "std/time/datetime";
+
+fn processItem(id, input, results) {
+    // Simulate work
+    let output = `[${id}] Processed: ${input}`;
+    send(results, output);
+}
+
+fn main() {
+    let items   = ["alpha", "beta", "gamma", "delta", "epsilon"];
+    let results = make_chan();
+
+    // Spawn one worker per item
+    for (let i = 0; i < len(items); i++) {
+        let item = items[i];
+        let idx  = i + 1;
+        spawn processItem(idx, item, results);
+    }
+
+    // Collect all results
+    let outputs = [];
+    for (let i = 0; i < len(items); i++) {
+        outputs = push(outputs, recv(results));
+    }
+
+    for (let i = 0; i < len(outputs); i++) {
+        echo(outputs[i]);
+    }
+}
+main();

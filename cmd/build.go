@@ -13,6 +13,7 @@ import (
 	"jabline/pkg/compiler"
 	"jabline/pkg/lexer"
 	"jabline/pkg/parser"
+	"jabline/pkg/typechecker"
 
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,16 @@ var buildCmd = &cobra.Command{
 		if len(p.Errors()) > 0 {
 			fmt.Println("Parser errors:")
 			for _, msg := range p.Errors() {
+				fmt.Printf("\t%s\n", msg)
+			}
+			os.Exit(1)
+		}
+
+		checker := typechecker.New()
+		typeErrors := checker.Check(program)
+		if len(typeErrors) > 0 {
+			fmt.Println("Type errors:")
+			for _, msg := range typeErrors {
 				fmt.Printf("\t%s\n", msg)
 			}
 			os.Exit(1)

@@ -1,0 +1,8 @@
+fn main() {
+    let name = "Jabline";
+    echo(`Hello from ${name}! 🚀`);
+    
+    let version = "0.6.0";
+    echo(`Version: ${version}`);
+    echo("Welcome to the playground!");
+}

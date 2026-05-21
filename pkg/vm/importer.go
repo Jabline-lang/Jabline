@@ -141,8 +141,8 @@ func (ml *ModuleLoader) compileContent(source, originalName, name, cacheKey stri
 	exports := make(map[object.HashKey]object.HashPair)
 	for symName, sym := range bytecode.SymbolTable.GetStore() {
 		if sym.Scope == symbol.GlobalScope && sym.IsExported {
-			if sym.Index < len(moduleVM.globals) {
-				val := moduleVM.globals[sym.Index]
+			if sym.Index < moduleVM.globals.Len() {
+				val := moduleVM.globals.Get(sym.Index)
 				if val != nil {
 					key := &object.String{Value: symName}
 					exports[key.HashKey()] = object.HashPair{Key: key, Value: val}

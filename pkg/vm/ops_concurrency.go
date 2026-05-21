@@ -8,6 +8,12 @@ import (
 	"os"
 )
 
+// MaxConcurrentSpawns limits the number of active goroutines created by spawn
+// to prevent fork bombs and out-of-memory errors.
+const MaxConcurrentSpawns = 10000
+
+var spawnLimiter = make(chan struct{}, MaxConcurrentSpawns)
+
 func ExecuteClosureBridge(closureObj object.Object, args []object.Object) object.Object {
 	callee, ok := closureObj.(*object.Closure)
 	if !ok {
@@ -33,10 +39,10 @@ func ExecuteClosureBridge(closureObj object.Object, args []object.Object) object
 
 	newVM := &VM{
 		constants:   constants,
-		stack:       make([]object.Object, StackSize),
+		stack:       make([]object.Object, InitialStackSize),
 		sp:          0,
-		globals:     globals,
-		frames:      make([]*Frame, MaxFrames),
+		globals:     GlobalStoreFromSlice(globals),
+		frames:      make([]*Frame, InitialFrames),
 		framesIndex: 0,
 		loader:      GlobalLoader,
 		Ctx:         context.Background(),
@@ -80,6 +86,9 @@ func (vm *VM) executeAsyncCall(callee *object.Closure, numArgs int) object.Objec
 	globals := vm.globals // Capture globals from current VM
 
 	go func() {
+		spawnLimiter <- struct{}{} // Acquire semaphore slot
+		defer func() { <-spawnLimiter }() // Release slot
+
 		defer func() {
 			if r := recover(); r != nil {
 				err, ok := r.(error)
@@ -93,10 +102,10 @@ func (vm *VM) executeAsyncCall(callee *object.Closure, numArgs int) object.Objec
 		// Manually set up the new VM for executing the specific closure
 		asyncVM := &VM{
 			constants:   constants,
-			stack:       make([]object.Object, StackSize),
+			stack:       make([]object.Object, InitialStackSize),
 			sp:          0,
 			globals:     globals, // Use captured globals
-			frames:      make([]*Frame, MaxFrames),
+			frames:      make([]*Frame, InitialFrames),
 			framesIndex: 0, // Start with 0 frames, we'll push one
 			filename:    filename,
 			loader:      loader,

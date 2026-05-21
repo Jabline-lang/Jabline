@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -101,7 +100,7 @@ func (c *Compiler) compileTernaryExpression(node *ast.TernaryExpression) error {
 func (c *Compiler) compileIdentifier(node *ast.Identifier) error {
 	sym, ok := c.symbolTable.Resolve(node.Value) // Renamed variable
 	if !ok {
-		return fmt.Errorf("undefined variable %s", node.Value)
+		return c.errorPos("undefined variable %s", node.Value)
 	}
 
 	switch sym.Scope { // Use sym.Scope
@@ -174,7 +173,7 @@ func (c *Compiler) compilePrefixExpression(node *ast.PrefixExpression) error {
 	case "<-":
 		c.emit(code.OpRecvChannel)
 	default:
-		return fmt.Errorf("unknown operator %s", node.Operator)
+		return c.errorPos("unknown operator %s", node.Operator)
 	}
 
 	return nil
@@ -461,7 +460,7 @@ func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
 	case "<-":
 		c.emit(code.OpSendChannel)
 	default:
-		return fmt.Errorf("unknown operator %s", node.Operator)
+		return c.errorPos("unknown operator %s", node.Operator)
 	}
 
 	return nil
@@ -728,7 +727,7 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 	// Validate expression type against return type if specified
 	bodyType := c.inferType(node.Body)
 	if err := c.checkTypeMatch(returnType, bodyType, node.Body); err != nil {
-		return fmt.Errorf("compile error: arrow function return type mismatch - %s", err)
+		return c.errorPos("compile error: arrow function return type mismatch - %s", err)
 	}
 
 	c.emit(code.OpReturnValue)
@@ -816,12 +815,12 @@ func (c *Compiler) compileStructLiteral(node *ast.StructLiteral) error {
 func (c *Compiler) compilePostfixExpression(node *ast.PostfixExpression) error {
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
-		return fmt.Errorf("postfix operator only supported for identifiers")
+		return c.errorPos("postfix operator only supported for identifiers")
 	}
 
 	sym, ok := c.symbolTable.Resolve(ident.Value)
 	if !ok {
-		return fmt.Errorf("undefined variable %s", ident.Value)
+		return c.errorPos("undefined variable %s", ident.Value)
 	}
 
 	// For postfix, we usually need to return the OLD value if used in an expression.
@@ -847,7 +846,7 @@ func (c *Compiler) compilePostfixExpression(node *ast.PostfixExpression) error {
 			c.emit(code.OpDecGlobal, sym.Index)
 		}
 	} else {
-		return fmt.Errorf("postfix operator not supported for scope %s", sym.Scope)
+		return c.errorPos("postfix operator not supported for scope %s", sym.Scope)
 	}
 
 	return nil

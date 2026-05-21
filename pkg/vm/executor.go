@@ -96,7 +96,7 @@ func (vm *VM) executeCallClosure(cl *object.Closure, numArgs int, typeArgs map[s
 	}
 	if cl.Globals != nil {
 		frame.savedGlobals = vm.globals
-		vm.globals = cl.Globals
+		vm.globals = GlobalStoreFromSlice(cl.Globals)
 	}
 	if cl.Constants != nil {
 		frame.savedConstants = vm.constants
@@ -126,7 +126,7 @@ func (vm *VM) pushClosure(constIndex, numFree int) error {
 	closure := &object.Closure{
 		Fn:        function,
 		Free:      free,
-		Globals:   vm.globals,
+		Globals:   vm.globals.Snapshot(),
 		Constants: vm.constants,
 	}
 	return vm.push(closure)

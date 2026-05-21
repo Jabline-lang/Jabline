@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -10,7 +9,7 @@ import (
 func (c *Compiler) compileMeterStatement(node *ast.MeterStatement) error {
 	str, ok := node.Name.(*ast.StringLiteral)
 	if !ok {
-		return fmt.Errorf("meter metric name must be a string literal, got %T", node.Name)
+		return c.errorPos("meter metric name must be a string literal, got %T", node.Name)
 	}
 
 	nameIdx := c.addConstant(&object.String{Value: str.Value})
@@ -19,7 +18,7 @@ func (c *Compiler) compileMeterStatement(node *ast.MeterStatement) error {
 		c.emit(code.OpMetricInc, nameIdx)
 	} else {
 		// We could support -- or other ops if needed
-		return fmt.Errorf("unsupported meter operator: %s", node.Operator)
+		return c.errorPos("unsupported meter operator: %s", node.Operator)
 	}
 
 	return nil
@@ -28,7 +27,7 @@ func (c *Compiler) compileMeterStatement(node *ast.MeterStatement) error {
 func (c *Compiler) compileTraceStatement(node *ast.TraceStatement) error {
 	str, ok := node.Name.(*ast.StringLiteral)
 	if !ok {
-		return fmt.Errorf("trace name must be a string literal")
+		return c.errorPos("trace name must be a string literal")
 	}
 
 	nameIdx := c.addConstant(&object.String{Value: str.Value})

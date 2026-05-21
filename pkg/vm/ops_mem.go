@@ -9,13 +9,13 @@ import (
 func (vm *VM) opSetGlobal(ins code.Instructions, ip *int) {
 	globalIndex := int(code.ReadUint16(ins[*ip+1:]))
 	*ip += 2
-	vm.globals[globalIndex] = vm.pop()
+	vm.globals.Set(globalIndex, vm.pop())
 }
 
 func (vm *VM) opGetGlobal(ins code.Instructions, ip *int) error {
 	globalIndex := int(code.ReadUint16(ins[*ip+1:]))
 	*ip += 2
-	return vm.push(vm.globals[globalIndex])
+	return vm.push(vm.globals.Get(globalIndex))
 }
 
 func (vm *VM) opSetLocal(ins code.Instructions, ip *int) {
@@ -71,7 +71,7 @@ func (vm *VM) opIncLocal(ins code.Instructions, ip *int) error {
 	frame := vm.currentFrame()
 	obj := vm.stack[frame.basePointer+localIndex]
 	if i, ok := obj.(*object.Integer); ok {
-		vm.stack[frame.basePointer+localIndex] = &object.Integer{Value: i.Value + 1}
+		vm.stack[frame.basePointer+localIndex] = object.NewInteger(i.Value + 1)
 		return nil
 	} else if f, ok := obj.(*object.Float); ok {
 		vm.stack[frame.basePointer+localIndex] = &object.Float{Value: f.Value + 1.0}
@@ -86,7 +86,7 @@ func (vm *VM) opDecLocal(ins code.Instructions, ip *int) error {
 	frame := vm.currentFrame()
 	obj := vm.stack[frame.basePointer+localIndex]
 	if i, ok := obj.(*object.Integer); ok {
-		vm.stack[frame.basePointer+localIndex] = &object.Integer{Value: i.Value - 1}
+		vm.stack[frame.basePointer+localIndex] = object.NewInteger(i.Value - 1)
 		return nil
 	} else if f, ok := obj.(*object.Float); ok {
 		vm.stack[frame.basePointer+localIndex] = &object.Float{Value: f.Value - 1.0}
@@ -98,12 +98,12 @@ func (vm *VM) opDecLocal(ins code.Instructions, ip *int) error {
 func (vm *VM) opIncGlobal(ins code.Instructions, ip *int) error {
 	globalIndex := int(code.ReadUint16(ins[*ip+1:]))
 	*ip += 2
-	obj := vm.globals[globalIndex]
+	obj := vm.globals.Get(globalIndex)
 	if i, ok := obj.(*object.Integer); ok {
-		vm.globals[globalIndex] = &object.Integer{Value: i.Value + 1}
+		vm.globals.Set(globalIndex, object.NewInteger(i.Value+1))
 		return nil
 	} else if f, ok := obj.(*object.Float); ok {
-		vm.globals[globalIndex] = &object.Float{Value: f.Value + 1.0}
+		vm.globals.Set(globalIndex, &object.Float{Value: f.Value + 1.0})
 		return nil
 	}
 	return vm.newRuntimeError("attempted to fast-increment non-numeric global variable")
@@ -112,12 +112,12 @@ func (vm *VM) opIncGlobal(ins code.Instructions, ip *int) error {
 func (vm *VM) opDecGlobal(ins code.Instructions, ip *int) error {
 	globalIndex := int(code.ReadUint16(ins[*ip+1:]))
 	*ip += 2
-	obj := vm.globals[globalIndex]
+	obj := vm.globals.Get(globalIndex)
 	if i, ok := obj.(*object.Integer); ok {
-		vm.globals[globalIndex] = &object.Integer{Value: i.Value - 1}
+		vm.globals.Set(globalIndex, object.NewInteger(i.Value-1))
 		return nil
 	} else if f, ok := obj.(*object.Float); ok {
-		vm.globals[globalIndex] = &object.Float{Value: f.Value - 1.0}
+		vm.globals.Set(globalIndex, &object.Float{Value: f.Value - 1.0})
 		return nil
 	}
 	return vm.newRuntimeError("attempted to fast-decrement non-numeric global variable")
