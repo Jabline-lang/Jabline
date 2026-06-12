@@ -1,0 +1,31 @@
+// Result[T, E] pattern for error handling
+
+struct Result<T, E> {
+    value: T,
+    error: E,
+    isOk: boolean
+}
+
+fn ok<T, E>(val: T) {
+    return Result<T, E> { value: val, error: null, isOk: true }
+}
+
+fn err<T, E>(err: E) {
+    return Result<T, E> { value: null, error: err, isOk: false }
+}
+
+fn (r Result<T, E>) unwrap(): T {
+    if (!r.isOk) { throw "unwrap error: " + toString(r.error) }
+    return r.value
+}
+
+fn safeDivide(a, b) {
+    if (b == 0) { return err<int, string>("division by zero") }
+    return ok<int, string>(a / b)
+}
+
+let r1 = safeDivide(10, 2)
+let r2 = safeDivide(10, 0)
+
+echo("r1 ok:  " + toString(r1.isOk) + " val: " + toString(r1.value))
+echo("r2 ok:  " + toString(r2.isOk) + " err: " + r2.error)

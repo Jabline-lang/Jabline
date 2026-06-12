@@ -1,0 +1,14 @@
+// gzip.jb - demonstrates gzip compression
+
+import compress
+
+let text = "Hello, Jabline! " * 100
+
+fn main() {
+    let compressed = compress.gzip(text)
+    println("Original size: " + len(text) + " bytes")
+    println("Compressed size: " + len(compressed) + " bytes")
+
+    let decompressed = compress.gunzip(compressed)
+    println("Decompressed matches: " + (decompressed == text))
+}

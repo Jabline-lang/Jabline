@@ -1,0 +1,14 @@
+// Serialization - Convert data to/from wire formats
+
+let obj = {
+    "name": "Alice",
+    "age": 30,
+    "tags": ["admin", "user"]
+}
+
+let json = stringify(obj)
+print("JSON: " + json)
+
+let parsed = parse(json)
+print("Name: " + parsed["name"])
+print("Age: " + toString(parsed["age"]))

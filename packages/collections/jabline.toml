@@ -1,0 +1,6 @@
+[project]
+name = "collections"
+version = "0.1.0"
+description = "Generic data structures: Stack, Queue, Option, Result, Pair, and higher-order functions"
+
+[dependencies]

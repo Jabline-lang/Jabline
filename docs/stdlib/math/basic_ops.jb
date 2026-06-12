@@ -1,0 +1,16 @@
+// basic_ops.jb - demonstrates abs, sqrt, pow, max, min
+
+import math
+
+let n1 = -42
+let n2 = 16
+let n3 = 2
+let n4 = 10
+
+fn main() {
+    println("abs(-42) = " + math.abs(n1))
+    println("sqrt(16) = " + math.sqrt(n2))
+    println("pow(2, 10) = " + math.pow(n3, n4))
+    println("max(7, 23) = " + math.max(7, 23))
+    println("min(7, 23) = " + math.min(7, 23))
+}

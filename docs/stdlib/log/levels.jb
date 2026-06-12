@@ -1,0 +1,15 @@
+// levels.jb - demonstrates log levels
+
+import log
+
+fn main() {
+    log.set_level("debug")
+
+    log.debug("Connecting to server...")
+    log.info("Connected successfully")
+    log.warn("Response time is high: 2500ms")
+    log.error("Request failed: timeout after 30s")
+    log.fatal("System shutting down")
+
+    println("Current log level: " + log.get_level())
+}

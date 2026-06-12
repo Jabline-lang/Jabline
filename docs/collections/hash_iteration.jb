@@ -1,0 +1,18 @@
+// Iterating over hashes using keys()
+
+let capitals = {
+    "France": "Paris",
+    "Japan": "Tokyo",
+    "Brazil": "Brasilia"
+}
+
+// Iterate over keys
+for (country in keys(capitals)) {
+    echo(country + " -> " + capitals[country])
+}
+
+// Iterate over values
+echo("--- values ---")
+for (city in values(capitals)) {
+    echo(city)
+}

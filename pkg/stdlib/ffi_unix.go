@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build !windows && !wasm && !wasip1
 
 package stdlib
 

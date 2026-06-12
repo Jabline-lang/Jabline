@@ -1,0 +1,14 @@
+// Logical - &&, ||, ! operators
+
+let t = true, f = false
+
+print("t && t: " + toString(t && t))
+print("t && f: " + toString(t && f))
+print("t || f: " + toString(t || f))
+print("f || f: " + toString(f || f))
+print("!t: " + toString(!t))
+print("!f: " + toString(!f))
+
+let age = 25
+let canDrive = age >= 16 && age <= 100
+print("Can drive: " + toString(canDrive))

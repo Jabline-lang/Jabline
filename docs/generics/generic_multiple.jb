@@ -1,0 +1,25 @@
+// Multiple type parameters
+
+struct Pair<T, U> {
+    first: T,
+    second: U
+}
+
+fn first<T, U>(p: Pair<T, U>): T {
+    return p.first
+}
+
+fn second<T, U>(p: Pair<T, U>): U {
+    return p.second
+}
+
+fn swap<T, U>(p: Pair<T, U>) {
+    return Pair<U, T> { first: p.second, second: p.first }
+}
+
+let p = Pair<int, string> { first: 1, second: "one" }
+echo("first:  " + toString(first(p)))
+echo("second: " + second(p))
+
+let swapped = swap(p)
+echo("swapped: " + toString(swapped))

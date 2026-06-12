@@ -1,0 +1,12 @@
+// Mutating array elements by index assignment
+
+let arr = [1, 2, 3, 4, 5]
+echo("before: " + toString(arr))
+
+arr[0] = 99
+arr[2] = 77
+echo("after:  " + toString(arr))
+
+// Also works with the set() builtin
+set(arr, 1, 55)
+echo("set():  " + toString(arr))

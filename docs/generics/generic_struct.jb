@@ -1,0 +1,16 @@
+// Generic struct with type parameter T
+
+struct Box<T> {
+    value: T
+}
+
+let intBox = Box<int> { value: 42 }
+let strBox = Box<string> { value: "Hello Jabline" }
+let arrBox = Box<array> { value: [1, 2, 3] }
+
+echo("int box:  " + toString(intBox.value))
+echo("str box:  " + strBox.value)
+echo("arr box:  " + toString(arrBox.value))
+
+// type checking
+echo("intBox type: " + type(intBox))

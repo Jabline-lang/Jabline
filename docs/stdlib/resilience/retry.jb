@@ -1,0 +1,21 @@
+// retry.jb - demonstrates retry pattern
+
+import resilience
+
+let attempts = 0
+
+fn unreliable_call() {
+    attempts = attempts + 1
+    println("Attempt " + attempts)
+
+    if attempts < 3 {
+        throw "temporary failure"
+    }
+
+    return "success"
+}
+
+fn main() {
+    let result = resilience.retry(unreliable_call, {"max_retries": 3, "delay": 0.5})
+    println("Result: " + result)
+}

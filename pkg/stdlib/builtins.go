@@ -45,6 +45,7 @@ var Registry = []struct {
 	{"float64", &object.Builtin{Fn: float64Func}},
 
 	{"echo", &object.Builtin{Fn: printlnFunc}},
+	{"print", &object.Builtin{Fn: printFunc}},
 	{"set", &object.Builtin{Fn: setFunc}}, // Add set
 
 	{"push", &object.Builtin{Fn: pushFunc}},
@@ -59,7 +60,39 @@ var Registry = []struct {
 	{"panic", &object.Builtin{Fn: panicFunc}},
 	{"cancel", &object.Builtin{Fn: cancelProcessFunc}},
 	{"input", &object.Builtin{Fn: inputFunc}},
+	{"recover", &object.Builtin{Fn: recoverFunc}},
+	{"gc", &object.Builtin{Fn: runtimeGC}},
+	{"memoryStats", &object.Builtin{Fn: runtimeMemoryStats}},
 	{"__register_test_results", &object.Builtin{Fn: registerTestResultsFunc}},
+	// Math builtins
+	{"abs",     &object.Builtin{Fn: mathAbs}},
+	{"sqrt",    &object.Builtin{Fn: mathSqrt}},
+	{"pow",     &object.Builtin{Fn: mathPow}},
+	{"sin",     &object.Builtin{Fn: mathSin}},
+	{"cos",     &object.Builtin{Fn: mathCos}},
+	{"tan",     &object.Builtin{Fn: mathTan}},
+	{"random",  &object.Builtin{Fn: mathRandom}},
+	{"max",     &object.Builtin{Fn: mathMax}},
+	{"min",     &object.Builtin{Fn: mathMin}},
+	{"floor",   &object.Builtin{Fn: mathFloor}},
+	{"ceil",    &object.Builtin{Fn: mathCeil}},
+	{"round",   &object.Builtin{Fn: mathRound}},
+	{"log",     &object.Builtin{Fn: mathLog}},
+	{"log10",   &object.Builtin{Fn: mathLog10}},
+	{"exp",     &object.Builtin{Fn: mathExp}},
+	{"atan2",   &object.Builtin{Fn: mathAtan2}},
+	{"asin",    &object.Builtin{Fn: mathAsin}},
+	{"acos",    &object.Builtin{Fn: mathAcos}},
+	{"hypot",   &object.Builtin{Fn: mathHypot}},
+
+	// Array builtins
+	{"append",  &object.Builtin{Fn: appendFunc}},
+	{"copy",    &object.Builtin{Fn: copyFunc}},
+
+	{"clone", &object.Builtin{Fn: cloneFunc}},
+	{"delete", &object.Builtin{Fn: deleteFunc}},
+	{"range",   &object.Builtin{Fn: rangeFunc}},
+
 	// JSON globals (always available)
 	{"parse",           &object.Builtin{Fn: jsonParse}},
 	{"stringify",       &object.Builtin{Fn: jsonStringify}},
@@ -114,26 +147,7 @@ func init() {
 	Registry = append(Registry, ConcurrencyBuiltins...)
 	Registry = append(Registry, CryptoBuiltins...)
 	Registry = append(Registry, FFIBuiltins...)
-
-	GlobalModules = make(map[string]*object.Hash)
-	nativeModules := []string{"_strings", "_math", "_json", "_os", "_fs", "_http", "_db"}
-	for _, modName := range nativeModules {
-		if modHash := GetNativeModule(modName); modHash != nil {
-			globalName := modName[1:]
-			GlobalModules[globalName] = modHash
-		}
-	}
-
-	// Register Global Modules (like fs, math, os, etc.) in the global Registry
-	for name, obj := range GlobalModules {
-		Registry = append(Registry, struct {
-			Name   string
-			Object object.Object
-		}{name, obj})
-	}
 }
-
-// ... (other funcs)
 
 func panicFunc(args ...object.Object) object.Object {
 	if len(args) != 1 {
@@ -174,29 +188,7 @@ func setFunc(args ...object.Object) object.Object {
 	return newError("argument to `set` not supported, got %T", args[0])
 }
 
-var GlobalModules map[string]*object.Hash
-
-func init() {
-	// Register Concurrency builtins globally (channels, etc.)
-	Registry = append(Registry, ConcurrencyBuiltins...)
-
-	GlobalModules = make(map[string]*object.Hash)
-	nativeModules := []string{"_strings", "_math", "_json", "_os", "_fs", "_http"}
-	for _, modName := range nativeModules {
-		if modHash := GetNativeModule(modName); modHash != nil {
-			globalName := modName[1:]
-			GlobalModules[globalName] = modHash
-		}
-	}
-
-	// Register Global Modules (like fs, math, os, etc.) in the global Registry
-	for name, obj := range GlobalModules {
-		Registry = append(Registry, struct {
-			Name   string
-			Object object.Object
-		}{name, obj})
-	}
-}
+var GlobalModules = make(map[string]*object.Hash)
 
 func lenFunc(args ...object.Object) object.Object {
 	if len(args) != 1 {
@@ -379,6 +371,108 @@ func restFunc(args ...object.Object) object.Object {
 		return &object.Null{}
 	default:
 		return newError("argument to `rest` must be ARRAY or STRING, got %T", args[0])
+	}
+}
+
+func appendFunc(args ...object.Object) object.Object {
+	if len(args) < 2 {
+		return newError("wrong number of arguments. got=%d, want>=2", len(args))
+	}
+	arr, ok := args[0].(*object.Array)
+	if !ok {
+		return newError("first argument to `append` must be ARRAY, got %T", args[0])
+	}
+	newElements := make([]object.Object, len(arr.Elements)+len(args)-1)
+	copy(newElements, arr.Elements)
+	for i := 1; i < len(args); i++ {
+		newElements[len(arr.Elements)+i-1] = args[i]
+	}
+	return &object.Array{Elements: newElements}
+}
+
+func copyFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments. got=%d, want=1", len(args))
+	}
+	arr, ok := args[0].(*object.Array)
+	if !ok {
+		return newError("argument to `copy` must be ARRAY, got %T", args[0])
+	}
+	newElements := make([]object.Object, len(arr.Elements))
+	copy(newElements, arr.Elements)
+	return &object.Array{Elements: newElements}
+}
+
+func deleteFunc(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return newError("wrong number of arguments. got=%d, want=2", len(args))
+	}
+	hash, ok := args[0].(*object.Hash)
+	if !ok {
+		return newError("first argument to `delete` must be HASH, got %s", args[0].Type())
+	}
+	key, ok := args[1].(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", args[1].Type())
+	}
+	delete(hash.Pairs, key.HashKey())
+	return &object.Null{}
+}
+
+func rangeFunc(args ...object.Object) object.Object {
+	if len(args) == 1 {
+		end, ok := args[0].(*object.Integer)
+		if !ok {
+			return newError("argument to `range` must be INTEGER, got %s", args[0].Type())
+		}
+		elements := make([]object.Object, end.Value)
+		for i := int64(0); i < end.Value; i++ {
+			elements[i] = &object.Integer{Value: i}
+		}
+		return &object.Array{Elements: elements}
+	}
+	if len(args) == 2 {
+		start, ok1 := args[0].(*object.Integer)
+		end, ok2 := args[1].(*object.Integer)
+		if !ok1 || !ok2 {
+			return newError("arguments to `range` must be INTEGERs, got %s, %s", args[0].Type(), args[1].Type())
+		}
+		if end.Value <= start.Value {
+			return &object.Array{Elements: []object.Object{}}
+		}
+		size := end.Value - start.Value
+		elements := make([]object.Object, size)
+		for i := int64(0); i < size; i++ {
+			elements[i] = &object.Integer{Value: start.Value + i}
+		}
+		return &object.Array{Elements: elements}
+	}
+	return newError("wrong number of arguments. got=%d, want=1 or 2", len(args))
+}
+
+func cloneFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments. got=%d, want=1", len(args))
+	}
+	switch arg := args[0].(type) {
+	case *object.Array:
+		newElements := make([]object.Object, len(arg.Elements))
+		copy(newElements, arg.Elements)
+		return &object.Array{Elements: newElements}
+	case *object.Hash:
+		newPairs := make(map[object.HashKey]object.HashPair)
+		for k, v := range arg.Pairs {
+			newPairs[k] = v
+		}
+		return &object.Hash{Pairs: newPairs}
+	case *object.Instance:
+		newFields := make(map[string]object.Object)
+		for k, v := range arg.Fields {
+			newFields[k] = v
+		}
+		return &object.Instance{StructName: arg.StructName, Fields: newFields}
+	default:
+		return args[0]
 	}
 }
 

@@ -13,14 +13,26 @@ var ConcurrencyBuiltins = []struct {
 	Object object.Object
 }{
 	{"make_chan", &object.Builtin{Fn: makeChan}},
+	{"channel", &object.Builtin{Fn: makeChan}},
 	{"send", &object.Builtin{Fn: sendChan}},
 	{"recv", &object.Builtin{Fn: recvChan}},
+	{"close", &object.Builtin{Fn: closeChan}},
 	{"connect", &object.Builtin{Fn: connectFunc}},
 	{"listen", &object.Builtin{Fn: listenFunc}},
 }
 
 func makeChan(args ...object.Object) object.Object {
-	ch := make(chan object.Object, 10) // Increased buffer size to 10
+	bufferSize := 1
+	if len(args) > 0 {
+		if intObj, ok := args[0].(*object.Integer); ok {
+			if intObj.Value > 0 {
+				bufferSize = int(intObj.Value)
+			}
+		} else {
+			return newError("channel buffer size must be an integer, got %s", args[0].Type())
+		}
+	}
+	ch := make(chan object.Object, bufferSize)
 	return &object.Channel{Value: ch}
 }
 
@@ -62,6 +74,19 @@ func recvChan(args ...object.Object) object.Object {
 			return newError("remote recv failed: %s", err)
 		}
 		return val
+	default:
+		return newError("arg must be channel")
+	}
+}
+
+func closeChan(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong args: close(channel)")
+	}
+	switch ch := args[0].(type) {
+	case *object.Channel:
+		close(ch.Value)
+		return &object.Null{}
 	default:
 		return newError("arg must be channel")
 	}

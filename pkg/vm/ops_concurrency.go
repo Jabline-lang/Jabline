@@ -4,9 +4,26 @@ import (
 	"context"
 	"fmt"
 	"jabline/pkg/code"
+	"jabline/pkg/log"
 	"jabline/pkg/object"
-	"os"
+	"jabline/pkg/sandbox"
+	"sync"
 )
+
+// MaxConcurrentSpawns limits the number of active goroutines created by spawn
+// to prevent fork bombs and out-of-memory errors.
+// Can be changed at runtime (e.g., jabline.MaxConcurrentSpawns = 50000).
+var MaxConcurrentSpawns = 10000
+
+var spawnLimiterOnce sync.Once
+var spawnLimiter chan struct{}
+
+func getSpawnLimiter() chan struct{} {
+	spawnLimiterOnce.Do(func() {
+		spawnLimiter = make(chan struct{}, MaxConcurrentSpawns)
+	})
+	return spawnLimiter
+}
 
 func ExecuteClosureBridge(closureObj object.Object, args []object.Object) object.Object {
 	callee, ok := closureObj.(*object.Closure)
@@ -33,10 +50,10 @@ func ExecuteClosureBridge(closureObj object.Object, args []object.Object) object
 
 	newVM := &VM{
 		constants:   constants,
-		stack:       make([]object.Object, StackSize),
+		stack:       make([]object.Object, InitialStackSize),
 		sp:          0,
-		globals:     globals,
-		frames:      make([]*Frame, MaxFrames),
+		globals:     GlobalStoreFromSlice(globals),
+		frames:      make([]*Frame, InitialFrames),
 		framesIndex: 0,
 		loader:      GlobalLoader,
 		Ctx:         context.Background(),
@@ -51,20 +68,23 @@ func ExecuteClosureBridge(closureObj object.Object, args []object.Object) object
 	}
 	frame := NewFrame(callee, 1)
 	if err := newVM.pushFrame(frame); err != nil {
+		ReleaseFrame(frame)
 		return &object.Error{Message: err.Error()}
 	}
 	newVM.sp = frame.basePointer + callee.Fn.NumLocals
 
 	if err := newVM.Run(); err != nil {
+		if newVM.framesIndex > 0 && newVM.frames[0] == frame {
+			newVM.frames[0] = nil
+			newVM.framesIndex = 0
+			ReleaseFrame(frame)
+		}
 		return &object.Error{Message: err.Error()}
 	}
 	return newVM.stack[0]
 }
 
 func (vm *VM) executeAsyncCall(callee *object.Closure, numArgs int) object.Object {
-	// Args are on stack at vm.sp-numArgs to vm.sp
-	// We need to copy them
-
 	args := make([]object.Object, numArgs)
 	for i := 0; i < numArgs; i++ {
 		args[i] = vm.stack[vm.sp-numArgs+i]
@@ -77,67 +97,95 @@ func (vm *VM) executeAsyncCall(callee *object.Closure, numArgs int) object.Objec
 	constants := vm.constants
 	filename := vm.filename
 	loader := vm.loader
-	globals := vm.globals // Capture globals from current VM
 
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				err, ok := r.(error)
-				if !ok {
-					err = fmt.Errorf("async task panicked: %v", r)
+	// Deep copy maps to avoid data races between goroutines
+	methodsCopy := make(map[string]map[string]*object.Closure, len(vm.methods))
+	for k, v := range vm.methods {
+		innerCopy := make(map[string]*object.Closure, len(v))
+		for mk, mv := range v {
+			innerCopy[mk] = mv
+		}
+		methodsCopy[k] = innerCopy
+	}
+	typesCopy := make(map[string]object.Object)
+	for k, v := range vm.Types {
+		typesCopy[k] = v
+	}
+
+		go func() {
+			lim := getSpawnLimiter()
+			lim <- struct{}{}
+			defer func() { <-lim }()
+
+			defer func() {
+				if r := recover(); r != nil {
+					err, ok := r.(error)
+					if !ok {
+						err = fmt.Errorf("async task panicked: %v", r)
+					}
+					select {
+					case resultChan <- &object.Error{Message: err.Error()}:
+					case <-childCtx.Done():
+					}
 				}
-				resultChan <- &object.Error{Message: err.Error()}
-			}
-		}()
+			}()
 
-		// Manually set up the new VM for executing the specific closure
-		asyncVM := &VM{
-			constants:   constants,
-			stack:       make([]object.Object, StackSize),
-			sp:          0,
-			globals:     globals, // Use captured globals
-			frames:      make([]*Frame, MaxFrames),
-			framesIndex: 0, // Start with 0 frames, we'll push one
+			asyncVM := &VM{
+				constants:   constants,
+				stack:       make([]object.Object, InitialStackSize),
+				sp:          0,
+				globals:     GlobalStoreFromSlice(vm.globals.Snapshot()),
+			frames:      make([]*Frame, InitialFrames),
+			framesIndex: 0,
 			filename:    filename,
 			loader:      loader,
 			Ctx:         childCtx,
-			methods:     vm.methods,
-			Types:       vm.Types,
+			Cancel:      cancel,
+			methods:     methodsCopy,
+			Types:       typesCopy,
+			Sandbox:     vm.Sandbox,
 		}
 
-		// Push a dummy object at stack[0] as the 'function' slot for OpReturnValue to overwrite
 		asyncVM.stack[0] = Null
 		asyncVM.sp = 1
 
-		// Push the arguments onto the asyncVM's stack
 		for i := 0; i < numArgs; i++ {
 			asyncVM.stack[1+i] = args[i]
 		}
-		asyncVM.sp = 1 + numArgs // Stack pointer is now past dummy + arguments
+		asyncVM.sp = 1 + numArgs
 
-		// Create a new frame for the closure
-		// basePointer should be 1 because args are after the dummy at 0
-		asyncFrame := NewFrame(callee, 1) // basePointer for the arguments
+		asyncFrame := NewFrame(callee, 1)
 		if err := asyncVM.pushFrame(asyncFrame); err != nil {
-			resultChan <- &object.Error{Message: err.Error()}
+			ReleaseFrame(asyncFrame)
+			select {
+			case resultChan <- &object.Error{Message: err.Error()}:
+			case <-childCtx.Done():
+			}
 			close(resultChan)
 			return
 		}
-
-		// Update stack pointer for the asyncVM to reflect the new frame and its locals
 		asyncVM.sp = asyncFrame.basePointer + callee.Fn.NumLocals
 
-		err := asyncVM.Run() // Run this specific function in its own VM
+		err := asyncVM.Run()
+		if asyncVM.framesIndex > 0 && asyncVM.frames[0] == asyncFrame {
+			asyncVM.frames[0] = nil
+			asyncVM.framesIndex = 0
+			ReleaseFrame(asyncFrame)
+		}
 		if err != nil {
-			resultChan <- &object.Error{Message: err.Error()}
+			select {
+			case resultChan <- &object.Error{Message: err.Error()}:
+			case <-childCtx.Done():
+			}
 			close(resultChan)
 			return
 		}
 
-		var result object.Object = Null
-		// OpReturnValue puts the result at basePointer-1 (index 0)
-		result = asyncVM.stack[0]
-		resultChan <- result
+		result := asyncVM.stack[0]
+		select {
+		case resultChan <- result:
+		case <-childCtx.Done():
+		}
 		close(resultChan)
 	}()
 
@@ -145,6 +193,10 @@ func (vm *VM) executeAsyncCall(callee *object.Closure, numArgs int) object.Objec
 }
 
 func (vm *VM) opSpawn(ins code.Instructions, ip *int) error {
+	if err := vm.CheckPermission(sandbox.PermSpawn, "spawn"); err != nil {
+		return err
+	}
+
 	numArgs := int(ins[*ip+1])
 	*ip += 1
 
@@ -176,13 +228,23 @@ func (vm *VM) opSpawn(ins code.Instructions, ip *int) error {
 		newVM := NewWithLoader(code.Instructions{}, constants, filename, loader)
 		newVM.Ctx = childCtx
 		newVM.Cancel = cancel
-		newVM.globals = vm.globals // Share globals with child process
+		newVM.globals = GlobalStoreFromSlice(vm.globals.Snapshot()) // Isolated copy of globals
+		newVM.Sandbox = vm.Sandbox // Inherit sandbox policy
 
 		// Setup supervisor recovery for this spawn worker
 		defer func() {
+			// Release main frame to avoid memory leak
+			if newVM.framesIndex > 0 && newVM.frames[0] != nil {
+				mainFrame := newVM.frames[0]
+				newVM.frames[0] = nil
+				newVM.framesIndex = 0
+				ReleaseFrame(mainFrame)
+			}
+		}()
+		defer func() {
 			if r := recover(); r != nil {
 				// We don't crash the host VM. Instead, we emit a Supervisor error.
-				fmt.Fprintf(os.Stderr, "[Supervisor] Background process panicked: %v\n", r)
+				log.Error("Supervisor background process panicked", "panic", r)
 
 				// Optional: Send the error down the result channel so await doesn't hang forever
 				// if it was waiting for a result from a process that just died.
@@ -235,11 +297,18 @@ func (vm *VM) opAwait() error {
 
 	switch ch := obj.(type) {
 	case *object.Channel:
-		val, ok := <-ch.Value
-		if !ok {
-			return vm.push(Null) // Channel was closed or empty
+		select {
+		case val, ok := <-ch.Value:
+			if !ok {
+				return vm.push(Null)
+			}
+			return vm.push(val)
+		case <-vm.Ctx.Done():
+			if ch.Cancel != nil {
+				ch.Cancel()
+			}
+			return vm.push(Null)
 		}
-		return vm.push(val)
 
 	case *object.RemoteChannel:
 		val, err := ch.Receive()
@@ -248,8 +317,18 @@ func (vm *VM) opAwait() error {
 		}
 		return vm.push(val)
 
+	case *object.Promise:
+		switch ch.State {
+		case object.RESOLVED:
+			return vm.push(ch.Value)
+		case object.REJECTED:
+			return vm.push(ch.Reason)
+		default:
+			return vm.push(Null)
+		}
+
 	default:
-		return fmt.Errorf("can only await on a channel, got %s", obj.Type())
+		return fmt.Errorf("can only await on a channel or promise, got %s", obj.Type())
 	}
 }
 
@@ -283,4 +362,59 @@ func (vm *VM) opRecvChannel() error {
 	}
 
 	return vm.push(val)
+}
+
+func (vm *VM) opNextItem() error {
+	indexObj := vm.pop()
+	iterable := vm.pop()
+
+	// Determine index for array/string iteration
+	index := int64(0)
+	if idx, ok := indexObj.(*object.Integer); ok {
+		index = idx.Value
+	}
+
+	switch it := iterable.(type) {
+	case *object.Array:
+		if index < int64(len(it.Elements)) {
+			val := it.Elements[index]
+			vm.push(val)
+			nextIndex := &object.Integer{Value: index + 1}
+			vm.push(nextIndex)
+			return vm.push(True)
+		}
+		// Exhausted
+		vm.push(Null)
+		vm.push(Null)
+		return vm.push(False)
+
+	case *object.String:
+		runes := []rune(it.Value)
+		if index < int64(len(runes)) {
+			val := &object.String{Value: string(runes[index])}
+			vm.push(val)
+			nextIndex := &object.Integer{Value: index + 1}
+			vm.push(nextIndex)
+			return vm.push(True)
+		}
+		// Exhausted
+		vm.push(Null)
+		vm.push(Null)
+		return vm.push(False)
+
+	case *object.Channel:
+		val, open := <-it.Value
+		if open {
+			vm.push(val)
+			vm.push(&object.Integer{Value: 0})
+			return vm.push(True)
+		}
+		// Channel closed
+		vm.push(Null)
+		vm.push(Null)
+		return vm.push(False)
+
+	default:
+		return fmt.Errorf("cannot iterate over %s", iterable.Type())
+	}
 }

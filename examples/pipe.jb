@@ -1,0 +1,13 @@
+let result = 5
+    |> fn(x) { return x * 2 }
+    |> fn(x) { return x + 1 }
+    |> fn(x) { return x * x }
+
+echo("piped: " + toString(result))
+
+fn double(x) { return x * 2 }
+fn inc(x)    { return x + 1 }
+fn square(x) { return x * x }
+
+let chained = 3 |> double |> inc |> square
+echo("chained: " + toString(chained))

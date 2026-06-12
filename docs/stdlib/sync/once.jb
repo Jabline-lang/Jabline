@@ -1,0 +1,17 @@
+// once.jb - demonstrates run once pattern
+
+import sync
+
+let once = sync.once()
+
+fn initialize() {
+    println("Initialization running...")
+}
+
+fn main() {
+    once.do(initialize)
+    once.do(initialize)
+    once.do(initialize)
+
+    println("Initialization happened only once")
+}

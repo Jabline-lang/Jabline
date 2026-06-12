@@ -1,0 +1,16 @@
+// get_set.jb - demonstrates environment variable access
+
+import env
+
+fn main() {
+    env.set("APP_MODE", "development")
+    env.set("APP_PORT", "3000")
+
+    let mode = env.get("APP_MODE", "production")
+    let port = env.get("APP_PORT", "8080")
+    let missing = env.get("NOT_SET", "default")
+
+    println("Mode: " + mode)
+    println("Port: " + port)
+    println("Missing: " + missing)
+}

@@ -1,0 +1,28 @@
+describe(
+    "Type Alias",
+    fn() {
+        it(
+            "can define a type alias",
+            fn() {
+                alias MyInt = int;
+
+                let x: MyInt = 42;
+                assertEqual(x, 42, "alias resolves to int");
+            }
+        )
+
+        it(
+            "can use type alias in struct",
+            fn() {
+                alias Name = string;
+
+                struct Person {
+                    name: Name
+                }
+
+                let p = Person{name: "Alice"};
+                assertEqual(p.name, "Alice", "alias in struct field");
+            }
+        )
+    }
+)

@@ -33,6 +33,17 @@ func (rc *RemoteChannel) Receive() (Object, error) {
 	return NativeToObject(native), nil
 }
 
+// NetChannel represents a raw network connection used by TLS and TCP builtins.
+type NetChannel struct {
+	Conn   net.Conn
+	Buffer []byte
+}
+
+func (nc *NetChannel) Type() ObjectType { return "NET_CHANNEL" }
+func (nc *NetChannel) Inspect() string {
+	return fmt.Sprintf("NetChannel(%s)", nc.Conn.RemoteAddr())
+}
+
 // Helpers for serialization (Should act as bridge between Object and Go types)
 
 func ObjectToNative(obj Object) interface{} {

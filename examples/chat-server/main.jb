@@ -1,0 +1,16 @@
+fn main() {
+    echo("Connecting to wss://echo.websocket.org ...");
+    let conn = websocket.Connect("wss://echo.websocket.org");
+
+    let msg = "Hello from Jabline!";
+    echo("Sending: " + msg);
+    websocket.WriteText(conn, msg);
+
+    let reply = websocket.Read(conn);
+    echo("Received: " + reply);
+
+    websocket.Close(conn);
+    echo("Connection closed.");
+}
+
+main();

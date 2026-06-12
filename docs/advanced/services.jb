@@ -1,0 +1,18 @@
+// Service Definitions - Declarative service configuration and methods
+
+service Config {
+    host: "localhost"
+    port: 8080
+    timeout: 30
+}
+
+service Greeter {
+    greeting: "Hello"
+    fn greet(name): string {
+        return this.greeting + " " + name
+    }
+}
+
+print("Host: " + Config.host)
+print("Port: " + toString(Config.port))
+print("Greeting: " + Greeter.greet("World"))

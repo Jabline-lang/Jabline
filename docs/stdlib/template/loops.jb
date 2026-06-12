@@ -1,0 +1,12 @@
+// loops.jb - demonstrates template loops
+
+import template
+
+let tpl = "Items:\n{{ for item in items }}- {{ item }}\n{{ end }}"
+
+let data = {"items": ["apple", "banana", "cherry"]}
+
+fn main() {
+    let result = template.render(tpl, data)
+    println(result)
+}

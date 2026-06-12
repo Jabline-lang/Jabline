@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"jabline/pkg/compiler"
@@ -30,7 +29,7 @@ Available commands in debugger:
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := args[0]
-		src, err := ioutil.ReadFile(filename)
+		src, err := os.ReadFile(filename)
 		if err != nil {
 			fmt.Printf("Error leyendo archivo: %s\n", err)
 			os.Exit(1)
@@ -52,7 +51,7 @@ Available commands in debugger:
 		comp := compiler.New()
 		err = comp.Compile(program)
 		if err != nil {
-			fmt.Printf("Error del compilador: %s\n", err)
+			fmt.Printf("Compiler error: %s\n", err)
 			os.Exit(1)
 		}
 

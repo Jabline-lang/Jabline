@@ -1,0 +1,20 @@
+// select {} - multiplex channel operations
+// Run with: jabline run select_basic.jb
+
+let ch1 = channel()
+let ch2 = channel()
+
+spawn fn() {
+    ch1 <- "from channel 1"
+}()
+
+spawn fn() {
+    ch2 <- "from channel 2"
+}()
+
+select {
+    case <-ch1:
+        echo("received on ch1")
+    case <-ch2:
+        echo("received on ch2")
+}

@@ -1,0 +1,17 @@
+// list_ops.jb - demonstrates Redis list operations
+
+import redis
+
+let r = redis.connect("localhost", 6379)
+
+fn main() {
+    r.lpush("tasks", "task3")
+    r.lpush("tasks", "task2")
+    r.lpush("tasks", "task1")
+
+    let count = r.llen("tasks")
+    println("List length: " + count)
+
+    let item = r.rpop("tasks")
+    println("Popped: " + item)
+}

@@ -1,0 +1,19 @@
+// Assert Error - Testing that code throws expected errors
+
+fn divide(a, b) {
+    if (b == 0) {
+        throw "division by zero"
+    }
+    return a / b
+}
+
+describe("Error Assertions", fn() {
+    it("fails on division by zero", fn() {
+        let result = is_error(try divide(10, 0))
+        assertTrue(result, "division by zero throws")
+    })
+
+    it("succeeds on valid division", fn() {
+        assertEqual(divide(10, 2), 5, "10/2=5")
+    })
+})

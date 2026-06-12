@@ -1,0 +1,18 @@
+// export fn - make functions available to importing modules
+// Run with: jabline run export_function.jb
+
+export fn greet(name) {
+    return "Hello, " + name + "!"
+}
+
+export fn add(a, b) {
+    return a + b
+}
+
+fn internalHelper(x) {
+    return x * 2
+}
+
+// Self-test
+echo(greet("Jabline"))
+echo("3 + 5 = " + toString(add(3, 5)))

@@ -1,0 +1,35 @@
+// Visitor - Adds operations to object structures
+
+struct Circle { radius: float }
+struct Square { side: float }
+struct Triangle { base: float, height: float }
+
+fn (c Circle) accept(visitor) {
+    return visitor.visitCircle(c)
+}
+fn (s Square) accept(visitor) {
+    return visitor.visitSquare(s)
+}
+fn (t Triangle) accept(visitor) {
+    return visitor.visitTriangle(t)
+}
+
+fn createAreaVisitor() {
+    return {
+        "visitCircle": fn(self, c) { return 3.14159 * c.radius * c.radius },
+        "visitSquare": fn(self, s) { return s.side * s.side },
+        "visitTriangle": fn(self, t) { return 0.5 * t.base * t.height }
+    }
+}
+
+let shapes = [
+    Circle{radius: 5.0},
+    Square{side: 4.0},
+    Triangle{base: 3.0, height: 6.0}
+]
+let visitor = createAreaVisitor()
+let i = 0
+while (i < len(shapes)) {
+    print("Area: " + toString(shapes[i].accept(visitor)))
+    i = i + 1
+}

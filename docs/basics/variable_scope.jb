@@ -1,0 +1,11 @@
+// Variable Scope - Block scoping with {}
+
+let x = 10               // global to this file
+
+if true {
+    let y = 20           // scoped to this block
+    print("Inside block: x=" + toString(x) + ", y=" + toString(y))
+}
+
+print("Outside block: x=" + toString(x))
+// print(y)              // error: y is not defined here

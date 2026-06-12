@@ -1,0 +1,42 @@
+// Pipeline - Stages connected by channels
+
+let input = channel(10)
+let stage1 = channel(10)
+let stage2 = channel(10)
+let output = channel(10)
+
+spawn fn() {
+    let val = <-input
+    while (val != null) {
+        stage1 <- val * 2
+        val = <-input
+    }
+    close(stage1)
+}
+
+spawn fn() {
+    let val = <-stage1
+    while (val != null) {
+        stage2 <- val + 1
+        val = <-stage1
+    }
+    close(stage2)
+}
+
+spawn fn() {
+    let val = <-stage2
+    while (val != null) {
+        output <- val
+        val = <-stage2
+    }
+    close(output)
+}
+
+input <- 1; input <- 2; input <- 3
+close(input)
+
+let result = <-output
+while (result != null) {
+    print("Result: " + toString(result))
+    result = <-output
+}

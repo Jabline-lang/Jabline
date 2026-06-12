@@ -1,0 +1,13 @@
+// copy() creates a shallow copy of an array
+
+let original = [1, 2, 3, 4, 5]
+let cloned = copy(original)
+
+echo("original: " + toString(original))
+echo("cloned:   " + toString(cloned))
+
+// Mutating the clone does not affect the original
+cloned[0] = 99
+echo("after mutation:")
+echo("original: " + toString(original))
+echo("cloned:   " + toString(cloned))

@@ -1,0 +1,217 @@
+describe(
+    "Data Types and Structures",
+    fn() {
+        it(
+            "supports integers",
+            fn() {
+                assertEqual(42, 42, "integer literal");
+                assertEqual(-10, -10, "negative integer");
+            }
+        )
+
+        it(
+            "supports floats",
+            fn() {
+                assertEqual(3.14, 3.14, "float literal");
+                assertEqual(type(3.14), "FLOAT", "float type name");
+            }
+        )
+
+        it(
+            "supports strings",
+            fn() {
+                assertEqual("hello", "hello", "string literal");
+                assertEqual("hello" + " world", "hello world", "string concatenation");
+                assertEqual(len("hello"), 5, "string length via len");
+            }
+        )
+
+        it(
+            "supports booleans",
+            fn() {
+                assertTrue(true, "true literal");
+                assertFalse(false, "false literal");
+            }
+        )
+
+        it(
+            "supports null",
+            fn() {
+                assertNull(null, "null literal");
+            }
+        )
+
+        it(
+            "supports arrays",
+            fn() {
+                let arr = [1, 2, 3];
+                assertEqual(len(arr), 3, "array length via len");
+                assertEqual(arr[0], 1, "array index 0");
+                assertEqual(arr[2], 3, "array index 2");
+            }
+        )
+
+        it(
+            "supports nested arrays",
+            fn() {
+                let matrix = [
+                    [1, 2],
+                    [3, 4]
+                ];
+                assertEqual(matrix[0][1], 2, "nested array access");
+            }
+        )
+
+        it(
+            "supports array push",
+            fn() {
+                let arr = [1, 2];
+                let newArr = push(arr, 3);
+                assertEqual(len(newArr), 3, "after push");
+                assertEqual(newArr[2], 3, "pushed value");
+            }
+        )
+
+        it(
+            "supports array pop",
+            fn() {
+                let arr = [1, 2, 3];
+                let popped = pop(arr);
+                assertEqual(popped, 3, "popped value");
+                assertEqual(len(arr), 2, "arr mutated");
+            }
+        )
+
+        it(
+            "supports array first and last",
+            fn() {
+                let arr = [10, 20, 30];
+                assertEqual(first(arr), 10, "first element");
+                assertEqual(last(arr), 30, "last element");
+            }
+        )
+
+        it(
+            "supports array rest",
+            fn() {
+                let arr = [1, 2, 3, 4];
+                let tail = rest(arr);
+                assertEqual(len(tail), 3, "rest length");
+                assertEqual(tail[0], 2, "rest[0]");
+            }
+        )
+
+        it(
+            "supports hashes",
+            fn() {
+                let h = {
+                    "name": "Jabline",
+                    "version": "0.6"
+                };
+                assertEqual(h.name, "Jabline", "hash field access");
+                assertEqual(h.version, "0.6", "hash field access 2");
+            }
+        )
+
+        it(
+            "supports hash bracket access",
+            fn() {
+                let h = {
+                    "a": 1,
+                    "b": 2
+                };
+                assertEqual(h["a"], 1, "hash bracket access");
+                assertEqual(h["b"], 2, "hash bracket access 2");
+            }
+        )
+
+        it(
+            "supports nested hashes",
+            fn() {
+                let data = {
+                    "user": {
+                        "age": 30,
+                        "name": "Alice"
+                    }
+                };
+                assertEqual(data.user.name, "Alice", "nested hash access");
+                assertEqual(data.user.age, 30, "nested hash access 2");
+            }
+        )
+
+        it(
+            "supports hash keys and values",
+            fn() {
+                let h = {
+                    "x": 10,
+                    "y": 20
+                };
+                let ks = keys(h);
+                assertEqual(len(ks), 2, "two keys");
+                let vs = values(h);
+                assertEqual(len(vs), 2, "two values");
+            }
+        )
+
+        it(
+            "supports hash set via builtin",
+            fn() {
+                let h = {
+                    "a": 1
+                };
+                set(h, "b", 2);
+                assertEqual(h["b"], 2, "hash set new key");
+                assertEqual(len(h), 2, "hash grew");
+            }
+        )
+
+        it(
+            "supports hash missing key returns null",
+            fn() {
+                let h = {
+                    "a": 1
+                };
+                assertNull(h["missing"], "missing key returns null");
+            }
+        )
+
+        it(
+            "supports string indexing",
+            fn() {
+                let s = "hello";
+                assertEqual(s[0], "h", "string index 0");
+                assertEqual(s[4], "o", "string index 4");
+            }
+        )
+
+        it(
+            "supports type function",
+            fn() {
+                assertEqual(type(42), "INTEGER", "type int");
+                assertEqual(type("hi"), "STRING", "type string");
+                assertEqual(type(true), "BOOLEAN", "type bool");
+                assertEqual(type([1, 2]), "ARRAY", "type array");
+                assertEqual(type({
+                    "a": 1
+                }), "HASH", "type hash");
+                assertEqual(type(null), "NULL", "type null");
+            }
+        )
+
+        it(
+            "supports toString",
+            fn() {
+                assertEqual(toString(42), "42", "int to string");
+                assertEqual(toString(true), "true", "bool to string");
+            }
+        )
+
+        it(
+            "supports parseInt and parseFloat",
+            fn() {
+                assertEqual(parseInt("42"), 42, "parseInt");
+                assertEqual(parseFloat("3.14"), 3.14, "parseFloat");
+            }
+        )
+    }
+)

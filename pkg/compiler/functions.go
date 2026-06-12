@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -38,19 +37,46 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 	}
 
 	// Compile the parameters as local variables within the function's scope.
+	var paramSymbols []symbol.Symbol
 	for _, p := range node.Parameters {
 		paramType := ""
 		if p.Type != nil {
 			paramType = p.Type.Value
 		}
 		sym := c.symbolTable.DefineWithType(p.Value, paramType)
+		paramSymbols = append(paramSymbols, sym)
+	}
 
-		// If the parameter has a type annotation, insert runtime check
+	// Emit default value initialization prologue for parameters with defaults
+	// This must run BEFORE type checks so defaults are applied first
+	for i, p := range node.Parameters {
+		if p.DefaultValue != nil {
+			sym := paramSymbols[i]
+			// get_local idx; jump_not_null skip; pop; <default>; set_local idx; jump end; skip: pop
+			c.emit(code.OpGetLocal, sym.Index)
+			jumpNotNullPos := c.emit(code.OpJumpNotNull, 9999)
+			c.emit(code.OpPop)
+			if err := c.Compile(p.DefaultValue); err != nil {
+				return err
+			}
+			c.emit(code.OpSetLocal, sym.Index)
+			jumpEndPos := c.emit(code.OpJump, 9999)
+			skipPos := len(c.currentInstructions())
+			c.changeOperand(jumpNotNullPos, skipPos)
+			c.emit(code.OpPop)
+			endPos := len(c.currentInstructions())
+			c.changeOperand(jumpEndPos, endPos)
+		}
+	}
+
+	// Runtime type checks for parameters with type annotations (after defaults applied)
+	for i, p := range node.Parameters {
 		if p.Type != nil {
+			sym := paramSymbols[i]
 			typeIdx := c.addConstant(&object.String{Value: p.Type.Value})
 			c.emit(code.OpGetLocal, sym.Index)
 			c.emit(code.OpCheckType, typeIdx)
-			c.emit(code.OpPop) // CheckType inspects the top of stack, Pop removes it
+			c.emit(code.OpPop)
 		}
 	}
 
@@ -67,6 +93,7 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions() // Access via getter
+	fnSymTable := c.symbolTable                 // Save before leaveScope
 	instructions, sourceMap := c.leaveScope()   // Exit the function's scope
 
 	for _, s := range freeSymbols {
@@ -87,6 +114,11 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 		numParams++
 	}
 
+	isVariadic := false
+	if len(node.Parameters) > 0 && node.Parameters[len(node.Parameters)-1].Variadic {
+		isVariadic = true
+	}
+
 	typeParams := []string{}
 	for _, tp := range node.TypeParameters {
 		typeParams = append(typeParams, tp.Value)
@@ -98,7 +130,9 @@ func (c *Compiler) compileFunctionStatement(node *ast.FunctionStatement) error {
 		NumParameters:  numParams,
 		SourceMap:      sourceMap,
 		Name:           fnName,
+		IsVariadic:     isVariadic,
 		TypeParameters: typeParams,
+		SymTable:       fnSymTable,
 	}
 	// Emits the closure onto the stack
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
@@ -134,14 +168,40 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 		c.symbolTable.DefineType(tp.Value)
 	}
 
+	var paramSymbols []symbol.Symbol
 	for _, p := range node.Parameters {
 		paramType := ""
 		if p.Type != nil {
 			paramType = p.Type.Value
 		}
 		sym := c.symbolTable.DefineWithType(p.Value, paramType)
+		paramSymbols = append(paramSymbols, sym)
+	}
 
+	// Emit default value initialization prologue for parameters with defaults
+	for i, p := range node.Parameters {
+		if p.DefaultValue != nil {
+			sym := paramSymbols[i]
+			c.emit(code.OpGetLocal, sym.Index)
+			jumpNotNullPos := c.emit(code.OpJumpNotNull, 9999)
+			c.emit(code.OpPop)
+			if err := c.Compile(p.DefaultValue); err != nil {
+				return err
+			}
+			c.emit(code.OpSetLocal, sym.Index)
+			jumpEndPos := c.emit(code.OpJump, 9999)
+			skipPos := len(c.currentInstructions())
+			c.changeOperand(jumpNotNullPos, skipPos)
+			c.emit(code.OpPop)
+			endPos := len(c.currentInstructions())
+			c.changeOperand(jumpEndPos, endPos)
+		}
+	}
+
+	// Runtime type checks for parameters with type annotations (after defaults applied)
+	for i, p := range node.Parameters {
 		if p.Type != nil {
+			sym := paramSymbols[i]
 			typeIdx := c.addConstant(&object.String{Value: p.Type.Value})
 			c.emit(code.OpGetLocal, sym.Index)
 			c.emit(code.OpCheckType, typeIdx)
@@ -162,15 +222,30 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
+	fnSymTable := c.symbolTable
 	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
-		c.emit(code.OpGetFree, s.Index)
+		switch s.Scope {
+		case symbol.GlobalScope:
+			c.emit(code.OpGetGlobal, s.Index)
+		case symbol.LocalScope:
+			c.emit(code.OpGetLocal, s.Index)
+		case symbol.FreeScope:
+			c.emit(code.OpGetFree, s.Index)
+		case symbol.FunctionScope:
+			c.emit(code.OpCurrentClosure)
+		}
 	}
 
 	typeParams := []string{}
 	for _, tp := range node.TypeParameters {
 		typeParams = append(typeParams, tp.Value)
+	}
+
+	isVariadic := false
+	if len(node.Parameters) > 0 && node.Parameters[len(node.Parameters)-1].Variadic {
+		isVariadic = true
 	}
 
 	compiledFn := &object.CompiledFunction{
@@ -179,8 +254,10 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 		NumParameters:  len(node.Parameters),
 		SourceMap:      sourceMap,
 		IsAsync:        true,
+		IsVariadic:     isVariadic,
 		Name:           node.Name.Value,
 		TypeParameters: typeParams,
+		SymTable:       fnSymTable,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -195,10 +272,27 @@ func (c *Compiler) compileAsyncFunctionStatement(node *ast.AsyncFunctionStatemen
 
 func (c *Compiler) compileReturnStatement(node *ast.ReturnStatement) error {
 	if node.ReturnValue != nil {
-		// Static type validation
 		valType := c.inferType(node.ReturnValue)
 		if err := c.checkTypeMatch(c.expectedReturnType, valType, node.ReturnValue); err != nil {
-			return fmt.Errorf("compile error: return type mismatch - %s", err)
+			return c.errorPos("compile error: return type mismatch - %s", err)
+		}
+
+		if _, isCall := node.ReturnValue.(*ast.CallExpression); isCall {
+			c.tailCallReturn = true
+			if err := c.Compile(node.ReturnValue); err != nil {
+				c.tailCallReturn = false
+				return err
+			}
+			c.tailCallReturn = false
+			lastOp := c.scopes[c.scopeIndex].lastInstruction
+			if lastOp.Opcode == code.OpCall {
+				argCount := int(c.currentInstructions()[lastOp.Position+1])
+				c.replaceInstruction(lastOp.Position, code.Make(code.OpTailCall, argCount))
+				c.scopes[c.scopeIndex].lastInstruction.Opcode = code.OpTailCall
+				return nil
+			}
+			c.emit(code.OpReturnValue)
+			return nil
 		}
 
 		if err := c.Compile(node.ReturnValue); err != nil {
@@ -206,9 +300,8 @@ func (c *Compiler) compileReturnStatement(node *ast.ReturnStatement) error {
 		}
 		c.emit(code.OpReturnValue)
 	} else {
-		// If return type is expected but no value provided
 		if c.expectedReturnType != "" && c.expectedReturnType != "any" {
-			return fmt.Errorf("compile error: return type mismatch - expected %s, got void", c.expectedReturnType)
+			return c.errorPos("compile error: return type mismatch - expected %s, got void", c.expectedReturnType)
 		}
 		c.emit(code.OpReturn)
 	}

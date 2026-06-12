@@ -1,0 +1,12 @@
+// Multiple Assignment - Assign multiple vars at once
+
+let x, y = 1, 2
+print("x=" + toString(x) + ", y=" + toString(y))
+
+let a, b, c = 10, 20, 30
+print("a=" + toString(a) + " b=" + toString(b) + " c=" + toString(c))
+
+// Swap values
+let p = 5, q = 9
+p, q = q, p
+print("p=" + toString(p) + ", q=" + toString(q))

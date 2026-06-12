@@ -1,0 +1,32 @@
+// Generic collection type
+
+struct List<T> {
+    items: array
+}
+
+fn newList<T>() {
+    return List<T> { items: [] }
+}
+
+fn (l List<T>) add(item: T) {
+    l.items = push(l.items, item)
+}
+
+fn (l List<T>) get(index: int): T {
+    return l.items[index]
+}
+
+fn (l List<T>) size(): int {
+    return len(l.items)
+}
+
+let ints = newList<int>()
+ints.add(10)
+ints.add(20)
+ints.add(30)
+
+let i = 0
+while (i < ints.size()) {
+    echo("ints[" + toString(i) + "] = " + toString(ints.get(i)))
+    i = i + 1
+}

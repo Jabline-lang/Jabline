@@ -1,0 +1,13 @@
+// hex.jb - demonstrates hex encode/decode
+
+import encoding
+
+let data = "Jabline"
+
+fn main() {
+    let hex = encoding.hex_encode(data)
+    println("Hex: " + hex)
+
+    let decoded = encoding.hex_decode(hex)
+    println("Decoded: " + decoded)
+}

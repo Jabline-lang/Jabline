@@ -1,0 +1,11 @@
+// replace.jb - demonstrates replace operations
+
+import strings
+
+let text = "Hello world, world of Jabline!"
+
+fn main() {
+    let result = strings.replace(text, "world", "Jabline")
+    println("before: " + text)
+    println("after:  " + result)
+}

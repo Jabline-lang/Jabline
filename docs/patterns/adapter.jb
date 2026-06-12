@@ -1,0 +1,19 @@
+// Adapter - Makes incompatible interfaces work together
+
+fn oldApi() {
+    return "name=Alice;age=30"
+}
+
+fn newApi(name, age) {
+    return {"name": name, "age": age}
+}
+
+fn adapter(oldResult) {
+    let parts = split(oldResult, ";")
+    let name = split(parts[0], "=")[1]
+    let age = int(split(parts[1], "=")[1])
+    return newApi(name, age)
+}
+
+let adapted = adapter(oldApi())
+print("Adapted: " + stringify(adapted))

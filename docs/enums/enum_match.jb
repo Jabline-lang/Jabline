@@ -1,0 +1,27 @@
+// Matching on enum values using match
+
+enum HttpStatus {
+    OK,
+    NotFound,
+    ServerError,
+    Redirect
+}
+
+fn describe(status) {
+    match (status) {
+        case HttpStatus.OK:
+            return "200 OK"
+        case HttpStatus.NotFound:
+            return "404 Not Found"
+        case HttpStatus.ServerError:
+            return "500 Server Error"
+        case HttpStatus.Redirect:
+            return "3xx Redirect"
+        default:
+            return "Unknown status"
+    }
+}
+
+echo(describe(HttpStatus.OK))
+echo(describe(HttpStatus.NotFound))
+echo(describe(HttpStatus.ServerError))

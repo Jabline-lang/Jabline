@@ -1,0 +1,21 @@
+// waitgroup.jb - demonstrates WaitGroup pattern
+
+import sync
+import time
+
+let wg = sync.waitgroup()
+
+fn worker(id) {
+    wg.done()
+    println("Worker " + id + " finished")
+}
+
+fn main() {
+    for i in 1..5 {
+        wg.add(1)
+        go worker(i)
+    }
+
+    wg.wait()
+    println("All workers completed")
+}

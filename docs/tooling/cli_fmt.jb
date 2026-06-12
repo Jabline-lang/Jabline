@@ -1,0 +1,10 @@
+// CLI Fmt - Automatic code formatting
+// Usage: jabline fmt cli_fmt.jb
+//        jabline fmt --check cli_fmt.jb
+//        jabline fmt --write cli_fmt.jb
+
+fn add(a,b){return a+b}
+let x=1
+let y=2
+let z=add(x,y)
+print("sum="+toString(z))

@@ -1,0 +1,21 @@
+// histogram.jb - demonstrates histogram metrics
+
+import metrics
+import time
+
+let latency = metrics.histogram("request_duration_ms", "Request latency")
+
+fn main() {
+    latency.observe(10.5)
+    latency.observe(23.1)
+    latency.observe(15.3)
+    latency.observe(42.7)
+    latency.observe(8.9)
+
+    println("Histogram stats:")
+    println("  Count: " + latency.count())
+    println("  Sum: " + latency.sum())
+    println("  Avg: " + latency.avg())
+    println("  P50: " + latency.percentile(50))
+    println("  P99: " + latency.percentile(99))
+}

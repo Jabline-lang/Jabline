@@ -1,0 +1,101 @@
+// collections — Generic data structures for Jabline
+// Stack, Queue, Option, Result, Pair, map/filter/reduce
+
+export fn Stack() {
+    let state = { "data": [] };
+    return {
+        "push": fn(self, item) { state["data"] = push(state["data"], item); return self; },
+        "pop": fn(self) {
+            if (len(state["data"]) == 0) { return null; }
+            let item = last(state["data"]);
+            let n = len(state["data"]);
+            let newData = []; let i = 0;
+            while (i < n - 1) { newData = push(newData, state["data"][i]); i = i + 1; }
+            state["data"] = newData;
+            return item;
+        },
+        "peek": fn(self) {
+            if (len(state["data"]) == 0) { return null; }
+            return last(state["data"]);
+        },
+        "size": fn(self) { return len(state["data"]); },
+        "isEmpty": fn(self) { return len(state["data"]) == 0; },
+        "toArray": fn(self) { return state["data"]; }
+    };
+}
+
+export fn Queue() {
+    let state = { "data": [] };
+    return {
+        "enqueue": fn(self, item) { state["data"] = push(state["data"], item); return self; },
+        "dequeue": fn(self) {
+            if (len(state["data"]) == 0) { return null; }
+            let item = first(state["data"]);
+            state["data"] = rest(state["data"]);
+            return item;
+        },
+        "peek": fn(self) {
+            if (len(state["data"]) == 0) { return null; }
+            return first(state["data"]);
+        },
+        "size": fn(self) { return len(state["data"]); },
+        "isEmpty": fn(self) { return len(state["data"]) == 0; },
+        "toArray": fn(self) { return state["data"]; }
+    };
+}
+
+export fn Some(value) {
+    return {
+        "isSome": true, "isNone": false, "value": value,
+        "unwrap": fn(self) { return value; },
+        "unwrapOr": fn(self, fallback) { return value; },
+        "map": fn(self, f) { return Some(f(value)); }
+    };
+}
+
+export fn None() {
+    return {
+        "isSome": false, "isNone": true, "value": null,
+        "unwrap": fn(self) { throw "unwrap on None"; },
+        "unwrapOr": fn(self, fallback) { return fallback; },
+        "map": fn(self, f) { return None(); }
+    };
+}
+
+export fn Ok(value) {
+    return {
+        "isOk": true, "isErr": false, "value": value, "error": null,
+        "unwrap": fn(self) { return value; },
+        "map": fn(self, f) { return Ok(f(value)); }
+    };
+}
+
+export fn Err(error) {
+    return {
+        "isOk": false, "isErr": true, "value": null, "error": error,
+        "unwrap": fn(self) { throw "unwrap on Err: " + error; },
+        "map": fn(self, f) { return self; }
+    };
+}
+
+export fn Pair(first, second) {
+    return { "first": first, "second": second };
+}
+
+export fn gmap(arr, f) {
+    let result = [];
+    for (item in arr) { result = push(result, f(item)); }
+    return result;
+}
+
+export fn gfilter(arr, predicate) {
+    let result = [];
+    for (item in arr) { if (predicate(item)) { result = push(result, item); } }
+    return result;
+}
+
+export fn greduce(arr, initial, f) {
+    let acc = initial;
+    for (item in arr) { acc = f(acc, item); }
+    return acc;
+}

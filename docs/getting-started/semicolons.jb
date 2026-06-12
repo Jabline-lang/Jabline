@@ -1,0 +1,11 @@
+// Semicolons are OPTIONAL in Jabline
+// Each statement goes on its own line
+
+print("No semicolon needed here")
+
+print("Can use semicolons if you want");
+
+print("Putting multiple statements on one line requires ;")
+let a = 1; let b = 2; let c = a + b
+
+print("Result: " + toString(c))

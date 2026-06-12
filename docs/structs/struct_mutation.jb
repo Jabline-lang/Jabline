@@ -1,0 +1,21 @@
+// Mutating struct fields
+
+struct Counter {
+    value: int
+}
+
+let c = Counter { value: 0 }
+echo("initial: " + toString(c.value))
+
+c.value = 10
+echo("after set: " + toString(c.value))
+
+c.value = c.value + 5
+echo("after add: " + toString(c.value))
+
+// Mutating fields via methods
+fn (c2 Counter) increment() {
+    c2.value = c2.value + 1
+}
+
+echo("still: " + toString(c.value))

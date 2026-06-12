@@ -1,0 +1,12 @@
+// render.jb - demonstrates template rendering
+
+import template
+
+let tpl = "Hello, {{ name }}! Welcome to {{ place }}."
+
+let data = {"name": "Alice", "place": "Jabline World"}
+
+fn main() {
+    let result = template.render(tpl, data)
+    println(result)
+}

@@ -1,0 +1,21 @@
+// recover() builtin - catch a panic and resume execution
+// Run with: jabline run recover.jb
+
+fn safeOperation() {
+    let result = recover(
+        fn() {
+            panic("something went wrong inside")
+            return "never reached"
+        }
+    )
+    return result
+}
+
+let outcome = safeOperation()
+echo("recovered result: " + toString(outcome))
+
+if (is_error(outcome)) {
+    echo("the operation panicked with: " + toString(outcome))
+} else {
+    echo("operation succeeded: " + toString(outcome))
+}

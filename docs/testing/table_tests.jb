@@ -1,0 +1,23 @@
+// Table Tests - Data-driven testing with tables
+
+fn add(a, b) {
+    return a + b
+}
+
+describe("Table-Driven Tests", fn() {
+    let testCases = [
+        {"a": 1, "b": 1, "expected": 2},
+        {"a": 0, "b": 0, "expected": 0},
+        {"a": -1, "b": 1, "expected": 0},
+        {"a": 100, "b": 200, "expected": 300}
+    ]
+
+    let i = 0
+    while (i < len(testCases)) {
+        let tc = testCases[i]
+        it("adds " + toString(tc["a"]) + " + " + toString(tc["b"]), fn() {
+            assertEqual(add(tc["a"], tc["b"]), tc["expected"], "table row")
+        })
+        i = i + 1
+    }
+})

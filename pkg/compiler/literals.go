@@ -44,21 +44,29 @@ func (c *Compiler) compileNull(node *ast.Null) error {
 
 
 func (c *Compiler) compileArrayLiteral(node *ast.ArrayLiteral) error {
-
-	for _, el := range node.Elements {
-
-		if err := c.Compile(el); err != nil {
-
-			return err
-
+	hasSpread := false
+	spreadMask := uint16(0)
+	for i, el := range node.Elements {
+		if se, ok := el.(*ast.SpreadExpr); ok {
+			hasSpread = true
+			spreadMask |= 1 << i
+			if err := c.Compile(se.Right); err != nil {
+				return err
+			}
+		} else {
+			if err := c.Compile(el); err != nil {
+				return err
+			}
 		}
-
 	}
 
-	c.emit(code.OpArray, len(node.Elements))
+	if hasSpread {
+		c.emit(code.OpBuildArrayWithSpread, len(node.Elements), int(spreadMask))
+	} else {
+		c.emit(code.OpArray, len(node.Elements))
+	}
 
 	return nil
-
 }
 
 

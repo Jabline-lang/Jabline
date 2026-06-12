@@ -1,0 +1,17 @@
+// arithmetic.jb - demonstrates date arithmetic
+
+import datetime
+
+fn main() {
+    let today = datetime.now()
+
+    let next_week = datetime.add(today, 7)
+    println("Today: " + today)
+    println("+7 days: " + next_week)
+
+    let last_month = datetime.sub(today, 30)
+    println("-30 days: " + last_month)
+
+    let diff = datetime.diff(next_week, today)
+    println("Difference: " + diff + " days")
+}

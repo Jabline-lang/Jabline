@@ -1,0 +1,27 @@
+// Default field values via constructor pattern
+
+struct Config {
+    host: string,
+    port: int,
+    debug: boolean
+}
+
+fn defaultConfig() {
+    return Config {
+        host: "localhost",
+        port: 8080,
+        debug: false
+    }
+}
+
+let cfg = defaultConfig()
+echo("host:  " + cfg.host)
+echo("port:  " + toString(cfg.port))
+echo("debug: " + toString(cfg.debug))
+
+// Override specific fields
+let custom = Config {
+    host: "example.com",
+    port: 443
+}
+echo("custom: " + toString(custom))

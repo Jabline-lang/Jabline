@@ -1,0 +1,14 @@
+// append_file.jb - demonstrates appending to files
+
+import io
+
+fn main() {
+    io.write_file("log.txt", "Start of log\n")
+
+    for i in 1..5 {
+        io.append_file("log.txt", "Entry " + i + "\n")
+    }
+
+    let result = io.read_file("log.txt")
+    println(result)
+}

@@ -1,0 +1,20 @@
+// Parameters - Functions with multiple arguments
+
+fn sum3(a, b, c) {
+    return a + b + c
+}
+
+fn describe(name, age, city) {
+    print(name + " is " + toString(age) + " from " + city)
+}
+
+let total = sum3(10, 20, 30)
+print("Sum: " + toString(total))
+
+describe("Alice", 30, "New York")
+
+// No return returns null
+fn logMsg(msg) {
+    print("LOG: " + msg)
+}
+logMsg("Function called")

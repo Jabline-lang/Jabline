@@ -1,0 +1,23 @@
+// Iterating enum values by converting to string
+
+enum Fruit {
+    Apple,
+    Banana,
+    Cherry,
+    Date
+}
+
+let fruitNames = ["Apple", "Banana", "Cherry", "Date"]
+let i = 0
+
+echo("All fruits:")
+while (i < len(fruitNames)) {
+    // Compare enum value by looking it up
+    let name = fruitNames[i]
+    echo("  " + toString(i) + ": " + name)
+    i = i + 1
+}
+
+// Using enum values directly
+let selected = Fruit.Banana
+echo("Selected: " + toString(selected))

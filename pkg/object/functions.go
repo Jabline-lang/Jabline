@@ -2,6 +2,7 @@ package object
 
 import (
 	"jabline/pkg/ast"
+	"strconv"
 	"strings"
 )
 
@@ -26,7 +27,7 @@ func (f *Function) Inspect() string {
 	out += "\n}"
 
 	if f.IsClosureCreated && len(f.CapturedVars) > 0 {
-		out += " [closure with " + string(rune(len(f.CapturedVars))) + " captured vars]"
+		out += " [closure with " + strconv.Itoa(len(f.CapturedVars)) + " captured vars]"
 	}
 
 	return out

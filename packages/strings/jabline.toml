@@ -1,0 +1,6 @@
+[project]
+name = "strings"
+version = "0.1.0"
+description = "Advanced string manipulation utilities"
+
+[dependencies]

@@ -1,0 +1,18 @@
+// Stateful Closures - Closures maintaining internal state
+
+fn makeCounter() {
+    let count = 0
+    return fn() {
+        count = count + 1
+        return count
+    }
+}
+
+let counter = makeCounter()
+print(counter())   // 1
+print(counter())   // 2
+print(counter())   // 3
+
+let counter2 = makeCounter()
+print(counter2())  // 1 (independent state)
+print(counter())   // 4 (original continues)

@@ -1,0 +1,16 @@
+// array_json.jb - demonstrates JSON arrays
+
+import json
+
+let raw = '["alpha", "beta", "gamma", "delta"]'
+
+fn main() {
+    let arr = json.parse(raw)
+    println("Length: " + len(arr))
+    println("First: " + arr[0])
+    println("Last: " + arr[-1])
+
+    for item in arr {
+        println("  item: " + item)
+    }
+}

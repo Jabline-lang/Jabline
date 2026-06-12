@@ -183,7 +183,15 @@ func (sa *SemanticAnalyzer) walk(node ast.Node) {
 			valType = sa.inferType(n.Value)
 			sa.walk(n.Value)
 		}
-		sa.declareSymbol(n.Name.Value, protocol.SymbolKindVariable, valType, n.Name.Token, n)
+		if n.Destructure != nil {
+			for _, field := range n.Destructure.Fields {
+				if field.Value != nil {
+					sa.declareSymbol(field.Value.Value, protocol.SymbolKindVariable, valType, field.Value.Token, n)
+				}
+			}
+		} else if n.Name != nil {
+			sa.declareSymbol(n.Name.Value, protocol.SymbolKindVariable, valType, n.Name.Token, n)
+		}
 
 	case *ast.ConstStatement:
 		valType := "any"
@@ -191,7 +199,15 @@ func (sa *SemanticAnalyzer) walk(node ast.Node) {
 			valType = sa.inferType(n.Value)
 			sa.walk(n.Value)
 		}
-		sa.declareSymbol(n.Name.Value, protocol.SymbolKindConstant, valType, n.Name.Token, n)
+		if n.Destructure != nil {
+			for _, field := range n.Destructure.Fields {
+				if field.Value != nil {
+					sa.declareSymbol(field.Value.Value, protocol.SymbolKindConstant, valType, field.Value.Token, n)
+				}
+			}
+		} else if n.Name != nil {
+			sa.declareSymbol(n.Name.Value, protocol.SymbolKindConstant, valType, n.Name.Token, n)
+		}
 
 	case *ast.FunctionStatement:
 		sig := buildFnSignature(n.Name.Value, n.Parameters, n.ReturnType, false)
@@ -269,6 +285,12 @@ func (sa *SemanticAnalyzer) walk(node ast.Node) {
 
 	case *ast.InterfaceStatement:
 		sa.declareSymbol(n.Name.Value, protocol.SymbolKindInterface, "interface", n.Name.Token, n)
+
+	case *ast.EnumStatement:
+		sa.declareSymbol(n.Name.Value, protocol.SymbolKindEnum, "enum", n.Name.Token, n)
+
+	case *ast.ServiceStatement:
+		sa.declareSymbol(n.Name.Value, protocol.SymbolKindNamespace, "service", n.Name.Token, n)
 
 	case *ast.ExpressionStatement:
 		sa.walk(n.Expression)

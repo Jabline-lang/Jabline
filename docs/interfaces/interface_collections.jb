@@ -1,0 +1,34 @@
+// Collections of interface types
+
+interface Speaker {
+    Speak(): string
+}
+
+struct Dog {
+    name: string
+}
+
+fn (d Dog) Speak(): string {
+    return d.name + " says woof"
+}
+
+struct Cat {
+    name: string
+}
+
+fn (c Cat) Speak(): string {
+    return c.name + " says meow"
+}
+
+let animals = [
+    Dog { name: "Rex" },
+    Cat { name: "Luna" },
+    Dog { name: "Buddy" }
+]
+
+for (a in animals) {
+    match (a) {
+        case Speaker:
+            echo(a.Speak())
+    }
+}

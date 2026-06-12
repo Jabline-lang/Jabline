@@ -37,7 +37,6 @@ func (i *Instance) Inspect() string {
 	for name, value := range i.Fields {
 		out += "  " + name + ": " + value.Inspect() + ",\n"
 	}
-	out += "}"
 	out += "}\n"
 	return out
 }

@@ -1,0 +1,29 @@
+let ch = chan()
+
+fn producer(c) {
+    let i = 0
+    while (i < 5) {
+        c <- i
+        i = i + 1
+    }
+    close(c)
+}
+
+spawn producer(ch)
+
+let results = []
+let val = <-ch
+while (val != null) {
+    results = push(results, val)
+    val = <-ch
+}
+echo("received: " + toString(results))
+
+async fn fetchData(id) {
+    return id * 2
+}
+
+let f1 = fetchData(21)
+let f2 = fetchData(42)
+echo("await f1 = " + toString(await f1))
+echo("await f2 = " + toString(await f2))

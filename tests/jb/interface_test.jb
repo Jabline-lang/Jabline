@@ -1,0 +1,152 @@
+describe(
+    "Interface",
+    fn() {
+        it(
+            "can define an interface without error",
+            fn() {
+                interface Stringer {
+                    String(): string
+                }
+
+                assertTrue(true, "interface defined without error");
+            }
+        )
+
+        it(
+            "supports duck typing via method calls",
+            fn() {
+                interface Speaker {
+                    Speak(): string
+                }
+
+                struct Dog {
+                    name: string
+                }
+
+                fn (d Dog) Speak(): string {
+                    return d.name + " says woof";
+                }
+
+                let d = Dog {
+                    name: "Rex"
+                };
+                assertEqual(d.Speak(), "Rex says woof", "duck typing via interface method");
+            }
+        )
+
+        it(
+            "supports interface type check with match",
+            fn() {
+                interface Stringer {
+                    String(): string
+                }
+
+                struct Foo {
+                    val: int
+                }
+
+                fn (f Foo) String(): string {
+                    return toString(f.val);
+                }
+
+                let f = Foo {
+                    val: 42
+                };
+                let result = "";
+
+                match (f) {
+                    case Stringer:
+                        result = "implements Stringer";
+                    default:
+                        result = "does not implement";
+                }
+
+                assertEqual(result, "implements Stringer", "match interface type check");
+            }
+        )
+
+        it(
+            "rejects structs missing interface methods",
+            fn() {
+                interface CanFly {
+                    Fly(): string
+                }
+
+                struct Bird {
+                    name: string
+                }
+
+                fn (b Bird) Fly(): string {
+                    return b.name + " flies";
+                }
+
+                struct Rock {
+                    weight: int
+                }
+
+                let b = Bird {
+                    name: "Eagle"
+                };
+                let r = Rock {
+                    weight: 10
+                };
+                let bResult = "";
+
+                match (b) {
+                    case CanFly:
+                        bResult = "can fly";
+                    default:
+                        bResult = "cannot fly";
+                }
+
+                let rResult = "";
+
+                match (r) {
+                    case CanFly:
+                        rResult = "can fly";
+                    default:
+                        rResult = "cannot fly";
+                }
+
+                assertEqual(bResult, "can fly", "bird can fly");
+                assertEqual(rResult, "cannot fly", "rock cannot fly");
+            }
+        )
+
+        it(
+            "supports interface with multiple methods",
+            fn() {
+                interface Shape {
+                    Area(): int
+                    Name(): string
+                }
+
+                struct Square {
+                    side: int
+                }
+
+                fn (s Square) Area(): int {
+                    return s.side * s.side;
+                }
+
+                fn (s Square) Name(): string {
+                    return "square";
+                }
+
+                let sq = Square {
+                    side: 5
+                };
+                let result = "";
+
+                match (sq) {
+                    case Shape:
+                        result = sq.Name() + " area=" + toString(sq.Area());
+                    default:
+                        result = "unknown";
+                }
+
+                assertEqual(result, "square area=25", "multi-method interface");
+            }
+        )
+    }
+)

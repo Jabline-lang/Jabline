@@ -1,0 +1,14 @@
+// connect.jb - demonstrates database connection
+
+import db
+
+fn main() {
+    let conn = db.connect("sqlite://mydb.sqlite")
+    println("Connected: " + conn.connected)
+
+    if conn.connected {
+        println("Database version: " + conn.version)
+    }
+
+    conn.close()
+}

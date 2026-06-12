@@ -1,8 +1,11 @@
 package stdlib
 
 import (
+	"bytes"
 	"jabline/pkg/object"
 	"os"
+	"os/exec"
+	"strings"
 )
 
 var OSBuiltins = []struct {
@@ -19,6 +22,8 @@ var OSBuiltins = []struct {
 	{"stat", &object.Builtin{Fn: osStat}},
 	{"chmod", &object.Builtin{Fn: osChmod}},
 	{"tempDir", &object.Builtin{Fn: osTempDir}},
+	{"args", &object.Builtin{Fn: osArgs}},
+	{"exec", &object.Builtin{Fn: osExec}},
 }
 
 func osExit(args ...object.Object) object.Object {
@@ -184,4 +189,58 @@ func osChmod(args ...object.Object) object.Object {
 
 func osTempDir(args ...object.Object) object.Object {
 	return &object.String{Value: os.TempDir()}
+}
+
+func osArgs(args ...object.Object) object.Object {
+	elements := make([]object.Object, len(os.Args))
+	for i, a := range os.Args {
+		elements[i] = &object.String{Value: a}
+	}
+	return &object.Array{Elements: elements}
+}
+
+func osExec(args ...object.Object) object.Object {
+	if len(args) < 1 {
+		return newError("exec expects at least 1 argument (command)")
+	}
+	cmdStr, ok := args[0].(*object.String)
+	if !ok {
+		return newError("first argument to exec must be STRING, got %s", args[0].Type())
+	}
+
+	var cmdArgs []string
+	for i := 1; i < len(args); i++ {
+		if s, ok := args[i].(*object.String); ok {
+			cmdArgs = append(cmdArgs, s.Value)
+		} else {
+			cmdArgs = append(cmdArgs, args[i].Inspect())
+		}
+	}
+
+	cmd := exec.Command(cmdStr.Value, cmdArgs...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	pairs := make(map[object.HashKey]object.HashPair)
+	add := func(k string, v object.Object) {
+		ks := &object.String{Value: k}
+		pairs[ks.HashKey()] = object.HashPair{Key: ks, Value: v}
+	}
+
+	add("stdout", &object.String{Value: strings.TrimRight(stdout.String(), "\n\r")})
+	add("stderr", &object.String{Value: strings.TrimRight(stderr.String(), "\n\r")})
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			add("error", &object.String{Value: err.Error()})
+		}
+	}
+	add("exit_code", &object.Integer{Value: int64(exitCode)})
+
+	return &object.Hash{Pairs: pairs}
 }

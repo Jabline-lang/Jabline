@@ -1,0 +1,29 @@
+// Result pattern - return [value, error] tuples from functions
+// Run with: jabline run result_pattern.jb
+
+fn fetchUser(id) {
+    if (id <= 0) {
+        return [null, Error("invalid user id: " + toString(id))]
+    }
+    if (id > 1000) {
+        return [null, Error("user not found")]
+    }
+    return ["user_" + toString(id), null]
+}
+
+let result = fetchUser(42)
+let user = result[0]
+let err = result[1]
+
+if (is_error(err)) {
+    echo("error: " + toString(err))
+} else {
+    echo("user: " + toString(user))
+}
+
+let result2 = fetchUser(-1)
+let user2 = result2[0]
+let err2 = result2[1]
+if (is_error(err2)) {
+    echo("error: " + toString(err2))
+}

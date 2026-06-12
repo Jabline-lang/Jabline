@@ -1,0 +1,13 @@
+// replace.jb - demonstrates regex replace
+
+import regex
+
+let text = "Hello 123, world 456!"
+
+fn main() {
+    let pattern = regex.compile(r"\d+")
+
+    let result = pattern.replace(text, "[NUM]")
+    println("before: " + text)
+    println("after:  " + result)
+}

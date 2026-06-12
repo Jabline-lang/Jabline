@@ -1,0 +1,14 @@
+// hmac.jb - demonstrates HMAC operations
+
+import crypto
+
+let message = "Important message"
+let key = "my-secret-key"
+
+fn main() {
+    let hmac_sha256 = crypto.hmac_sha256(key, message)
+    println("HMAC-SHA256: " + hmac_sha256)
+
+    let hmac_sha1 = crypto.hmac_sha1(key, message)
+    println("HMAC-SHA1:   " + hmac_sha1)
+}

@@ -1,0 +1,35 @@
+// Proper error messages - clear, actionable error descriptions
+// Run with: jabline run error_messages.jb
+
+struct FileError {
+    operation: string,
+    path: string,
+    reason: string
+}
+
+fn formatFileError(op, path, reason) {
+    return Error(op + " failed on '" + path + "': " + reason)
+}
+
+fn readFile(path) {
+    if (path == "") {
+        return formatFileError("read", "<empty>", "path must not be empty")
+    }
+    if (!startsWith(path, "/")) {
+        return formatFileError("read", path, "path must be absolute")
+    }
+    return "file contents here"
+}
+
+fn startsWith(s, prefix) {
+    if (len(s) < len(prefix)) { return false }
+    let i = 0
+    while (i < len(prefix)) {
+        if (s[i] != prefix[i]) { return false }
+        i = i + 1
+    }
+    return true
+}
+
+let data = readFile("")
+echo("error: " + toString(data))

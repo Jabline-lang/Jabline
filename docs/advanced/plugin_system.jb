@@ -1,0 +1,18 @@
+// Plugin System - Load and execute modules dynamically
+
+import * as fs from "fs"
+
+fn loadPlugin(path) {
+    let code = fs.readFile(path)
+    let plugin = compile(code)
+    return plugin
+}
+
+fn runPlugin(plugin, input) {
+    return plugin.execute(input)
+}
+
+let pluginCode = "fn process(data) { return data * 2 }"
+let plugin = compile(pluginCode)
+let result = runPlugin(plugin, 21)
+print("Plugin result: " + toString(result))

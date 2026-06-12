@@ -1,0 +1,82 @@
+const DATA_FILE = "todos.json"
+
+fn load_tasks() {
+    try {
+        let raw = io.readFile(DATA_FILE);
+        return parse(raw) ?? [];
+    } catch (e) {
+        return [];
+    }
+}
+
+fn save_tasks(tasks) {
+    io.writeFile(DATA_FILE, stringify(tasks));
+}
+
+fn add(title) {
+    let tasks = load_tasks();
+    let id = 1;
+    if (len(tasks) > 0) { id = tasks[len(tasks) - 1].id + 1; }
+    tasks = push(tasks, {id: id, title: title, done: false});
+    save_tasks(tasks);
+    echo("Added: #" + toString(id) + " " + title);
+}
+
+fn list() {
+    let tasks = load_tasks();
+    if (len(tasks) == 0) { echo("No tasks."); return; }
+    for (t in tasks) {
+        let mark = if (t.done) { "[x]" } else { "[ ]" };
+        echo(mark + " #" + toString(t.id) + " " + t.title);
+    }
+}
+
+fn set_done(id) {
+    let tasks = load_tasks();
+    for (t in tasks) { if (t.id == id) { t.done = true; } }
+    save_tasks(tasks);
+    echo("Done: #" + toString(id));
+}
+
+fn remove(id) {
+    let tasks = load_tasks();
+    let kept = [];
+    for (t in tasks) {
+        if (t.id != id) { kept = push(kept, t); }
+    }
+    save_tasks(kept);
+    echo("Removed: #" + toString(id));
+}
+
+fn main() {
+    let all_args = os.args();
+    let args = [];
+    for (a in all_args) {
+        if (a != "run" && !strings.endsWith(a, ".jb") && !strings.endsWith(a, ".exe")) {
+            args = push(args, a);
+        }
+    }
+    if (len(args) == 0) {
+        echo("Usage: jabline run main.jb <command> [args]");
+        echo("  add <title>    Add a new task");
+        echo("  list           List all tasks");
+        echo("  done <id>      Mark task as done");
+        echo("  remove <id>    Remove a task");
+        return;
+    }
+    let cmd = args[0];
+    match (cmd) {
+        case "add":
+            if (len(args) > 1) { add(args[1]); } else { echo("Missing title"); }
+        case "list":
+            list();
+        case "done":
+            if (len(args) > 1) { set_done(parseInt(args[1])); } else { echo("Missing id"); }
+        case "remove":
+            if (len(args) > 1) { remove(parseInt(args[1])); } else { echo("Missing id"); }
+        default:
+            echo("Unknown command: " + cmd);
+    }
+}
+
+main();

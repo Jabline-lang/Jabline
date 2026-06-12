@@ -1,0 +1,21 @@
+// make_chan() basic - create and use unbuffered channels
+// Run with: jabline run channel_basic.jb
+
+let ch = make_chan()
+
+spawn fn() {
+    ch <- "hello from channel"
+}()
+
+let msg = <-ch
+echo("received: " + toString(msg))
+
+// channel() is an alias for make_chan()
+let ch2 = channel()
+
+spawn fn() {
+    ch2 <- 42
+}()
+
+let val = <-ch2
+echo("got: " + toString(val))

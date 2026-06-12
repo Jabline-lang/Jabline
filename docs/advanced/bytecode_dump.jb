@@ -1,0 +1,10 @@
+// Bytecode - Compile Jabline source to bytecode for inspection
+
+let source = "fn add(a, b) { return a + b }"
+let bytecode = compile(source)
+print("Bytecode instructions:")
+let i = 0
+while (i < len(bytecode)) {
+    print("  [" + toString(i) + "] " + toString(bytecode[i]))
+    i = i + 1
+}

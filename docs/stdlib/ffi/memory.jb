@@ -1,0 +1,18 @@
+// memory.jb - demonstrates FFI memory management
+
+import ffi
+
+fn main() {
+    let lib = ffi.load("libc.so.6")
+
+    let malloc = lib.func("malloc", "void*", ["size_t"])
+    let free = lib.func("free", "void", ["void*"])
+
+    let ptr = malloc.call(100)
+    println("Allocated 100 bytes at: " + ptr)
+
+    free.call(ptr)
+    println("Freed memory")
+
+    lib.close()
+}

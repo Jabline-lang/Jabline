@@ -1,0 +1,78 @@
+describe(
+    "Spread Operator",
+    fn() {
+        it(
+            "spread in array literals",
+            fn() {
+                let a = [1, 2, 3];
+                let b = [...a, 4, 5];
+                assertEqual(len(b), 5, "spread extends length");
+                assertEqual(b[0], 1, "spread first element");
+                assertEqual(b[2], 3, "spread third element");
+                assertEqual(b[3], 4, "after spread element");
+                assertEqual(b[4], 5, "last element");
+            }
+        )
+
+        it(
+            "spread in middle of array",
+            fn() {
+                let a = [2, 3];
+                let b = [1, ...a, 4];
+                assertEqual(len(b), 4, "middle spread length");
+                assertEqual(b[0], 1, "before spread");
+                assertEqual(b[1], 2, "spread first");
+                assertEqual(b[2], 3, "spread second");
+                assertEqual(b[3], 4, "after spread");
+            }
+        )
+
+        it(
+            "multiple spreads in array",
+            fn() {
+                let a = [1, 2];
+                let b = [3, 4];
+                let c = [...a, ...b];
+                assertEqual(len(c), 4, "multiple spreads length");
+                assertEqual(c[0], 1, "first array first");
+                assertEqual(c[1], 2, "first array second");
+                assertEqual(c[2], 3, "second array first");
+                assertEqual(c[3], 4, "second array second");
+            }
+        )
+
+        it(
+            "spread empty array",
+            fn() {
+                let a = [];
+                let b = [...a, 1, 2];
+                assertEqual(len(b), 2, "empty spread length");
+                assertEqual(b[0], 1, "after empty spread");
+            }
+        )
+
+        it(
+            "spread in function calls",
+            fn() {
+                let sum = fn(a, b, c) {
+                    a + b + c;
+                };
+
+                let nums = [10, 20, 30];
+                assertEqual(sum(...nums), 60, "spread args sum");
+            }
+        )
+
+        it(
+            "spread with regular args in calls",
+            fn() {
+                let sum4 = fn(a, b, c, d) {
+                    a + b + c + d;
+                };
+
+                let nums = [2, 3];
+                assertEqual(sum4(1, ...nums, 4), 10, "spread mixed args");
+            }
+        )
+    }
+)

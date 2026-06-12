@@ -1,0 +1,26 @@
+interface Drawable {
+    draw()
+}
+
+struct Circle {
+    radius: int
+}
+
+fn (c Circle) draw() {
+    echo("Drawing circle with radius " + toString(c.radius))
+}
+
+struct Square {
+    side: int
+}
+
+fn (s Square) draw() {
+    echo("Drawing square with side " + toString(s.side))
+}
+
+let shapes = [Circle { radius: 5 }, Square { side: 3 }]
+let i = 0
+while (i < len(shapes)) {
+    shapes[i].draw()
+    i = i + 1
+}

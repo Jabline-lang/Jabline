@@ -1,0 +1,17 @@
+// Set union using hash-based sets
+
+fn union(setA, setB) {
+    let result = clone(setA)
+    for (k in keys(setB)) {
+        result[k] = true
+    }
+    return result
+}
+
+let a = { "a": true, "b": true, "c": true }
+let b = { "c": true, "d": true, "e": true }
+
+let u = union(a, b)
+echo("A:     " + toString(keys(a)))
+echo("B:     " + toString(keys(b)))
+echo("union: " + toString(keys(u)))

@@ -1,0 +1,18 @@
+// match.jb - demonstrates regex matching
+
+import regex
+
+let email = "user@example.com"
+
+fn main() {
+    let pattern = regex.compile(r"^\w+@\w+\.\w+$")
+
+    if pattern.is_match(email) {
+        println(email + " is a valid email")
+    }
+
+    let found = pattern.find(email)
+    if found != "" {
+        println("Found: " + found)
+    }
+}

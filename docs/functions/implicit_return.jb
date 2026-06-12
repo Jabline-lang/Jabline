@@ -1,0 +1,17 @@
+// Implicit Return - Last expression is returned automatically
+
+fn double(x) {
+    x * 2     // no return keyword needed
+}
+
+fn isPositive(x) {
+    x > 0     // returns a boolean
+}
+
+fn formatName(first, last) {
+    first + " " + last
+}
+
+print("double(7) = " + toString(double(7)))
+print("isPositive(-3) = " + toString(isPositive(-3)))
+print(formatName("Jane", "Doe"))

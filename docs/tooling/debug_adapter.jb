@@ -1,0 +1,13 @@
+// Debug Adapter - DAP integration for step-through debugging
+// Usage: jabline dap --port=4711
+// Features: breakpoints, watch, call stack, variables
+
+fn factorial(n) {
+    if (n <= 1) {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+let result = factorial(5)
+print("5! = " + toString(result))

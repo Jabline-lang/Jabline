@@ -1,0 +1,23 @@
+// Builder - Constructs complex objects step by step
+
+fn createBuilder() {
+    return {
+        "name": "",
+        "age": 0,
+        "email": "",
+        "setName": fn(self, name) { self["name"] = name; return self },
+        "setAge": fn(self, age) { self["age"] = age; return self },
+        "setEmail": fn(self, email) { self["email"] = email; return self },
+        "build": fn(self) {
+            return {"name": self["name"], "age": self["age"], "email": self["email"]}
+        }
+    }
+}
+
+let user = createBuilder()
+    .setName("Alice")
+    .setAge(30)
+    .setEmail("alice@test.com")
+    .build()
+
+print("Built user: " + user["name"])

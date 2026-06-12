@@ -1,0 +1,29 @@
+// parallel_pipeline.jb - demonstrates parallel pipeline
+
+import parallel
+
+fn stage1(x) {
+    return x * 2
+}
+
+fn stage2(x) {
+    return x + 1
+}
+
+fn stage3(x) {
+    return "Result: " + x
+}
+
+fn main() {
+    let input = [1, 2, 3, 4, 5]
+
+    let pipeline = parallel.pipeline()
+        .add(stage1)
+        .add(stage2)
+        .add(stage3)
+
+    let output = pipeline.execute(input)
+    for item in output {
+        println(item)
+    }
+}

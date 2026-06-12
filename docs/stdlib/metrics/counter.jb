@@ -1,0 +1,21 @@
+// counter.jb - demonstrates counter metrics
+
+import metrics
+
+let requests = metrics.counter("http_requests_total", "Total HTTP requests")
+
+fn handle_request() {
+    requests.inc()
+}
+
+fn main() {
+    handle_request()
+    handle_request()
+    handle_request()
+
+    println("Requests: " + requests.value())
+
+    let labelled = metrics.counter("errors_total", "Errors by type", ["type"])
+    labelled.with({"type": "404"}).inc()
+    labelled.with({"type": "500"}).inc()
+}

@@ -15,6 +15,9 @@ const (
 	// This points to a JSON file hosted on GitHub that maps package names to git URLs.
 	RegistryURL = "https://raw.githubusercontent.com/Jabline-lang/registry/main/index.json"
 
+	// LocalRegistryFile is the path to a local registry index (bundled with the project).
+	LocalRegistryFile = "registry/index.json"
+
 	// CacheDir is the local directory for caching registry data.
 	CacheDir = ".jb_cache"
 
@@ -27,11 +30,15 @@ const (
 
 // RegistryEntry represents a single package in the registry.
 type RegistryEntry struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	URL         string `json:"url"`
-	Version     string `json:"version"`
-	Author      string `json:"author"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	URL         string   `json:"url"`
+	Version     string   `json:"version"`
+	Author      string   `json:"author"`
+	Category    string   `json:"category,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+	License     string   `json:"license,omitempty"`
+	Repository  string   `json:"repository,omitempty"`
 }
 
 // RegistryIndex is the full registry: a map of package name → entry.
@@ -39,6 +46,7 @@ type RegistryIndex map[string]RegistryEntry
 
 // FetchRegistry downloads the registry index from the remote URL,
 // using a local cache to avoid unnecessary network requests.
+// Falls back to a local registry file if the remote is unavailable.
 func FetchRegistry() (RegistryIndex, error) {
 	cachePath := filepath.Join(CacheDir, CacheFile)
 
@@ -47,6 +55,11 @@ func FetchRegistry() (RegistryIndex, error) {
 		if time.Since(info.ModTime()) < CacheTTL {
 			return loadCachedRegistry(cachePath)
 		}
+	}
+
+	// Try local registry first (bundled with the project)
+	if local, err := loadCachedRegistry(LocalRegistryFile); err == nil && len(local) > 0 {
+		return local, nil
 	}
 
 	// Fetch from remote
@@ -58,6 +71,10 @@ func FetchRegistry() (RegistryIndex, error) {
 			fmt.Println("Warning: Using cached registry (network unavailable)")
 			return cached, nil
 		}
+		// Try local registry as last resort
+		if local, localErr := loadCachedRegistry(LocalRegistryFile); localErr == nil {
+			return local, nil
+		}
 		return nil, fmt.Errorf("failed to fetch registry: %w", err)
 	}
 	defer resp.Body.Close()
@@ -65,6 +82,10 @@ func FetchRegistry() (RegistryIndex, error) {
 	if resp.StatusCode != 200 {
 		// If registry doesn't exist yet (404), return empty registry
 		if resp.StatusCode == 404 {
+			// Try local registry first
+			if local, localErr := loadCachedRegistry(LocalRegistryFile); localErr == nil {
+				return local, nil
+			}
 			fmt.Println("Registry not found at remote URL. Using empty registry.")
 			return make(RegistryIndex), nil
 		}

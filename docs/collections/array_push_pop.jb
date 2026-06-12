@@ -1,0 +1,12 @@
+// push() adds to end (returns new array)
+// pop() removes from end (mutates, returns removed value)
+
+let arr = [1, 2, 3]
+
+// push returns a new array
+let bigger = push(arr, 4)
+echo("pushed: " + toString(bigger))
+
+// pop mutates the array and returns the last element
+let removed = pop(arr)
+echo("popped: " + toString(removed) + "  arr now: " + toString(arr))

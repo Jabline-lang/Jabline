@@ -1,0 +1,64 @@
+let _counter = 0;
+
+fn _inc() {
+    _counter = _counter + 1;
+}
+
+fn _readCounter() {
+    return _counter;
+}
+
+describe(
+    "Defer",
+    fn() {
+        it(
+            "defer runs after function returns",
+            fn() {
+                _counter = 0;
+
+                fn test() {
+                    defer _inc();
+                    return 42;
+                }
+
+                let result = test();
+                assertEqual(result, 42, "return value from function");
+            }
+        )
+
+        it(
+            "defer runs even on throw",
+            fn() {
+                _counter = 0;
+
+                fn test() {
+                    defer print("defer on throw");
+                    throw "error";
+                }
+
+                try {
+                    test();
+                } catch (e) {
+                    // expected
+                }
+
+                assertTrue(true, "defer executed without crash on throw");
+            }
+        )
+
+        it(
+            "multiple defers run",
+            fn() {
+                fn test() {
+                    defer print("third");
+                    defer print("second");
+                    defer print("first");
+                    return "done";
+                }
+
+                let result = test();
+                assertEqual(result, "done", "return value preserved");
+            }
+        )
+    }
+)

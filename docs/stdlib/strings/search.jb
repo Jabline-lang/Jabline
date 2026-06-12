@@ -1,0 +1,13 @@
+// search.jb - demonstrates contains, index, starts_with, ends_with
+
+import strings
+
+let sentence = "The quick brown fox jumps over the lazy dog"
+
+fn main() {
+    println("contains 'fox': " + strings.contains(sentence, "fox"))
+    println("index of 'fox': " + strings.index(sentence, "fox"))
+    println("index of 'cat': " + strings.index(sentence, "cat"))
+    println("starts with 'The': " + strings.starts_with(sentence, "The"))
+    println("ends with 'dog': " + strings.ends_with(sentence, "dog"))
+}

@@ -1,0 +1,20 @@
+// Recursion - Functions calling themselves
+
+fn factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+fn fibonacci(n) {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+print("factorial(5) = " + toString(factorial(5)))
+print("factorial(10) = " + toString(factorial(10)))
+
+print("fib(10) = " + toString(fibonacci(10)))

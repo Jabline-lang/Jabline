@@ -1,0 +1,15 @@
+// stringify.jb - demonstrates JSON.stringify()
+
+import json
+
+let person = {
+    "name": "Alice",
+    "age": 30,
+    "skills": ["Jabline", "Python", "Go"],
+    "active": true
+}
+
+fn main() {
+    let output = json.stringify(person)
+    println(output)
+}

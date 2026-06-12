@@ -17,6 +17,10 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseReturnStatement()
 	case token.ECHO:
 		return p.parseEchoStatement()
+	case token.DEFER:
+		return p.parseDeferStatement()
+	case token.DO:
+		return p.parseDoWhileStatement()
 	case token.WHILE:
 		return p.parseWhileStatement()
 	case token.FOR:
@@ -59,10 +63,14 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseEnumStatement()
 	case token.MATCH:
 		return p.parseMatchStatement()
+	case token.SELECT:
+		return p.parseSelectStatement()
 	case token.METER:
 		return p.parseMeterStatement()
 	case token.TRACE:
 		return p.parseTraceStatement()
+	case token.ALIAS:
+		return p.parseTypeAliasStatement()
 	default:
 		if p.isAssignmentStatement() {
 			return p.parseFieldAssignmentStatement()
@@ -74,8 +82,47 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
+func (p *Parser) parseTypeAliasStatement() *ast.TypeAliasStatement {
+	stmt := &ast.TypeAliasStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	stmt.Name = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+
+	p.nextToken()
+	stmt.Type = p.parseExpression(LOWEST)
+
+	return stmt
+}
+
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curTok}
+
+	// Check for destructuring: let [a, b] = ... or let {x, y} = ...
+	if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
+		isHash := p.peekTokenIs(token.LBRACE)
+		p.nextToken() // consume LBRACKET or LBRACE
+		stmt.Destructure = p.parseDestructuringPattern(isHash)
+
+		if !p.expectPeek(token.ASSIGN) {
+			return nil
+		}
+
+		p.nextToken()
+		stmt.Value = p.parseExpression(LOWEST)
+
+		if p.peekTokenIs(token.SEMICOLON) {
+			p.nextToken()
+		}
+
+		return stmt
+	}
 
 	if !p.expectPeek(token.IDENT) {
 		return nil
@@ -87,7 +134,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	if p.peekTokenIs(token.COLON) {
 		p.nextToken() // consume COLON
 		p.nextToken() // move to type token
-		stmt.Type = &ast.TypeExpression{Token: p.curTok, Value: p.curTok.Literal}
+		stmt.Type = p.parseTypeExpression()
 	}
 
 	if !p.expectPeek(token.ASSIGN) {
@@ -108,6 +155,26 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	stmt := &ast.ConstStatement{Token: p.curTok}
 
+	// Check for destructuring: const [a, b] = ... or const {x, y} = ...
+	if p.peekTokenIs(token.LBRACKET) || p.peekTokenIs(token.LBRACE) {
+		isHash := p.peekTokenIs(token.LBRACE)
+		p.nextToken() // consume LBRACKET or LBRACE
+		stmt.Destructure = p.parseDestructuringPattern(isHash)
+
+		if !p.expectPeek(token.ASSIGN) {
+			return nil
+		}
+
+		p.nextToken()
+		stmt.Value = p.parseExpression(LOWEST)
+
+		if p.peekTokenIs(token.SEMICOLON) {
+			p.nextToken()
+		}
+
+		return stmt
+	}
+
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -118,7 +185,7 @@ func (p *Parser) parseConstStatement() *ast.ConstStatement {
 	if p.peekTokenIs(token.COLON) {
 		p.nextToken() // consume COLON
 		p.nextToken() // move to type token
-		stmt.Type = &ast.TypeExpression{Token: p.curTok, Value: p.curTok.Literal}
+		stmt.Type = p.parseTypeExpression()
 	}
 
 	if !p.expectPeek(token.ASSIGN) {
@@ -162,6 +229,50 @@ func (p *Parser) parseEchoStatement() *ast.EchoStatement {
 	}
 
 	stmt.Values = p.parseExpressionList(token.RPAREN)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseDeferStatement() *ast.DeferStatement {
+	stmt := &ast.DeferStatement{Token: p.curTok}
+
+	p.nextToken()
+	stmt.Call = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseDoWhileStatement() *ast.DoWhileStatement {
+	stmt := &ast.DoWhileStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	stmt.Body = p.parseBlockStatement()
+
+	if !p.expectPeek(token.WHILE) {
+		return nil
+	}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+
+	p.nextToken()
+	stmt.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
 
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
@@ -559,6 +670,14 @@ func (p *Parser) parseTryStatement() *ast.TryStatement {
 				return nil
 			}
 			stmt.CatchParam = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+
+			// Parse optional type annotation: catch(e: TypeName)
+			if p.peekTokenIs(token.COLON) {
+				p.nextToken() // consume ':'
+				p.nextToken() // move to type name
+				stmt.CatchType = p.parseTypeExpression()
+			}
+
 			if !p.expectPeek(token.RPAREN) {
 				return nil
 			}
@@ -569,6 +688,15 @@ func (p *Parser) parseTryStatement() *ast.TryStatement {
 		}
 
 		stmt.CatchBlock = p.parseBlockStatement()
+	}
+
+	// Parse optional finally block
+	if p.peekTokenIs(token.FINALLY) {
+		p.nextToken()
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		stmt.Finally = p.parseBlockStatement()
 	}
 
 	return stmt
@@ -1092,6 +1220,99 @@ func (p *Parser) parseMatchCase() *ast.MatchCase {
 
 	return clause
 }
+func (p *Parser) parseSelectStatement() *ast.SelectStatement {
+	stmt := &ast.SelectStatement{Token: p.curTok}
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	for !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+		p.nextToken()
+		if p.curTokenIs(token.CASE) {
+			c := p.parseSelectCase()
+			if c != nil {
+				stmt.Cases = append(stmt.Cases, c)
+			}
+		} else if p.curTokenIs(token.DEFAULT) {
+			stmt.DefaultCase = p.parseSelectDefault()
+		} else {
+			p.addError("expected 'case' or 'default' in select body, got %s", p.curTok.Literal)
+			return nil
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+	return stmt
+}
+
+func (p *Parser) parseSelectCase() *ast.SelectCase {
+	c := &ast.SelectCase{Token: p.curTok}
+	p.nextToken()
+
+	if p.curTokenIs(token.ARROW_LEFT) {
+		// case <-ch:  (recv without binding)
+		p.nextToken() // consume <-
+		c.IsSend = false
+		c.Channel = p.parseExpression(LOWEST)
+	} else if p.curTokenIs(token.IDENT) && p.peekTokenIs(token.ARROW_LEFT) {
+		// case ch <- expr:  (send) — parse channel ident directly
+		ch := &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+		p.nextToken() // consume ident
+		p.nextToken() // consume <-
+		c.IsSend = true
+		c.Channel = ch
+		c.Value = p.parseExpression(LOWEST)
+	} else {
+		p.addError("expected '<-' or 'channel <-' in select case, got %s", p.curTok.Literal)
+		return nil
+	}
+
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+
+	if p.peekTokenIs(token.LBRACE) {
+		p.nextToken()
+		block := p.parseBlockStatement()
+		if block != nil {
+			c.Statements = block.Statements
+		}
+	} else {
+		for !p.peekTokenIs(token.CASE) && !p.peekTokenIs(token.DEFAULT) && !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+			p.nextToken()
+			if stmt := p.parseStatement(); stmt != nil {
+				c.Statements = append(c.Statements, stmt)
+			}
+		}
+	}
+	return c
+}
+
+func (p *Parser) parseSelectDefault() *ast.DefaultClause {
+	clause := &ast.DefaultClause{Token: p.curTok}
+	if !p.expectPeek(token.COLON) {
+		return nil
+	}
+	if p.peekTokenIs(token.LBRACE) {
+		p.nextToken()
+		block := p.parseBlockStatement()
+		if block != nil {
+			clause.Statements = block.Statements
+		}
+	} else {
+		for !p.peekTokenIs(token.CASE) && !p.peekTokenIs(token.DEFAULT) && !p.peekTokenIs(token.RBRACE) && !p.peekTokenIs(token.EOF) {
+			p.nextToken()
+			if stmt := p.parseStatement(); stmt != nil {
+				clause.Statements = append(clause.Statements, stmt)
+			}
+		}
+	}
+	return clause
+}
+
 func (p *Parser) parseMeterStatement() *ast.MeterStatement {
 	stmt := &ast.MeterStatement{Token: p.curTok}
 
@@ -1126,4 +1347,93 @@ func (p *Parser) parseTraceStatement() *ast.TraceStatement {
 	stmt.Body = p.parseBlockStatement()
 
 	return stmt
+}
+
+func (p *Parser) parseDestructuringPattern(isHash bool) *ast.DestructuringPattern {
+	dp := &ast.DestructuringPattern{
+		Token:  p.curTok,
+		IsHash: isHash,
+	}
+
+	if isHash {
+		// Parse {x, y, z: alias}
+		if p.peekTokenIs(token.RBRACE) {
+			p.nextToken()
+			return dp
+		}
+		p.nextToken()
+
+		for {
+			if p.curTokenIs(token.RBRACE) {
+				break
+			}
+
+			field := ast.DestructuringField{}
+
+			if p.curTokenIs(token.IDENT) {
+				field.Key = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+				field.Value = field.Key
+
+				// Check for alias: {orig: newName}
+				if p.peekTokenIs(token.COLON) {
+					p.nextToken() // consume COLON
+					if !p.expectPeek(token.IDENT) {
+						return nil
+					}
+					field.Value = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+				}
+			}
+
+			dp.Fields = append(dp.Fields, field)
+
+			if !p.peekTokenIs(token.COMMA) {
+				break
+			}
+			p.nextToken() // consume COMMA
+			p.nextToken() // move to next field
+		}
+
+		if !p.expectPeek(token.RBRACE) {
+			return nil
+		}
+	} else {
+		// Parse [a, b, ...rest]
+		if p.peekTokenIs(token.RBRACKET) {
+			p.nextToken()
+			return dp
+		}
+		p.nextToken()
+
+		for {
+			if p.curTokenIs(token.RBRACKET) {
+				break
+			}
+
+			field := ast.DestructuringField{}
+
+			if p.curTokenIs(token.ELLIPSIS) {
+				field.Rest = true
+				if !p.expectPeek(token.IDENT) {
+					return nil
+				}
+				field.Value = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+			} else if p.curTokenIs(token.IDENT) {
+				field.Value = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+			}
+
+			dp.Fields = append(dp.Fields, field)
+
+			if field.Rest || !p.peekTokenIs(token.COMMA) {
+				break
+			}
+			p.nextToken() // consume COMMA
+			p.nextToken() // move to next field
+		}
+
+		if !p.expectPeek(token.RBRACKET) {
+			return nil
+		}
+	}
+
+	return dp
 }

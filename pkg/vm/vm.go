@@ -6,7 +6,9 @@ import (
 	"io/fs"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
+	"jabline/pkg/sandbox"
 	"jabline/pkg/stdlib"
+	"reflect"
 )
 
 // EmbeddedModules can be set from main to bundle the standard library into the binary.
@@ -24,8 +26,21 @@ func init() {
 	stdlib.Executor = ExecuteClosureBridge
 }
 
-const StackSize = 2048
+// InitialStackSize is the starting capacity of the VM stack.
+// It grows automatically up to MaxStackSize, so forks start cheap.
+const InitialStackSize = 256
+
+// MaxStackSize is the hard cap for the VM stack.
+// A stack overflow error is returned when this limit is reached.
+const MaxStackSize = 65536
+
+// StackSize is kept for backward compatibility in tests and direct VM construction.
+const StackSize = InitialStackSize
+
 const GlobalsSize = 65536
+
+// InitialFrames is the starting number of call frames. Grows up to MaxFrames.
+const InitialFrames = 64
 const MaxFrames = 1024
 
 var (
@@ -38,7 +53,7 @@ type VM struct {
 	constants []object.Object
 	stack     []object.Object
 	sp        int
-	globals   []object.Object
+	globals   *GlobalStore
 
 	frames      []*Frame
 	framesIndex int
@@ -50,17 +65,33 @@ type VM struct {
 	methods map[string]map[string]*object.Closure
 	Types   map[string]object.Object
 
-	LastError object.Object // Store last encountered error for recover()
+	LastError         object.Object // Store last encountered error for recover()
+	PendingException object.Object // Raw exception value for rethrow after finally
 
 	Ctx    context.Context
 	Cancel context.CancelFunc
 
 	Telemetry *Telemetry
 	Debug     *DebugSession
+
+	Sandbox         *sandbox.Policy
+	finallyHandlers []FinallyHandler
+
+	// Coverage tracking
+	RecordingCoverage bool
+	Coverage          map[string]map[int]int // filename -> line -> hit count
+
+	// OpenTelemetry
+	otelCtx     context.Context
+	otelSpanEnd []func()
 }
+
+// globalOTelCleanup is set by InitTelemetryFromEnv and called on VM shutdown.
+var globalOTelCleanup func()
 
 type ExceptionHandler struct {
 	CatchIP    int
+	FinallyIP  int
 	StackSP    int
 	FrameIndex int
 }
@@ -77,18 +108,22 @@ func NewWithLoader(instructions code.Instructions, constants []object.Object, fi
 
 	vm := &VM{
 		constants:   constants,
-		stack:       make([]object.Object, StackSize),
+		stack:       make([]object.Object, InitialStackSize),
 		sp:          0,
-		globals:     make([]object.Object, GlobalsSize),
-		frames:      make([]*Frame, MaxFrames),
+		globals:     NewGlobalStore(GlobalsSize),
+		frames:      make([]*Frame, InitialFrames),
 		framesIndex: 1,
-		handlers:    []ExceptionHandler{},
-		filename:    filename,
+		handlers:        []ExceptionHandler{},
+		finallyHandlers: []FinallyHandler{},
+		filename:        filename,
 		loader:      loader,
 		methods:     make(map[string]map[string]*object.Closure),
 		Types:       make(map[string]object.Object),
+		Sandbox:     sandbox.DefaultPolicy(sandbox.LevelNone),
 		Ctx:         ctx,
 		Cancel:      cancel,
+		otelCtx:     context.Background(),
+		otelSpanEnd: []func(){},
 	}
 	vm.frames[0] = mainFrame
 
@@ -105,7 +140,7 @@ func NewWithLoader(instructions code.Instructions, constants []object.Object, fi
 
 func NewWithGlobalsStore(instructions code.Instructions, constants []object.Object, globals []object.Object, filename string) *VM {
 	vm := New(instructions, constants, filename)
-	vm.globals = globals
+	vm.globals = GlobalStoreFromSlice(globals)
 	return vm
 }
 
@@ -196,6 +231,30 @@ func (vm *VM) Run() (err error) {
 	}()
 
 	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
+		// Sync with hot reload — ensures Reload() is not modifying state concurrently
+		reloadMu.Lock()
+		reloadMu.Unlock()
+
+		// Coverage recording
+		if vm.RecordingCoverage {
+			frm := vm.currentFrame()
+			if frm.cl != nil && frm.cl.Fn != nil && frm.cl.Fn.SourceMap != nil {
+				if pos, ok := frm.cl.Fn.SourceMap[frm.ip]; ok {
+					filename := vm.filename
+					if frm.cl.Fn.Name != "" {
+						filename = frm.cl.Fn.Name
+					}
+					if vm.Coverage == nil {
+						vm.Coverage = make(map[string]map[int]int)
+					}
+					if vm.Coverage[filename] == nil {
+						vm.Coverage[filename] = make(map[int]int)
+					}
+					vm.Coverage[filename][pos.Line]++
+				}
+			}
+		}
+
 		// Debug hook
 		if vm.Debug != nil {
 			vm.Debug.OnInstruction(vm)
@@ -328,21 +387,34 @@ func (vm *VM) Run() (err error) {
 				return vm.handleNativeError(err.Error())
 			}
 		case code.OpCall:
-			// Handle OpCall manually to manage IP updates correctly before frame switch
 			numArgs := int(ins[ip+1])
-			ip += 1                   // Advance IP past operand
-			vm.currentFrame().ip = ip // Save the updated IP to the current frame (caller)
+			ip += 1
+			vm.currentFrame().ip = ip
 
 			if err := vm.executeCall(numArgs); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
-			continue // Continue loop with the new frame (callee)
+			continue
+
+		case code.OpTailCall:
+			numArgs := int(ins[ip+1])
+			ip += 1
+			vm.currentFrame().ip = ip
+
+			// Pop the current frame (replaced by callee's frame)
+			oldFrame := vm.popFrame()
+			ReleaseFrame(oldFrame)
+
+			if err := vm.executeCall(numArgs); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+			continue
 
 		case code.OpCallMethodFast:
 			// methodNameIdx (2 bytes), numArgs (1 byte)
 			methodNameIdx := int(code.ReadUint16(ins[ip+1:]))
 			numArgs := int(ins[ip+3])
-			ip += 3                   // Advance IP past operands
+			ip += 3                   // Advance IP past operands (loop will ++ past opcode)
 			vm.currentFrame().ip = ip // Save the updated IP
 
 			methodNameObj := vm.constants[methodNameIdx]
@@ -353,16 +425,39 @@ func (vm *VM) Run() (err error) {
 				return vm.handleNativeError(err.Error())
 			}
 
+			// Handle Builtins immediately — the receiver comes from a
+			// hash-lookup (e.g. native["trim"]) and must NOT be passed
+			// as an extra argument.
+			if builtin, ok := callable.(*object.Builtin); ok {
+				if receiver.Type() == object.ARRAY_OBJ {
+					// For array methods (map, filter, reduce, etc.),
+					// keep the receiver as the first argument.
+					// Stack: [receiver, arg1, ..., argN]
+					// Rearrange to: [builtin, receiver, arg1, ..., argN]
+					for i := vm.sp; i > vm.sp-numArgs-1; i-- {
+						vm.stack[i] = vm.stack[i-1]
+					}
+					vm.stack[vm.sp-numArgs-1] = builtin
+					vm.sp++
+					if err := vm.executeCallBuiltin(builtin, numArgs+1); err != nil {
+						return vm.handleNativeError(err.Error())
+					}
+				} else {
+					vm.stack[vm.sp-numArgs-1] = builtin
+					if err := vm.executeCallBuiltin(builtin, numArgs); err != nil {
+						return vm.handleNativeError(err.Error())
+					}
+				}
+				continue
+			}
+
 			// Extract closure from BoundMethod or use as is
 			var fn *object.Closure
-			var builtin *object.Builtin
 			switch c := callable.(type) {
 			case *object.BoundMethod:
 				fn = c.Function
 			case *object.Closure:
 				fn = c
-			case *object.Builtin:
-				builtin = c
 			default:
 				var tType string
 				if callable != nil {
@@ -379,6 +474,9 @@ func (vm *VM) Run() (err error) {
 			// Shift everything up by 1 position
 
 			for len(vm.stack) <= vm.sp {
+				if len(vm.stack) >= MaxStackSize {
+					return vm.handleNativeError(fmt.Sprintf("stack overflow: exceeded maximum stack depth of %d", MaxStackSize))
+				}
 				vm.stack = append(vm.stack, nil)
 			}
 
@@ -386,29 +484,17 @@ func (vm *VM) Run() (err error) {
 				vm.stack[i] = vm.stack[i-1]
 			}
 			
-			if builtin != nil {
-				vm.stack[vm.sp-numArgs-1] = builtin
-			} else {
-				vm.stack[vm.sp-numArgs-1] = fn
-			}
+			vm.stack[vm.sp-numArgs-1] = fn
 			vm.sp++
 
-			if builtin != nil {
-				// Execute the builtin directly (numArgs + 1 incorporates self)
-				if err := vm.executeCallBuiltin(builtin, numArgs+1); err != nil {
-					return vm.handleNativeError(err.Error())
-				}
-				continue
-			}
-
-			// Now call executeCallClosure
+			// Now call executeCallClosure (numArgs + 1 incorporates receiver as self)
 			if err := vm.executeCallClosure(fn, numArgs+1, nil); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
 			continue // Continue loop with the new frame (callee)
 
 		case code.OpReturnValue:
-			if err := vm.opReturnValue(); err != nil {
+			if err := vm.opReturnValueDefer(); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
 			if vm.framesIndex == 0 {
@@ -416,7 +502,7 @@ func (vm *VM) Run() (err error) {
 			}
 			continue // Frame popped, refresh.
 		case code.OpReturn:
-			if err := vm.opReturn(); err != nil {
+			if err := vm.opReturnDefer(); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
 			if vm.framesIndex == 0 {
@@ -477,7 +563,12 @@ func (vm *VM) Run() (err error) {
 			vm.opTry(ins, &ip)
 		case code.OpEndTry:
 			vm.opEndTry()
-		case code.OpThrow:
+		case code.OpFinally:
+			vm.opFinally()
+	case code.OpEndFinally:
+		vm.opEndFinally()
+		continue
+	case code.OpThrow:
 			if err := vm.opThrow(); err != nil {
 				return vm.newRuntimeError("%s", err.Error())
 			}
@@ -502,10 +593,127 @@ func (vm *VM) Run() (err error) {
 			if err := vm.opTraceEnd(); err != nil {
 				return vm.handleNativeError(err.Error())
 			}
+		case code.OpSlice:
+			if err := vm.opSlice(); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpBuildArrayWithSpread:
+			if err := vm.opBuildArrayWithSpread(ins, &ip); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpCallSpread:
+			numArgs := int(ins[ip+1])
+			spreadMask := code.ReadUint16(ins[ip+2:])
+			ip += 3
+			vm.currentFrame().ip = ip
+
+			if err := vm.opCallSpread(numArgs, spreadMask); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+			continue
+		case code.OpDefer:
+			numArgs := int(ins[ip+1])
+			ip += 1
+			if err := vm.opDefer(numArgs); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
+		case code.OpSelect:
+			numCases := int(ins[ip+1])
+			hasDefault := int(ins[ip+2])
+			descriptorStart := ip + 3
+
+			// Parse case descriptors and compute stack contributions
+			type selCase struct {
+				flags      byte
+				bodyOffset int
+				items      int // 1 for recv, 2 for send
+			}
+			cases := make([]selCase, numCases)
+			totalItems := 0
+			for i := 0; i < numCases; i++ {
+				flags := ins[descriptorStart+i*3]
+				bodyOff := int(code.ReadUint16(ins[descriptorStart+i*3+1:]))
+				items := 2
+				if flags&1 == 0 {
+					items = 1
+				}
+				cases[i] = selCase{flags, bodyOff, items}
+				totalItems += items
+			}
+
+			// Build reflect.SelectCase slice — add a default case if hasDefault
+			selectCaseCount := numCases
+			if hasDefault != 0 {
+				selectCaseCount++
+			}
+			selCases := make([]reflect.SelectCase, selectCaseCount)
+			base := vm.sp - totalItems
+			for i, c := range cases {
+				chObj := vm.stack[base]
+				ch, ok := chObj.(*object.Channel)
+				if !ok {
+					return vm.newRuntimeError("select case %d: expected channel, got %s", i, chObj.Type())
+				}
+				if c.flags&1 != 0 {
+					// Send case
+					val := vm.stack[base+1]
+					selCases[i] = reflect.SelectCase{
+						Dir:  reflect.SelectSend,
+						Chan: reflect.ValueOf(ch.Value),
+						Send: reflect.ValueOf(val),
+					}
+				} else {
+					// Recv case
+					selCases[i] = reflect.SelectCase{
+						Dir:  reflect.SelectRecv,
+						Chan: reflect.ValueOf(ch.Value),
+					}
+				}
+				base += c.items
+			}
+			if hasDefault != 0 {
+				selCases[numCases] = reflect.SelectCase{Dir: reflect.SelectDefault}
+			}
+
+			// Pop all case data from stack
+			vm.sp -= totalItems
+
+			// Execute select (this may block unless default is selected)
+			chosen, _, _ := reflect.Select(selCases)
+
+			// Set IP to chosen case body (the loop will increment ip before dispatch)
+			if chosen < numCases {
+				ip = cases[chosen].bodyOffset - 1
+			} else {
+				// Default case — hasDefault is 1, default offset after case descriptors
+				defaultOff := descriptorStart + numCases*3
+				ip = int(code.ReadUint16(ins[defaultOff:])) - 1
+			}
+			vm.currentFrame().ip = ip
+			continue
+		case code.OpNextItem:
+			if err := vm.opNextItem(); err != nil {
+				return vm.handleNativeError(err.Error())
+			}
 		}
 
 		vm.currentFrame().ip = ip
 	}
+
+	// Execute deferred calls in the main frame (if any remain after the loop ends)
+	frame := vm.currentFrame()
+	deferred := frame.deferred
+	frame.deferred = nil
+	for i := len(deferred) - 1; i >= 0; i-- {
+		call := deferred[i]
+		if err := vm.executeCallFn(call.Fn, call.Args); err != nil {
+			return err
+		}
+		if err := vm.Run(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -516,4 +724,24 @@ func (vm *VM) LastPoppedStackElem() object.Object {
 		return nil
 	}
 	return vm.stack[vm.sp-1]
+}
+
+// GetCoverageReport returns a map of filename -> { line -> hit_count }
+// for all coverage data collected during execution.
+func (vm *VM) GetCoverageReport() map[string]map[int]int {
+	if vm.Coverage == nil {
+		return make(map[string]map[int]int)
+	}
+	return vm.Coverage
+}
+
+// ResetCoverage clears all coverage data.
+func (vm *VM) ResetCoverage() {
+	vm.Coverage = nil
+}
+
+// Cleanup releases all VM-level resources including OTel and global connections.
+func (vm *VM) Cleanup() {
+	ShutdownOTel()
+	stdlib.CloseAllResources()
 }

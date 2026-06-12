@@ -1,0 +1,18 @@
+// error_handling.jb - demonstrates JSON parse error handling
+
+import json
+
+let invalid = "{bad json}"
+let valid = '{"ok": true}'
+
+fn main() {
+    let result1 = json.try_parse(invalid)
+    if result1.is_error {
+        println("Expected error: " + result1.error)
+    }
+
+    let result2 = json.try_parse(valid)
+    if result2.is_ok {
+        println("Parsed OK: " + result2.value["ok"])
+    }
+}

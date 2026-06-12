@@ -1,0 +1,16 @@
+import * as crypto from "crypto"
+
+let data = "hello jabline"
+echo("md5    = " + crypto.md5(data))
+echo("sha256 = " + crypto.sha256(data))
+
+let key = crypto.randomBytes(16)
+echo("key    = " + crypto.sha256(key))
+
+let encrypted = crypto.aesEncrypt(key, data)
+echo("encrypted = " + crypto.sha256(encrypted))
+
+let decrypted = crypto.aesDecrypt(key, encrypted)
+echo("decrypted = " + decrypted)
+
+echo("uuid = " + crypto.uuid())

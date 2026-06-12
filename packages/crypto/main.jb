@@ -1,0 +1,49 @@
+// crypto — Cryptographic utilities for Jabline
+// Hash, base64, hex encoding, and HMAC helpers
+
+export fn md5(self, input) {
+    if (type(nativeMD5) == "BUILTIN") {
+        return nativeMD5(input);
+    }
+    return __md5_fallback(input);
+}
+
+export fn sha1(self, input) {
+    if (type(nativeSHA1) == "BUILTIN") {
+        return nativeSHA1(input);
+    }
+    return __sha1_fallback(input);
+}
+
+export fn sha256(self, input) {
+    if (type(nativeSHA256) == "BUILTIN") {
+        return nativeSHA256(input);
+    }
+    return __sha256_fallback(input);
+}
+
+export fn base64Encode(self, input) {
+    return encodeBase64(input);
+}
+
+export fn base64Decode(self, input) {
+    return decodeBase64(input);
+}
+
+export fn hexEncode(self, input) {
+    return encodeHex(input);
+}
+
+export fn hexDecode(self, input) {
+    return decodeHex(input);
+}
+
+export fn randomBytes(self, n) {
+    let result = [];
+    let i = 0;
+    while (i < n) {
+        result = push(result, random());
+        i = i + 1;
+    }
+    return result;
+}

@@ -1,0 +1,27 @@
+// Factory - Creates objects without specifying exact class
+
+fn createButton(text) {
+    return {
+        "text": text,
+        "render": fn(self) { return "<button>" + self["text"] + "</button>" }
+    }
+}
+
+fn createInput(placeholder) {
+    return {
+        "placeholder": placeholder,
+        "render": fn(self) { return "<input placeholder='" + self["placeholder"] + "'>" }
+    }
+}
+
+fn createElement(type, props) {
+    if (type == "button") {
+        return createButton(props["text"])
+    } else if (type == "input") {
+        return createInput(props["placeholder"])
+    }
+    return null
+}
+
+let btn = createElement("button", {"text": "Click"})
+print(btn.render())

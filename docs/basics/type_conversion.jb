@@ -1,0 +1,13 @@
+// Type Conversion - Converting between types
+
+let numStr = "42"
+let num = parseInt(numStr)
+print("Parsed int: " + toString(num + 8))
+
+let fltStr = "3.14"
+let flt = parseFloat(fltStr)
+print("Parsed float: " + toString(flt * 2))
+
+let val = 99
+let asStr = toString(val)
+print("As string: " + asStr + " (length=" + toString(length(asStr)) + ")")

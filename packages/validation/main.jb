@@ -1,0 +1,189 @@
+// jabline-validation — Validation library for Jabline
+// String, number, and object validators with composable rules.
+
+export fn isEmail(s) {
+    if (type(s) != "STRING") { return false; }
+    let at = indexOf(s, "@");
+    if (at < 1) { return false; }
+    let localPart = slice(s, 0, at);
+    let domain = slice(s, at + 1);
+    if (len(domain) < 1) { return false; }
+    let dot = indexOf(domain, ".");
+    if (dot < 1) { return false; }
+    let tld = slice(domain, dot + 1);
+    if (len(tld) < 2) { return false; }
+    // Check no consecutive dots, no spaces
+    if (indexOf(s, "..") >= 0) { return false; }
+    if (indexOf(s, " ") >= 0) { return false; }
+    return true;
+}
+
+export fn isURL(s) {
+    if (type(s) != "STRING") { return false; }
+    let lower = lower(s);
+    if (!startsWith(lower, "http://") && !startsWith(lower, "https://")) {
+        return false;
+    }
+    if (len(s) < 10) { return false; }
+    if (indexOf(s, " ") >= 0) { return false; }
+    return true;
+}
+
+export fn isIP(s) {
+    if (type(s) != "STRING") { return false; }
+    let parts = split(s, ".");
+    if (len(parts) != 4) { return false; }
+    let i = 0;
+    while (i < 4) {
+        let octet = parseInt(parts[i]);
+        if (is_error(octet)) { return false; }
+        if (octet < 0 || octet > 255) { return false; }
+        if (toString(octet) != parts[i]) { return false; }
+        i = i + 1;
+    }
+    return true;
+}
+
+export fn isUUID(s) {
+    if (type(s) != "STRING") { return false; }
+    if (len(s) != 36) { return false; }
+    let parts = split(s, "-");
+    if (len(parts) != 5) { return false; }
+    if (len(parts[0]) != 8) { return false; }
+    if (len(parts[1]) != 4) { return false; }
+    if (len(parts[2]) != 4) { return false; }
+    if (len(parts[3]) != 4) { return false; }
+    if (len(parts[4]) != 12) { return false; }
+    return true;
+}
+
+export fn isAlpha(s) {
+    if (type(s) != "STRING") { return false; }
+    if (len(s) == 0) { return false; }
+    let i = 0;
+    while (i < len(s)) {
+        let c = s[i];
+        if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z"))) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+export fn isAlphaNumeric(s) {
+    if (type(s) != "STRING") { return false; }
+    if (len(s) == 0) { return false; }
+    let i = 0;
+    while (i < len(s)) {
+        let c = s[i];
+        if (!((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9"))) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+export fn isNumeric(s) {
+    if (type(s) != "STRING") { return false; }
+    if (len(s) == 0) { return false; }
+    let i = 0;
+    while (i < len(s)) {
+        let c = s[i];
+        if (!(c >= "0" && c <= "9")) {
+            return false;
+        }
+        i = i + 1;
+    }
+    return true;
+}
+
+export fn isInt(n) {
+    if (type(n) == "INTEGER") { return true; }
+    if (type(n) == "STRING") {
+        let v = parseInt(n);
+        return !is_error(v) && toString(v) == n;
+    }
+    return false;
+}
+
+export fn isFloat(n) {
+    if (type(n) == "FLOAT") { return true; }
+    if (type(n) == "STRING") {
+        let v = parseFloat(n);
+        return !is_error(v);
+    }
+    return false;
+}
+
+export fn min(n, limit) {
+    if (type(n) == "INTEGER") { return n >= limit; }
+    if (type(n) == "FLOAT") { return n >= to_float(limit); }
+    return false;
+}
+
+export fn max(n, limit) {
+    if (type(n) == "INTEGER") { return n <= limit; }
+    if (type(n) == "FLOAT") { return n <= to_float(limit); }
+    return false;
+}
+
+export fn between(n, lo, hi) {
+    return min(n, lo) && max(n, hi);
+}
+
+export fn lenMin(s, minLen) {
+    if (type(s) != "STRING") { return false; }
+    return len(s) >= minLen;
+}
+
+export fn lenMax(s, maxLen) {
+    if (type(s) != "STRING") { return false; }
+    return len(s) <= maxLen;
+}
+
+export fn lenBetween(s, lo, hi) {
+    if (type(s) != "STRING") { return false; }
+    let l = len(s);
+    return l >= lo && l <= hi;
+}
+
+export fn required(v) {
+    if (v == null) { return false; }
+    if (type(v) == "STRING" && len(v) == 0) { return false; }
+    return true;
+}
+
+export fn isEmailOrNull(s) {
+    if (s == null) { return true; }
+    return isEmail(s);
+}
+
+export fn matches(s, pattern) {
+    if (type(s) != "STRING") { return false; }
+    return regex["test"](pattern, s);
+}
+
+export fn validate(obj, rules) {
+    let errors = {};
+    for (field in keys(rules)) {
+        let value = obj[field];
+        let checks = rules[field];
+        let i = 0;
+        while (i < len(checks)) {
+            let check = checks[i];
+            if (check != null && !check(value)) {
+                if (errors[field] == null) {
+                    errors[field] = [];
+                }
+                errors[field] = push(errors[field], toString(check));
+            }
+            i = i + 1;
+        }
+    }
+    if (len(keys(errors)) == 0) {
+        return {valid: true, errors: null};
+    }
+    return {valid: false, errors: errors};
+}

@@ -5,7 +5,6 @@ import (
 	"jabline/pkg/ast"
 	jfmt "jabline/pkg/fmt"
 	"jabline/pkg/token"
-	"os"
 	"strings"
 
 	"github.com/tliron/glsp"
@@ -61,19 +60,27 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 			}
 		}
 	case *ast.LetStatement:
-		sym := currentScope.Get(n.Name.Value)
-		doc := "any"
-		if sym != nil {
-			doc = sym.Type
+		if n.Destructure != nil {
+			content = "```jabline\nlet ... = ...\n```\n_Destructuring assignment_"
+		} else if n.Name != nil {
+			sym := currentScope.Get(n.Name.Value)
+			doc := "any"
+			if sym != nil {
+				doc = sym.Type
+			}
+			content = fmt.Sprintf("```jabline\nlet %s: %s\n```", n.Name.Value, doc)
 		}
-		content = fmt.Sprintf("```jabline\nlet %s: %s\n```", n.Name.Value, doc)
 	case *ast.ConstStatement:
-		sym := currentScope.Get(n.Name.Value)
-		doc := "any"
-		if sym != nil {
-			doc = sym.Type
+		if n.Destructure != nil {
+			content = "```jabline\nconst ... = ...\n```\n_Destructuring assignment_"
+		} else if n.Name != nil {
+			sym := currentScope.Get(n.Name.Value)
+			doc := "any"
+			if sym != nil {
+				doc = sym.Type
+			}
+			content = fmt.Sprintf("```jabline\nconst %s: %s\n```", n.Name.Value, doc)
 		}
-		content = fmt.Sprintf("```jabline\nconst %s: %s\n```", n.Name.Value, doc)
 	case *ast.FunctionStatement:
 		sig := buildFnSignature(n.Name.Value, n.Parameters, n.ReturnType, false)
 		content = fmt.Sprintf("```jabline\n%s\n```\n_Function declaration_", sig)
@@ -83,11 +90,11 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	case *ast.FunctionLiteral:
 		varName := ""
 		for i := len(path) - 2; i >= 0; i-- {
-			if ls, ok2 := path[i].(*ast.LetStatement); ok2 {
+			if ls, ok2 := path[i].(*ast.LetStatement); ok2 && ls.Name != nil {
 				varName = ls.Name.Value
 				break
 			}
-			if cs, ok2 := path[i].(*ast.ConstStatement); ok2 {
+			if cs, ok2 := path[i].(*ast.ConstStatement); ok2 && cs.Name != nil {
 				varName = cs.Name.Value
 				break
 			}
@@ -101,7 +108,7 @@ func textDocumentHover(context *glsp.Context, params *protocol.HoverParams) (*pr
 	case *ast.AsyncFunctionLiteral:
 		varName := ""
 		for i := len(path) - 2; i >= 0; i-- {
-			if ls, ok2 := path[i].(*ast.LetStatement); ok2 {
+			if ls, ok2 := path[i].(*ast.LetStatement); ok2 && ls.Name != nil {
 				varName = ls.Name.Value
 				break
 			}
@@ -435,12 +442,7 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 		return nil, nil
 	}
 
-	content, err := os.ReadFile(params.TextDocument.URI[len("file://"):])
-	if err != nil {
-		logger.Error(fmt.Sprintf("Failed to read file for signature help: %v", err))
-		return nil, nil
-	}
-	funcContent := string(content)
+	funcContent := docInfo.Content
 
 	line := int(params.Position.Line) + 1
 	col := int(params.Position.Character) + 1
@@ -466,42 +468,49 @@ func textDocumentSignatureHelp(context *glsp.Context, params *protocol.Signature
 	}
 
 	symbol := docInfo.SymbolTable.RootScope.Get(ident.Value)
-	if symbol == nil || symbol.Definition == nil {
+	if symbol == nil {
 		return nil, nil
 	}
 
 	var label string
 	var paramsInfo []protocol.ParameterInformation
 
-	switch f := symbol.Definition.(type) {
-	case *ast.FunctionStatement:
-		label = "fn " + f.Name.Value + "("
-		for i, p := range f.Parameters {
-			if i > 0 {
-				label += ", "
-			}
-			label += p.Value
-			paramsInfo = append(paramsInfo, protocol.ParameterInformation{
-				Label: p.Value,
-			})
+	if symbol.Definition == nil {
+		// Builtin or test function — use doc signature
+		if doc, ok := BuiltinDocs[ident.Value]; ok {
+			label = doc.Signature
+		} else {
+			label = symbol.Type
 		}
-		label += ")"
-	case *ast.FunctionLiteral:
-
-		label = "fn("
-		for i, p := range f.Parameters {
-			if i > 0 {
-				label += ", "
+	} else {
+		switch f := symbol.Definition.(type) {
+		case *ast.FunctionStatement:
+			label = "fn " + f.Name.Value + "("
+			for i, p := range f.Parameters {
+				if i > 0 {
+					label += ", "
+				}
+				label += p.Value
+				paramsInfo = append(paramsInfo, protocol.ParameterInformation{
+					Label: p.Value,
+				})
 			}
-			label += p.Value
-			paramsInfo = append(paramsInfo, protocol.ParameterInformation{
-				Label: p.Value,
-			})
+			label += ")"
+		case *ast.FunctionLiteral:
+			label = "fn("
+			for i, p := range f.Parameters {
+				if i > 0 {
+					label += ", "
+				}
+				label += p.Value
+				paramsInfo = append(paramsInfo, protocol.ParameterInformation{
+					Label: p.Value,
+				})
+			}
+			label += ")"
+		default:
+			return nil, nil
 		}
-		label += ")"
-
-	default:
-		return nil, nil
 	}
 
 	activeParameter := uint32(0)

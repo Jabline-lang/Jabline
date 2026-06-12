@@ -63,17 +63,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Wire the embedded standard modules into the VM
 	vm.EmbeddedModules = embedded.Modules
-
-	// Initialize the loader with embedded modules support
 	loader := vm.NewModuleLoaderWithEmbed(embedded.Modules)
-
-	// Execute inside VM
 	machine := vm.NewWithLoader(bytecode.Instructions, bytecode.Constants, "main", loader)
-	
-	// Register GlobalVM so concurrency/async works inside compiled binaries too
 	vm.GlobalVM = machine
+
+	if bytecode.Sandbox != "" {
+		if err := machine.SetSandboxLevel(bytecode.Sandbox); err != nil {
+			fmt.Printf("Error: invalid embedded sandbox level %q: %s\n", bytecode.Sandbox, err)
+			os.Exit(1)
+		}
+	}
 
 	err = machine.Run()
 	if err != nil {

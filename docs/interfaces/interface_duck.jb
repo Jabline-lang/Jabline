@@ -1,0 +1,28 @@
+// Duck typing: implicit interface implementation
+// A struct implements an interface automatically if it has matching methods
+
+interface Quacker {
+    Quack(): string
+}
+
+struct Duck {
+    name: string
+}
+
+fn (d Duck) Quack(): string {
+    return d.name + " says quack!"
+}
+
+struct Robot {
+    id: int
+}
+
+fn (r Robot) Quack(): string {
+    return "Robot " + toString(r.id) + " emits quack sound"
+}
+
+let d = Duck { name: "Donald" }
+let r = Robot { id: 42 }
+
+echo(d.Quack())
+echo(r.Quack())

@@ -1,0 +1,22 @@
+// Higher-Order Functions - Taking/returning functions
+
+fn applyTwice(f, x) {
+    return f(f(x))
+}
+
+fn makeMultiplier(factor) {
+    return fn(x) {
+        return x * factor
+    }
+}
+
+fn addOne(x) {
+    return x + 1
+}
+
+let double = makeMultiplier(2)
+let triple = makeMultiplier(3)
+
+print("applyTwice(addOne, 5) = " + toString(applyTwice(addOne, 5)))
+print("double(10) = " + toString(double(10)))
+print("triple(10) = " + toString(triple(10)))

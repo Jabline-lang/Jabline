@@ -1,0 +1,13 @@
+// rounding.jb - demonstrates floor, ceil, round
+
+import math
+
+let values = [3.14, 2.718, -1.5, 9.99, 0.01]
+
+fn main() {
+    for v in values {
+        println("floor(" + v + ") = " + math.floor(v) +
+                ", ceil(" + v + ") = " + math.ceil(v) +
+                ", round(" + v + ") = " + math.round(v))
+    }
+}

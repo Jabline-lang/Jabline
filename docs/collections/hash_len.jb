@@ -1,0 +1,15 @@
+// len() works on hashes, returning key count
+
+let empty = {}
+let person = {
+    "name": "Bob",
+    "age": 25,
+    "city": "NYC"
+}
+
+echo("len(empty):  " + toString(len(empty)))
+echo("len(person): " + toString(len(person)))
+
+// Adding a key increases length
+person["country"] = "USA"
+echo("after add:   " + toString(len(person)))

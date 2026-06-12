@@ -1,0 +1,13 @@
+// format.jb - demonstrates time formatting
+
+import time
+
+fn main() {
+    let now = time.now()
+
+    let formatted = time.format(now, "YYYY-MM-DD HH:mm:ss")
+    println("Formatted: " + formatted)
+
+    let date_only = time.format(now, "YYYY/MM/DD")
+    println("Date: " + date_only)
+}

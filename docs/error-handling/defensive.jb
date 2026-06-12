@@ -1,0 +1,31 @@
+// Defensive programming - validate inputs and handle edge cases
+// Run with: jabline run defensive.jb
+
+fn safeDivide(a, b) {
+    if (type(a) != "INTEGER" && type(a) != "FLOAT") {
+        return Error("a must be a number")
+    }
+    if (type(b) != "INTEGER" && type(b) != "FLOAT") {
+        return Error("b must be a number")
+    }
+    if (b == 0) {
+        return Error("division by zero")
+    }
+    return a / b
+}
+
+fn safeArrayGet(arr, index) {
+    if (type(arr) != "ARRAY") {
+        return Error("first argument must be an array")
+    }
+    if (index < 0 || index >= len(arr)) {
+        return Error("index " + toString(index) + " out of bounds")
+    }
+    return arr[index]
+}
+
+let div = safeDivide(10, 2)
+if (!is_error(div)) { echo("10/2 = " + toString(div)) }
+
+let item = safeArrayGet([1, 2, 3], 5)
+if (is_error(item)) { echo("guard: " + toString(item)) }

@@ -1,0 +1,14 @@
+// import "mod" as alias - rename imports for convenience
+// Run with: jabline run import_rename.jb
+
+import { map, filter } from "collections"
+import * as str from "strings"
+
+let nums = [1, 2, 3, 4, 5]
+let doubled = map(nums, fn(x) { return x * 2 })
+echo("doubled: " + toString(doubled))
+
+let evens = filter(nums, fn(x) { return x % 2 == 0 })
+echo("evens: " + toString(evens))
+
+echo("reversed: " + str.reverse("jabline"))

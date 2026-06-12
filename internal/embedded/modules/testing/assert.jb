@@ -265,13 +265,21 @@ export fn includes(container, item, message) {
             if (x == item) { found = true; }
         }
     } else if (type(container) == "STRING") {
-        // Simple search if Jabline supports it or use index
         let i = 0;
-        while (i <= len(container) - len(item)) {
-            // This is complex in Jabline without slice.
-            // Let's assume we can use the new native strings/slice 
-            // once we have a way to call it here.
-            // For now, let's keep it simple.
+        let clen = len(container);
+        let ilen = len(item);
+        while (i <= clen - ilen) {
+            let matched = true;
+            let j = 0;
+            while (j < ilen) {
+                if (container[i + j] != item[j]) {
+                    matched = false;
+                }
+                j = j + 1;
+            }
+            if (matched) {
+                found = true;
+            }
             i = i + 1;
         }
     }

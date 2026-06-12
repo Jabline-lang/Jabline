@@ -1,0 +1,26 @@
+// Iterator - Traverses collections without exposing internals
+
+fn createIterator(arr) {
+    let index = 0
+    return {
+        "next": fn(self) {
+            if (index < len(arr)) {
+                let val = arr[index]
+                index = index + 1
+                return val
+            }
+            return null
+        },
+        "hasNext": fn(self) {
+            return index < len(arr)
+        }
+    }
+}
+
+let items = ["a", "b", "c", "d"]
+let iter = createIterator(items)
+
+while (iter.hasNext()) {
+    let val = iter.next()
+    print("Item: " + val)
+}

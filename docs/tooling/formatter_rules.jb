@@ -1,0 +1,14 @@
+// Formatter Rules - Code style conventions enforced by jabline fmt
+// 2-space indentation, no tabs
+// Spaces around operators and after commas
+// Opening brace on same line
+
+fn calculate(values) {
+    let sum = 0
+    let i = 0
+    while (i < len(values)) {
+        sum = sum + values[i]
+        i = i + 1
+    }
+    return sum
+}

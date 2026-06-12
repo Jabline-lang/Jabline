@@ -1,0 +1,20 @@
+// with_timeout.jb - demonstrates context with timeout
+
+import context
+import time
+
+fn slow_operation(ctx) {
+    time.sleep(2.0)
+
+    if ctx.expired() {
+        println("Operation timed out")
+        return
+    }
+
+    println("Operation completed")
+}
+
+fn main() {
+    let ctx = context.with_timeout(context.background(), 1.0)
+    slow_operation(ctx)
+}

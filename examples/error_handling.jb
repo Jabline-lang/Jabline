@@ -1,0 +1,22 @@
+fn divide(a, b) {
+    if (b == 0) {
+        throw "division by zero"
+    }
+    return a / b
+}
+
+try {
+    echo("10 / 2 = " + toString(divide(10, 2)))
+    echo("10 / 0 = " + toString(divide(10, 0)))
+} catch (e) {
+    echo("caught: " + toString(e))
+} finally {
+    echo("finally block always runs")
+}
+
+retry (3) {
+    echo("retry attempt")
+    throw "ephemeral error"
+} catch (e) {
+    echo("retries exhausted: " + toString(e))
+}

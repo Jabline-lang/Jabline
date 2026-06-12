@@ -1,0 +1,13 @@
+// exec.jb - demonstrates running external commands
+
+import os
+
+fn main() {
+    let result = os.exec("echo Hello from Jabline")
+    println("Exit code: " + result.code)
+    println("Stdout:\n" + result.stdout)
+
+    if result.stderr != "" {
+        println("Stderr:\n" + result.stderr)
+    }
+}

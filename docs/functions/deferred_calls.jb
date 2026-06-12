@@ -1,0 +1,24 @@
+// Deferred Calls - defer statement for cleanup
+
+fn readFile(path) {
+    print("Opening: " + path)
+    defer {
+        print("Closing: " + path)
+    }
+    print("Reading contents...")
+    print("File read complete")
+}
+
+fn main() {
+    print("Start")
+    defer {
+        print("Cleanup step 1")
+    }
+    defer {
+        print("Cleanup step 2")
+    }
+    print("Working...")
+}
+
+readFile("data.txt")
+main()

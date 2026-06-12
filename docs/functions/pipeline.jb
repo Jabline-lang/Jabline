@@ -1,0 +1,17 @@
+// Pipeline - Pipe operator |> for chaining
+
+fn double(x) { return x * 2 }
+fn addOne(x) { return x + 1 }
+fn toString(x) { return toString(x) }
+
+// Using pipe operator
+let result = 5
+    |> double
+    |> addOne
+    |> toString
+
+print("5 |> double |> addOne |> toString = " + result)
+
+// Without pipe (equivalent)
+let result2 = toString(addOne(double(5)))
+print("Nested call = " + result2)

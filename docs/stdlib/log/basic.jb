@@ -1,0 +1,14 @@
+// basic.jb - demonstrates basic logging
+
+import log
+
+fn main() {
+    log.info("Application started")
+    log.info("Loading configuration...")
+    log.info("Configuration loaded")
+
+    log.warn("Using default settings")
+    log.error("Failed to connect to database")
+
+    println("See log output above")
+}

@@ -1,0 +1,27 @@
+// Module initialization order - top-level code runs on import
+// Run with: jabline run module_init.jb
+
+echo("module init: top-level code executes first")
+
+export let initialized = false
+export let config = {}
+
+fn initModule() {
+    initialized = true
+    config["status"] = "ready"
+    config["version"] = "1.0"
+    echo("module: initialization complete")
+}
+
+initModule()
+
+export fn getConfig() {
+    return config
+}
+
+export fn isReady() {
+    return initialized
+}
+
+echo("module ready: " + toString(isReady()))
+echo("config: " + toString(getConfig()))

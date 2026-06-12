@@ -1,0 +1,15 @@
+// panic() builtin - immediately halt with a fatal error message
+// Run with: jabline run panic.jb
+
+fn checkPositive(n) {
+    if (n <= 0) {
+        panic("number must be positive, got " + toString(n))
+    }
+    return sqrt(n)
+}
+
+// This will panic and stop execution
+echo("sqrt of 16 is " + toString(checkPositive(16)))
+echo("about to panic...")
+checkPositive(-1)
+echo("this line will never execute")

@@ -1,0 +1,19 @@
+// timeout.jb - demonstrates timeout pattern
+
+import resilience
+import time
+
+fn slow_task() {
+    time.sleep(3.0)
+    return "done"
+}
+
+fn main() {
+    let result = resilience.with_timeout(slow_task, 1.0)
+
+    if result.is_error {
+        println("Task timed out: " + result.error)
+    } else {
+        println("Task completed: " + result.value)
+    }
+}

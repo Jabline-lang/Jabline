@@ -70,6 +70,8 @@ type Null struct{}
 func (n *Null) Type() ObjectType { return NULL_OBJ }
 func (n *Null) Inspect() string  { return "null" }
 
+var NullObj = &Null{}
+
 // --- Signed Integers ---
 
 type Int8 struct {

@@ -1,0 +1,12 @@
+import * as fs from "fs"
+
+let content = fs.readFile("examples/hello.jb")
+echo("read file:")
+echo(content)
+
+fs.writeFile("/tmp/jabline-test.txt", "hello from jabline")
+let readBack = fs.readFile("/tmp/jabline-test.txt")
+echo("written and read: " + readBack)
+
+let files = fs.readDir(".")
+echo("current dir has " + toString(len(files)) + " entries")

@@ -1,2 +1,28 @@
-# Mark all .jb files as Jabline language for GitHub Linguist
-*.jb linguist-language=Jabline
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Go source
+*.go text diff=golang
+
+# Jabline source
+*.jb text
+
+# Binary files
+*.vsix binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Archives
+*.zip binary
+*.tar.gz binary
+*.tgz binary

@@ -1,0 +1,11 @@
+// Ternary - Inline if/else as one-liner
+
+let age = 20
+
+// If expressions can be used inline
+let status = if age >= 18 { "adult" } else { "minor" }
+print(status)
+
+let score = 75
+let grade = if score >= 90 { "A" } else if score >= 80 { "B" } else if score >= 70 { "C" } else { "F" }
+print("Grade: " + grade)

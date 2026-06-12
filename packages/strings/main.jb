@@ -1,0 +1,63 @@
+// strings — Advanced string manipulation for Jabline
+// Case conversion, splitting, joining, trimming, and more
+
+export fn upper(self, s) {
+    if (type(s) != "STRING") { return ""; }
+    return nativeUpper(s);
+}
+
+export fn lower(self, s) {
+    if (type(s) != "STRING") { return ""; }
+    return nativeLower(s);
+}
+
+export fn capitalize(self, s) {
+    if (len(s) == 0) { return s; }
+    let first = self.upper(s[0]);
+    let result = first;
+    let i = 1;
+    while (i < len(s)) {
+        result = result + self.lower(s[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn camelCase(self, s) {
+    let words = self.split(s.replace(s, "_", " "), " ");
+    let result = self.lower(words[0]);
+    let i = 1;
+    while (i < len(words)) {
+        result = result + self.capitalize(words[i]);
+        i = i + 1;
+    }
+    return result;
+}
+
+export fn snake_case(self, s) {
+    return self.lower(self.replace(self.replace(s, " ", "_"), "-", "_"));
+}
+
+export fn contains(self, s, sub) {
+    if (type(s) != "STRING" || type(sub) != "STRING") { return false; }
+    return nativeContains(s, sub);
+}
+
+export fn replace(self, s, old, new) {
+    if (type(s) != "STRING") { return ""; }
+    return nativeReplace(s, old, new);
+}
+
+export fn split(self, s, sep) {
+    if (type(s) != "STRING") { return []; }
+    return nativeSplit(s, sep);
+}
+
+export fn join(self, arr, sep) {
+    return nativeJoin(arr, sep);
+}
+
+export fn trim(self, s) {
+    if (type(s) != "STRING") { return ""; }
+    return nativeTrim(s);
+}

@@ -1,0 +1,14 @@
+// Function Type - Type annotations for functions
+
+fn apply(x: int, y: int, op: fn(int, int) -> int) -> int {
+    return op(x, y)
+}
+
+fn add(a, b) { return a + b }
+fn multiply(a, b) { return a * b }
+
+let result1 = apply(5, 3, add)
+let result2 = apply(5, 3, multiply)
+
+print("apply(5, 3, add) = " + toString(result1))
+print("apply(5, 3, multiply) = " + toString(result2))

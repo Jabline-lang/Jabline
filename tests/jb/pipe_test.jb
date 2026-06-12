@@ -1,0 +1,46 @@
+describe(
+    "Pipe Operator",
+    fn() {
+        it(
+            "supports basic pipe",
+            fn() {
+                let double = fn(x) {
+                    x * 2;
+                }
+
+                assertEqual(5 |> double, 10, "basic pipe");
+            }
+        )
+
+        it(
+            "supports chained pipes",
+            fn() {
+                let double = fn(x) {
+                    x * 2;
+                }
+
+                let addOne = fn(x) {
+                    x + 1;
+                }
+
+                assertEqual(5 |> double |> addOne, 11, "chained pipe");
+            }
+        )
+
+        it(
+            "supports pipe with builtins",
+            fn() {
+                let result = 42 |> toString;
+                assertEqual(result, "42", "pipe to builtin");
+            }
+        )
+
+        it(
+            "supports pipe with method calls",
+            fn() {
+                let result = "hello" |> toString |> len;
+                assertEqual(result, 5, "pipe with method");
+            }
+        )
+    }
+)

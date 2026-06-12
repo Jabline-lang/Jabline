@@ -1,0 +1,16 @@
+// sftp.jb - demonstrates SFTP file transfer
+
+import ssh
+
+fn main() {
+    let client = ssh.connect({"host": "example.com", "user": "admin"})
+
+    let sftp = client.sftp()
+    sftp.upload("local_file.txt", "/remote/path/file.txt")
+    println("Uploaded local_file.txt")
+
+    sftp.download("/remote/path/file.txt", "downloaded_file.txt")
+    println("Downloaded to downloaded_file.txt")
+
+    client.close()
+}

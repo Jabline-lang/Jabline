@@ -1,0 +1,18 @@
+// Basic struct definition
+// Fields can have types (optional)
+
+struct Point {
+    x: int,
+    y: int
+}
+
+struct Empty {
+
+}
+
+let p = Point { x: 10, y: 20 }
+let e = Empty {}
+
+echo("Point: " + toString(p))
+echo("x: " + toString(p.x) + ", y: " + toString(p.y))
+echo("type: " + type(p))

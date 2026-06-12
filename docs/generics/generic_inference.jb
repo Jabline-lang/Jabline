@@ -1,0 +1,23 @@
+// Type inference with generics
+// The compiler infers type parameters from usage
+
+fn identity<T>(x): T {
+    return x
+}
+
+struct Box<T> {
+    value: T
+}
+
+// Explicit type annotation
+let explicit = identity<int>(42)
+
+// Inferred from context (if supported by the runtime)
+let inferred = identity("hello")
+
+echo("explicit: " + toString(explicit))
+echo("inferred: " + inferred)
+
+// Generic struct with inferred usage
+let b = Box<int> { value: 99 }
+echo("box value: " + toString(b.value))

@@ -1,0 +1,11 @@
+// get.jb - demonstrates HTTP GET request
+
+import http
+
+fn main() {
+    let resp = http.get("https://api.example.com/data")
+    println("Status: " + resp.status)
+
+    let body = resp.body
+    println("Body: " + body)
+}

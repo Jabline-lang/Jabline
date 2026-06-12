@@ -1,0 +1,24 @@
+// Event Loop - Custom event-driven processing
+
+let events = channel()
+
+fn emit(event) {
+    events <- event
+}
+
+fn processEvents() {
+    let ev = <-events
+    while (ev != null) {
+        print("Event: " + toString(ev))
+        if (ev == "stop") {
+            close(events)
+        }
+        ev = <-events
+    }
+}
+
+spawn processEvents()
+emit("start")
+emit("tick")
+emit("data")
+emit("stop")

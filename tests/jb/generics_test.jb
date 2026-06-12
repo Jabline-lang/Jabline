@@ -1,0 +1,67 @@
+describe(
+    "Generics",
+    fn() {
+        it(
+            "supports generic functions via variable",
+            fn() {
+                fn identity<T>(x): T {
+                    return x;
+                }
+
+                let idInt = identity<int>;
+                assertEqual(idInt(42), 42, "identity<int>(42)");
+            }
+        )
+
+        it(
+            "supports direct generic function calls",
+            fn() {
+                fn identity<T>(x): T {
+                    return x;
+                }
+
+                assertEqual(identity<int>(42), 42, "direct call identity<int>(42)");
+                assertEqual(identity<string>("hi"), "hi", "direct call identity<string>(\"hi\")");
+            }
+        )
+
+        it(
+            "supports multi-type generic functions",
+            fn() {
+                fn first<T, U>(a, b): T {
+                    return a;
+                }
+
+                assertEqual(first<int, string>(10, "twenty"), 10, "multi-type generic");
+            }
+        )
+
+        it(
+            "supports generic struct instantiation",
+            fn() {
+                struct Box<T> {
+                    value: T
+                }
+
+                let b = Box<int> {
+                    value: 99
+                };
+                assertEqual(b.value, 99, "Box<int>{value: 99}");
+            }
+        )
+
+        it(
+            "supports generic structs with string type",
+            fn() {
+                struct Wrapper<T> {
+                    data: T
+                }
+
+                let w = Wrapper<string> {
+                    data: "generic"
+                };
+                assertEqual(w.data, "generic", "Wrapper<string>");
+            }
+        )
+    }
+)

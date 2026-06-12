@@ -1,0 +1,11 @@
+import * as yaml from "yaml"
+
+let raw = "name: Jabline\nversion: 0.1\nfeatures:\n  - types\n  - generics\n  - concurrency"
+let data = yaml.parse(raw)
+
+echo("name:     " + data["name"])
+echo("version:  " + data["version"])
+echo("features: " + toString(data["features"]))
+
+let encoded = yaml.encode(data)
+echo("re-encoded:\n" + encoded)

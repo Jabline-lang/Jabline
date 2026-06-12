@@ -1,0 +1,17 @@
+// async/await functions - define and await asynchronous operations
+// Run with: jabline run async_await.jb
+
+async fn fetchData(url) {
+    return "data from " + url
+}
+
+async fn processItem(item) {
+    return item * 2
+}
+
+let data = await fetchData("http://example.com")
+echo("fetched: " + toString(data))
+
+let result1 = await processItem(21)
+let result2 = await processItem(42)
+echo("processed: " + toString(result1) + ", " + toString(result2))

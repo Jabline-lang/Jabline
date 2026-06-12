@@ -1,0 +1,7 @@
+// CLI Build - Compile Jabline to bytecode or standalone binary
+// Usage: jabline build cli_build.jb --out output.jbc
+//        jabline build --standalone cli_build.jb --out app.exe
+
+let name = "Jabline"
+let version = "1.0"
+print(name + " build v" + version)

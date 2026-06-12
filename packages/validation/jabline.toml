@@ -1,0 +1,6 @@
+[project]
+name = "validation"
+version = "0.1.0"
+description = "String, number, and schema validation library for Jabline"
+
+[dependencies]

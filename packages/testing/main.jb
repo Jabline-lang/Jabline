@@ -1,0 +1,67 @@
+// testing — Test utilities for Jabline
+// Assertions, describe/it blocks, and test runner helpers
+
+var __results = [];
+
+export fn assertEqual(self, expected, actual) {
+    if (expected != actual) {
+        self.fail("Expected " + toString(expected) + ", got " + toString(actual));
+    }
+}
+
+export fn assertTrue(self, value) {
+    if (value != true) {
+        self.fail("Expected true, got " + toString(value));
+    }
+}
+
+export fn assertFalse(self, value) {
+    if (value != false) {
+        self.fail("Expected false, got " + toString(value));
+    }
+}
+
+export fn assertError(self, fn) {
+    let ok = false;
+    try {
+        fn();
+    } catch (e) {
+        ok = true;
+    }
+    if (!ok) {
+        self.fail("Expected error, but none was thrown");
+    }
+}
+
+export fn fail(self, msg) {
+    __results = push(__results, { "pass": false, "message": msg });
+    throw "TEST FAILED: " + msg;
+}
+
+export fn describe(self, name, fn) {
+    echo("  " + name);
+    fn();
+}
+
+export fn it(self, name, fn) {
+    try {
+        fn();
+        __results = push(__results, { "pass": true, "message": name });
+        echo("    ✓ " + name);
+    } catch (e) {
+        __results = push(__results, { "pass": false, "message": name + ": " + toString(e) });
+        echo("    ✗ " + name + ": " + toString(e));
+    }
+}
+
+export fn run(self) {
+    let passed = 0;
+    let failed = 0;
+    for (r in __results) {
+        if (r["pass"]) { passed = passed + 1; }
+        else { failed = failed + 1; }
+    }
+    echo("");
+    echo(passed + " passed, " + failed + " failed");
+    return failed == 0;
+}

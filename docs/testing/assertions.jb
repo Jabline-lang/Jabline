@@ -1,0 +1,22 @@
+// Assertions - assertEqual, assertTrue, assertFalse, assertNull
+
+describe("Assertion Types", fn() {
+    it("assertEqual compares values", fn() {
+        assertEqual(42, 42, "equal integers")
+        assertEqual("abc", "abc", "equal strings")
+    })
+
+    it("assertTrue checks truth", fn() {
+        assertTrue(true, "true is true")
+        assertTrue(1 > 0, "1 > 0 is true")
+    })
+
+    it("assertFalse checks falsity", fn() {
+        assertFalse(false, "false is false")
+        assertFalse(1 > 2, "1 > 2 is false")
+    })
+
+    it("assertNull checks null", fn() {
+        assertNull(null, "null is null")
+    })
+})

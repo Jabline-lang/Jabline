@@ -50,8 +50,10 @@ var definitions = map[Opcode]*Definition{
 	OpGetBuiltin:        {"OpGetBuiltin", []int{1}},
 	OpImport:            {"OpImport", []int{}},
 	OpThrow:             {"OpThrow", []int{}},
-	OpTry:               {"OpTry", []int{2}},
+	OpTry:               {"OpTry", []int{2, 2}},
 	OpEndTry:            {"OpEndTry", []int{}},
+	OpFinally:           {"OpFinally", []int{}},
+	OpEndFinally:        {"OpEndFinally", []int{}},
 	OpBitAnd:            {"OpBitAnd", []int{}},
 	OpBitOr:             {"OpBitOr", []int{}},
 	OpBitXor:            {"OpBitXor", []int{}},
@@ -65,6 +67,9 @@ var definitions = map[Opcode]*Definition{
 	OpRecvChannel:       {"OpRecvChannel", []int{}},
 	OpCurrentClosure:    {"OpCurrentClosure", []int{}},
 	OpInstantiate:       {"OpInstantiate", []int{1}},
+
+	// Tail call optimization
+	OpTailCall: {"OpTailCall", []int{1}},
 
 	// Float specific opcodes
 	OpFloatAdd:   {"OpFloatAdd", []int{}},
@@ -84,4 +89,20 @@ var definitions = map[Opcode]*Definition{
 	OpMetricInc:      {"OpMetricInc", []int{2}},
 	OpTraceStart:     {"OpTraceStart", []int{2}},
 	OpTraceEnd:       {"OpTraceEnd", []int{}},
+
+	// Slice operator
+	OpSlice: {"OpSlice", []int{}},
+
+	// Spread operator support
+	OpBuildArrayWithSpread: {"OpBuildArrayWithSpread", []int{1, 2}},
+	OpCallSpread:           {"OpCallSpread", []int{1, 2}},
+
+	// Defer support
+	OpDefer: {"OpDefer", []int{1}},
+
+	// Select support — inline variable-length case descriptors follow operands
+	OpSelect: {"OpSelect", []int{1, 1}},
+
+	// For-each next item — no operands, pops (iterable, index), pushes (value, has_next)
+	OpNextItem: {"OpNextItem", []int{}},
 }

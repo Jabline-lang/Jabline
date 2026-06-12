@@ -3,9 +3,11 @@ package ast
 import "jabline/pkg/token"
 
 type Identifier struct {
-	Token token.Token
-	Value string
-	Type  *TypeExpression
+	Token        token.Token
+	Value        string
+	Type         *TypeExpression
+	DefaultValue Expression // nil = required parameter (no default)
+	Variadic     bool       // true for ...param in variadic functions
 }
 
 func (i *Identifier) expressionNode()      {}

@@ -1,0 +1,17 @@
+// Importing JPM packages - install and import from the package registry
+// Requires: jabline install to fetch dependencies first
+// Run with: jabline run module_jpm.jb
+
+import "strings"
+import * as json from "json"
+
+// Simulation of using a JPM package concept
+echo("JPM packages are imported with: import * as pkg from \"package-name\"")
+
+let pkgName = "example-package"
+echo("To add a package: jabline get " + pkgName)
+echo("After install, import it like any module")
+
+// Self-contained demo using stdlib
+let obj = json.parse('{"hello": "world"}')
+echo("JSON value: " + obj["hello"])

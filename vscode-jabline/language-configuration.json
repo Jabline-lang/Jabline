@@ -1,0 +1,36 @@
+{
+  "comments": {
+    "lineComment": "//",
+    "blockComment": ["/*", "*/"]
+  },
+  "brackets": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"]
+  ],
+  "autoClosingPairs": [
+    { "open": "{", "close": "}" },
+    { "open": "[", "close": "]" },
+    { "open": "(", "close": ")" },
+    { "open": "\"", "close": "\"", "notIn": ["string"] },
+    { "open": "`", "close": "`", "notIn": ["string"] }
+  ],
+  "surroundingPairs": [
+    ["{", "}"],
+    ["[", "]"],
+    ["(", ")"],
+    ["\"", "\""],
+    ["`", "`"]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "\\{[^}\"']*$|:\n|\\b(?:if|else|for|while|fn|struct|interface|enum|service|try|catch|finally|match|switch|case|default|retry|meter|trace)\\b[^{]*$|^\\s*(export\\s+)?(fn|async\\s+fn|struct|interface|enum|service)\\b",
+    "decreaseIndentPattern": "^\\s*[}\\]]|^\\s*\\b(?:else|catch|finally)\\b[\\s{]"
+  },
+  "wordPattern": "(-?\\d*\\.\\d+\\w*)|([^\\`\\!@#$%^&*\\(\\)\\-=\\+\\[\\]{}|;:',.<>\\/\\?\\s]+)",
+  "onEnterRules": [
+    {
+      "beforeText": "^\\s*\\b(?:fn|async|struct|interface|enum|service|if|else|for|while|try|catch|finally|match|switch|case|default|retry|meter|trace)\\b.*\\{[^}]*$",
+      "action": { "indent": "indent" }
+    }
+  ]
+}

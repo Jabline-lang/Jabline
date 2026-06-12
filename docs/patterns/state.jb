@@ -1,0 +1,31 @@
+// State - Changes behavior based on internal state
+
+fn createStateMachine() {
+    let state = "idle"
+    return {
+        "getState": fn(self) { return state },
+        "transition": fn(self, event) {
+            if (state == "idle" && event == "start") {
+                state = "running"
+                print("Started")
+            } else if (state == "running" && event == "pause") {
+                state = "paused"
+                print("Paused")
+            } else if (state == "paused" && event == "resume") {
+                state = "running"
+                print("Resumed")
+            } else if (state == "running" && event == "stop") {
+                state = "idle"
+                print("Stopped")
+            } else {
+                print("Invalid transition from " + state + " on " + event)
+            }
+        }
+    }
+}
+
+let sm = createStateMachine()
+sm.transition("start")
+sm.transition("pause")
+sm.transition("resume")
+sm.transition("stop")

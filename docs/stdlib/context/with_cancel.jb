@@ -1,0 +1,22 @@
+// with_cancel.jb - demonstrates context with cancellation
+
+import context
+
+fn worker(ctx) {
+    while true {
+        if ctx.cancelled() {
+            println("Worker cancelled")
+            return
+        }
+        println("Working...")
+    }
+}
+
+fn main() {
+    let ctx = context.with_cancel(context.background())
+
+    go worker(ctx)
+
+    ctx.cancel()
+    println("Cancellation requested")
+}

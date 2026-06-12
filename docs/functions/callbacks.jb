@@ -1,0 +1,24 @@
+// Callbacks - Passing functions as arguments
+
+fn processNumbers(numbers, callback) {
+    let results = []
+    for n in numbers {
+        results = results + [callback(n)]
+    }
+    return results
+}
+
+fn square(x) { return x * x }
+fn negate(x) { return -x }
+
+let nums = [1, 2, 3, 4, 5]
+
+let squares = processNumbers(nums, square)
+for i in squares {
+    print("square: " + toString(i))
+}
+
+let negs = processNumbers(nums, negate)
+for i in negs {
+    print("neg: " + toString(i))
+}

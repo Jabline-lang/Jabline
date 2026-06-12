@@ -31,9 +31,11 @@ var NativeModulePrefixes = map[string]string{
 	"_time":      "time_",
 	"_types":     "to_",
 	"_runtime":   "runtime",
+	"_template": "template_",
 	"_websocket": "ws",
 	"_env":       "env",
 	"_db":        "db_",
+	"_regex":     "regex_",
 }
 
 func init() {
@@ -44,11 +46,36 @@ func init() {
 	NativeModuleRegistry["_encoding"] = EncodingBuiltins
 	NativeModuleRegistry["_json"] = JSONBuiltins
 	NativeModuleRegistry["_strings"] = StringBuiltins
-	NativeModuleRegistry["_crypto"] = CryptoBuiltins
 	NativeModuleRegistry["_time"] = TimeBuiltins
 	NativeModuleRegistry["_types"] = TypesBuiltins
 	NativeModuleRegistry["_runtime"] = RuntimeBuiltins
 	NativeModuleRegistry["_env"] = EnvBuiltins
+	NativeModuleRegistry["_template"] = TemplateBuiltins
+	NativeModuleRegistry["_regex"] = RegexBuiltins
+	NativeModuleRegistry["_csv"] = CSVBuiltins
+	NativeModuleRegistry["_datetime"] = DateTimeBuiltins
+	NativeModuleRegistry["_yaml"] = YAMLBuiltins
+	NativeModuleRegistry["_compress"] = CompressBuiltins
+	NativeModuleRegistry["_tls"] = TLSBuiltins
+	NativeModuleRegistry["_sync"] = SyncBuiltins
+	NativeModuleRegistry["_xml"] = XMLBuiltins
+
+	// Now that NativeModuleRegistry is populated, build GlobalModules
+	nativeModules := []string{"_strings", "_math", "_json", "_os", "_io", "_fs", "_http", "_db", "_template", "_websocket", "_regex", "_csv", "_time", "_datetime", "_yaml", "_compress", "_tls", "_sync", "_xml", "_config", "_health", "_log", "_metrics", "_parallel", "_context", "_resilience", "_http_advanced"}
+	for _, modName := range nativeModules {
+		if modHash := GetNativeModule(modName); modHash != nil {
+			globalName := modName[1:]
+			GlobalModules[globalName] = modHash
+		}
+	}
+
+	// Register Global Modules in the global Registry
+	for name, obj := range GlobalModules {
+		Registry = append(Registry, struct {
+			Name   string
+			Object object.Object
+		}{name, obj})
+	}
 }
 
 // GetNativeModule returns a Hash object containing the builtins for a given module name.

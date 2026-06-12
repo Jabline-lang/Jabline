@@ -1,0 +1,43 @@
+---
+name: 📦 Add Package to Registry
+about: Submit a new package for inclusion in the Jabline registry
+title: "pkg: [package-name]"
+labels: package-request
+assignees: ""
+---
+
+## Package Information
+
+**Package Name:** `[your-package-name]`
+
+**Description:**
+<!-- Short description (max 100 chars) -->
+
+**Repository URL:**
+<!-- Public git repository URL -->
+
+**Author:**
+<!-- Your name or organization -->
+
+**License:**
+<!-- e.g., MIT, Apache 2.0, BSD-3 -->
+
+**Category:**
+- [ ] web
+- [ ] data
+- [ ] crypto
+- [ ] util
+- [ ] dev
+
+**Tags:**
+<!-- Comma-separated list, e.g., http, routing, middleware -->
+
+## Checklist
+
+- [ ] My package has a `jabline.toml` at the root
+- [ ] My package is open source with a permissive license
+- [ ] My package has at least basic tests
+- [ ] I have read the contribution guidelines
+
+## Additional Context
+<!-- Any additional information -->

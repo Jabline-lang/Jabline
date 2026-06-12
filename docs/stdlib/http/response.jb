@@ -1,0 +1,17 @@
+// response.jb - demonstrates HTTP response handling
+
+import http
+
+fn main() {
+    let resp = http.get("https://api.example.com/status")
+
+    println("Status Code: " + resp.status_code)
+    println("OK: " + resp.is_ok)
+
+    if resp.is_ok {
+        println("Body length: " + len(resp.body))
+        println("Content-Type: " + resp.headers["Content-Type"])
+    } else {
+        println("Error: " + resp.error)
+    }
+}

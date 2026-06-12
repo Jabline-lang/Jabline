@@ -1,0 +1,12 @@
+// hash.jb - demonstrates hash functions
+
+import crypto
+
+let text = "Hello, Jabline!"
+
+fn main() {
+    println("MD5:    " + crypto.md5(text))
+    println("SHA1:   " + crypto.sha1(text))
+    println("SHA256: " + crypto.sha256(text))
+    println("SHA512: " + crypto.sha512(text))
+}

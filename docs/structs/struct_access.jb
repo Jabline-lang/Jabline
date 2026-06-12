@@ -1,0 +1,26 @@
+// Accessing struct fields with dot notation
+
+struct User {
+    id: int,
+    username: string,
+    email: string
+}
+
+let u = User {
+    id: 42,
+    username: "jabber",
+    email: "jabber@example.com"
+}
+
+echo("id:       " + toString(u.id))
+echo("username: " + u.username)
+echo("email:    " + u.email)
+
+// Nested field access
+struct Profile {
+    user: User,
+    bio: string
+}
+
+let p = Profile { user: u, bio: "Jabline developer" }
+echo("nested username: " + p.user.username)

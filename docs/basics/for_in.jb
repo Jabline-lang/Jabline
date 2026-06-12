@@ -1,0 +1,12 @@
+// For In - Iterate over collections
+
+let items = ["apple", "banana", "cherry"]
+
+for fruit in items {
+    print("Fruit: " + fruit)
+}
+
+let scores = {"Alice": 95, "Bob": 87}
+for name, score in scores {
+    print(name + ": " + toString(score))
+}

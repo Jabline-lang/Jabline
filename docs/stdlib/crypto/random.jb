@@ -1,0 +1,14 @@
+// random.jb - demonstrates cryptographic random bytes
+
+import crypto
+
+fn main() {
+    let bytes16 = crypto.random_bytes(16)
+    println("16 random bytes (hex): " + crypto.hex(bytes16))
+
+    let bytes32 = crypto.random_bytes(32)
+    println("32 random bytes (hex): " + crypto.hex(bytes32))
+
+    let token = crypto.random_string(24)
+    println("Random token: " + token)
+}

@@ -1,0 +1,16 @@
+// string_ops.jb - demonstrates Redis string operations
+
+import redis
+
+let r = redis.connect("localhost", 6379)
+
+fn main() {
+    r.set("mykey", "Hello from Jabline!")
+    let val = r.get("mykey")
+    println("GET mykey: " + val)
+
+    r.incr("counter")
+    r.incr("counter")
+    r.incr("counter")
+    println("INCR counter: " + r.get("counter"))
+}

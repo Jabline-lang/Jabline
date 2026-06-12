@@ -1,0 +1,25 @@
+// DSL - Domain-specific language creation patterns
+
+fn route(method, path, handler) {
+    return {
+        "method": method,
+        "path": path,
+        "handler": handler
+    }
+}
+
+fn get(path, handler) {
+    return route("GET", path, handler)
+}
+
+fn post(path, handler) {
+    return route("POST", path, handler)
+}
+
+let routes = [
+    get("/", fn() { return "Home" }),
+    get("/about", fn() { return "About" }),
+    post("/data", fn() { return "Posted" })
+]
+
+print("Routes defined: " + toString(len(routes)))

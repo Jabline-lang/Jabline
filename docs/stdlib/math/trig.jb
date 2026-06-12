@@ -1,0 +1,18 @@
+// trig.jb - demonstrates sin, cos, tan, asin, acos, atan2
+
+import math
+
+let pi = 3.1415926535
+
+fn main() {
+    let angle = pi / 4
+
+    println("sin(pi/4) = " + math.sin(angle))
+    println("cos(pi/4) = " + math.cos(angle))
+    println("tan(pi/4) = " + math.tan(angle))
+
+    let half = 0.5
+    println("asin(0.5) = " + math.asin(half))
+    println("acos(0.5) = " + math.acos(half))
+    println("atan2(1, 1) = " + math.atan2(1, 1))
+}

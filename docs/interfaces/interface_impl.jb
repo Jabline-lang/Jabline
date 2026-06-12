@@ -1,0 +1,27 @@
+// Implementing an interface by defining matching methods
+
+interface Stringer {
+    String(): string
+}
+
+struct Person {
+    name: string
+}
+
+fn (p Person) String(): string {
+    return "Person: " + p.name
+}
+
+struct Car {
+    model: string
+}
+
+fn (c Car) String(): string {
+    return "Car: " + c.model
+}
+
+let p = Person { name: "Alice" }
+let c = Car { model: "Model X" }
+
+echo(p.String())
+echo(c.String())

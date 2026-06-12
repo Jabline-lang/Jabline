@@ -1,0 +1,16 @@
+// Nested arrays (arrays of arrays)
+
+let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+
+echo("matrix:    " + toString(matrix))
+echo("row 0:     " + toString(matrix[0]))
+echo("cell[1][2]: " + toString(matrix[1][2]))
+
+// Iterate over nested array
+for (row in matrix) {
+    echo("row: " + toString(row))
+}

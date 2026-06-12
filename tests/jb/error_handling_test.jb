@@ -1,0 +1,93 @@
+describe(
+    "Error Handling",
+    fn() {
+        it(
+            "can throw and catch basic errors",
+            fn() {
+                let caught = false;
+
+                try {
+                    throw "test error";
+                } catch (e) {
+                    caught = true;
+                    assertEqual(e, "test error", "caught throw value");
+                }
+
+                assertTrue(caught, "catch block executed");
+            }
+        )
+
+        it(
+            "catch block is skipped when no error",
+            fn() {
+                let caught = false;
+
+                try {
+                    let x = 42;
+                } catch (e) {
+                    caught = true;
+                }
+
+                assertFalse(caught, "catch not executed");
+            }
+        )
+
+        it(
+            "supports finally block",
+            fn() {
+                let finallyRan = false;
+
+                try {
+                    let x = 1;
+                } catch (e) {
+                } finally {
+                    finallyRan = true;
+                }
+
+                assertTrue(finallyRan, "finally ran after success");
+            }
+        )
+
+        it(
+            "finally runs even after throw and catch",
+            fn() {
+                let finallyRan = false;
+                let caught = false;
+
+                try {
+                    throw "err";
+                } catch (e) {
+                    caught = true;
+                } finally {
+                    finallyRan = true;
+                }
+
+                assertTrue(finallyRan, "finally ran after catch");
+                assertTrue(caught, "catch ran before finally");
+            }
+        )
+
+        it(
+            "supports is_error builtin",
+            fn() {
+                let err = Error("something broke");
+                assertTrue(is_error(err), "Error() creates error value");
+            }
+        )
+
+        it(
+            "Error can be thrown and caught",
+            fn() {
+                let caught = null;
+
+                try {
+                    throw Error("custom error");
+                } catch (e) {
+                    caught = e;
+                }
+
+                assertNotNull(caught, "caught Error object");
+            }
+        )
+    }
+)

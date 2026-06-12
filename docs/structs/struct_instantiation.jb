@@ -1,0 +1,19 @@
+// Instantiating structs using named field syntax
+
+struct Rect {
+    width: int,
+    height: int
+}
+
+// All fields
+let r1 = Rect { width: 10, height: 20 }
+
+// Order doesn't matter
+let r2 = Rect { height: 5, width: 3 }
+
+echo("r1 area: " + toString(r1.width * r1.height))
+echo("r2 area: " + toString(r2.width * r2.height))
+
+// Partial initialization (unset fields are null?)
+let r3 = Rect { width: 7 }
+echo("r3: " + toString(r3))

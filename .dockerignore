@@ -1,0 +1,11 @@
+.git
+.gitignore
+*.exe
+*.test
+.vscode
+node_modules
+tests/
+lib/
+.jb_cache/
+README.md
+prometheus.yml

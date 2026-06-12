@@ -1,0 +1,19 @@
+// Default Parameters - Fallback values for arguments
+
+fn greet(name = "World") {
+    print("Hello, " + name + "!")
+}
+
+fn power(base, exp = 2) {
+    let result = 1
+    for i in range(exp) {
+        result = result * base
+    }
+    return result
+}
+
+greet()           // uses default
+greet("Alice")    // overrides default
+
+print("5^2 = " + toString(power(5)))
+print("3^3 = " + toString(power(3, 3)))

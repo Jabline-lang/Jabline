@@ -1,0 +1,20 @@
+// structs.jb - demonstrates FFI with structs
+
+import ffi
+
+let my_struct = ffi.struct("MyStruct", [
+    {"name": "x", "type": "int"},
+    {"name": "y", "type": "double"},
+    {"name": "label", "type": "char[32]"}
+])
+
+fn main() {
+    let instance = my_struct.new()
+    instance.set("x", 42)
+    instance.set("y", 3.14)
+    instance.set("label", "hello")
+
+    println("x = " + instance.get("x"))
+    println("y = " + instance.get("y"))
+    println("label = " + instance.get("label"))
+}

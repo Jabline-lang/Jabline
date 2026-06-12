@@ -1,0 +1,15 @@
+struct Box<T> {
+    value: T
+}
+
+let intBox = Box<int> { value: 42 }
+let strBox = Box<string> { value: "hello" }
+echo("int box:  " + toString(intBox.value))
+echo("str box:  " + toString(strBox.value))
+
+fn identity<T>(x) -> T {
+    return x
+}
+
+echo("id int:  " + toString(identity<int>(42)))
+echo("id str:  " + toString(identity<string>("jabline")))

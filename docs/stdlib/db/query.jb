@@ -1,0 +1,18 @@
+// query.jb - demonstrates SQL queries
+
+import db
+
+let conn = db.connect("sqlite://mydb.sqlite")
+
+fn main() {
+    conn.execute("CREATE TABLE IF NOT EXISTS users (id INT, name TEXT)")
+
+    let rows = conn.query("SELECT * FROM users")
+    println("Users:")
+
+    for row in rows {
+        println("  " + row["id"] + ": " + row["name"])
+    }
+
+    conn.close()
+}

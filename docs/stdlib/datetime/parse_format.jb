@@ -1,0 +1,12 @@
+// parse_format.jb - demonstrates datetime parsing and formatting
+
+import datetime
+
+fn main() {
+    let raw = "2026-06-10 15:30:00"
+    let dt = datetime.parse(raw, "YYYY-MM-DD HH:mm:ss")
+    println("Parsed: " + dt)
+
+    let formatted = datetime.format(dt, "Mon, 02 Jan 2006")
+    println("Formatted: " + formatted)
+}

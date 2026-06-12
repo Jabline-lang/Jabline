@@ -1,0 +1,15 @@
+// compare.jb - demonstrates secure comparison
+
+import crypto
+
+fn main() {
+    let a = "secret123"
+    let b = "secret123"
+    let c = "different"
+
+    let match1 = crypto.secure_compare(a, b)
+    println("a == b: " + match1)
+
+    let match2 = crypto.secure_compare(a, c)
+    println("a == c: " + match2)
+}

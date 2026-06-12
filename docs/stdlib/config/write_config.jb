@@ -1,0 +1,18 @@
+// write_config.jb - demonstrates writing configuration
+
+import config
+
+let settings = {
+    "app": "myapp",
+    "version": "2.0",
+    "features": {
+        "auth": true,
+        "cache": false,
+        "rate_limit": 100
+    }
+}
+
+fn main() {
+    config.write("app.config", settings)
+    println("Configuration written to app.config")
+}

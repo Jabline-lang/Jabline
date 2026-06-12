@@ -1,0 +1,14 @@
+// server.jb - demonstrates WebSocket server
+
+import websocket
+
+fn on_message(conn, msg) {
+    println("Received: " + msg)
+    conn.send("Server ACK: " + msg)
+}
+
+fn main() {
+    let server = websocket.serve(":8080", on_message)
+    println("WebSocket server on ws://localhost:8080")
+    server.wait()
+}

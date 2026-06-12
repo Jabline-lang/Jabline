@@ -1,0 +1,7 @@
+// Embed - Compile static files into the binary at build time
+
+let data = embed("config.json")
+print("Embedded file size: " + toString(len(data)))
+
+let template = embed("template.html")
+print("Template loaded (" + toString(len(template)) + " bytes)")

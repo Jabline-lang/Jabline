@@ -1,0 +1,21 @@
+// Memory Management - GC control and memory statistics
+
+import { gc, memoryStats } from "runtime"
+
+print("Before allocation:")
+let stats = memoryStats()
+print("  Heap: " + toString(stats["heap"]))
+
+let arr = []
+let i = 0
+while (i < 10000) {
+    arr = push(arr, "item_" + toString(i))
+    i = i + 1
+}
+
+gc()
+
+print("After GC:")
+stats = memoryStats()
+print("  Heap: " + toString(stats["heap"]))
+print("  Objects: " + toString(stats["objects"]))

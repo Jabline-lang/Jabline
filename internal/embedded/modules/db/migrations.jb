@@ -1,0 +1,132 @@
+import * as _db from "_db";
+import { readFile, readDir } from "_fs";
+import { match } from "_regex";
+
+// Internal: get/create the migrations tracking table
+fn ensureMigrationsTable(conn) {
+    let tables = _db["query"](conn, "SELECT name FROM sqlite_master WHERE type='table' AND name='_migrations'", []);
+    if (len(tables) == 0) {
+        _db["exec"](conn, "CREATE TABLE _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)", []);
+    }
+}
+
+// Register and apply a single migration
+fn applyMigration(conn, name, sql, direction) {
+    let statements = sql.split(";");
+    for (let stmt of statements) {
+        let trimmed = stmt.trim();
+        if (len(trimmed) > 0 && !trimmed.startsWith("--")) {
+            _db["exec"](conn, trimmed, []);
+        }
+    }
+    if (direction == "up") {
+        _db["exec"](conn, "INSERT OR IGNORE INTO _migrations (name, applied_at) VALUES ($1, datetime('now'))", [name]);
+    }
+}
+
+// Run all pending up-migrations from a directory
+// Migration files: 001_create_users.sql with:
+// -- up
+// CREATE TABLE ...
+// -- down
+// DROP TABLE ...
+export fn up(conn, dir) {
+    ensureMigrationsTable(conn);
+    
+    let files = readDir(dir);
+    let applied = {};
+    let rows = _db["query"](conn, "SELECT name FROM _migrations ORDER BY name", []);
+    for (let row of rows) {
+        applied[row["name"]] = true;
+    }
+
+    let sorted = [];
+    for (let file of files) {
+        if (file.endsWith(".sql")) {
+            sorted = push(sorted, file);
+        }
+    }
+    
+    // Simple sort by name (files should be prefixed with numbers)
+    fn compare(a, b) { return a < b ? -1 : (a > b ? 1 : 0); }
+    
+    let count = 0;
+    for (let file of sorted) {
+        if (!applied[file]) {
+            let content = readFile(dir + "/" + file);
+            // Extract the up section (between "-- up" and "-- down")
+            let parts = content.split("-- down");
+            let upSql = parts[0];
+            if (upSql.startsWith("-- up\n") || upSql.startsWith("-- up\r\n")) {
+                let idx = 4; // skip "-- up"
+                if (upSql[4] == "\n") { idx = 5; }
+                else if (upSql[4] == "\r") { idx = 6; }
+                upSql = upSql.substring(idx);
+            } else {
+                upSql = content; // whole file is the up migration
+            }
+            applyMigration(conn, file, upSql, "up");
+            count = count + 1;
+        }
+    }
+    return count;
+}
+
+// Roll back the last N migrations (default 1)
+export fn down(conn, dir, steps) {
+    if (steps == null || steps == undefined) {
+        steps = 1;
+    }
+    ensureMigrationsTable(conn);
+
+    let rows = _db["query"](conn, "SELECT name FROM _migrations ORDER BY name DESC", []);
+    let count = 0;
+    for (let row of rows) {
+        if (count >= steps) { break; }
+        let file = row["name"];
+        let content = readFile(dir + "/" + file);
+        let parts = content.split("-- down");
+        if (len(parts) >= 2) {
+            let downSql = parts[1];
+            applyMigration(conn, file, downSql, "down");
+        }
+        _db["exec"](conn, "DELETE FROM _migrations WHERE name = $1", [file]);
+        count = count + 1;
+    }
+    return count;
+}
+
+// List pending migrations
+export fn pending(conn, dir) {
+    ensureMigrationsTable(conn);
+    
+    let files = readDir(dir);
+    let applied = {};
+    let rows = _db["query"](conn, "SELECT name FROM _migrations ORDER BY name", []);
+    for (let row of rows) {
+        applied[row["name"]] = true;
+    }
+
+    let result = [];
+    for (let file of files) {
+        if (file.endsWith(".sql") && !applied[file]) {
+            result = push(result, file);
+        }
+    }
+    return result;
+}
+
+// List applied migrations
+export fn applied(conn) {
+    ensureMigrationsTable(conn);
+    return _db["query"](conn, "SELECT name, applied_at FROM _migrations ORDER BY name", []);
+}
+
+// Create a new migration file
+export fn create(dir, name) {
+    let now = toString(date());
+    let filename = now + "_" + name + ".sql";
+    let content = "-- up\n-- Write your UP migration here\n\n-- down\n-- Write your DOWN migration here\n";
+    writeFile(dir + "/" + filename, content);
+    return filename;
+}

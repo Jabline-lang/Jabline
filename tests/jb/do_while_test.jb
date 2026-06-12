@@ -1,0 +1,49 @@
+describe(
+    "Do While",
+    fn() {
+        it(
+            "do-while executes body at least once",
+            fn() {
+                let count = 0;
+
+                do {
+                    count = count + 1;
+                } while (false);
+
+                assertEqual(count, 1, "body executed once");
+            }
+        )
+
+        it(
+            "do-while loops while condition is true",
+            fn() {
+                let i = 0;
+                let sum = 0;
+
+                do {
+                    sum = sum + i;
+                    i = i + 1;
+                } while (i < 5);
+
+                assertEqual(sum, 10, "sum of 0..4");
+                assertEqual(i, 5, "i reached 5");
+            }
+        )
+
+        it(
+            "do-while with break",
+            fn() {
+                let i = 0;
+
+                do {
+                    i = i + 1;
+                    if (i == 3) {
+                        break;
+                    }
+                } while (i < 10);
+
+                assertEqual(i, 3, "break at 3");
+            }
+        )
+    }
+)

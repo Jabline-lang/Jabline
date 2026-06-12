@@ -1,0 +1,240 @@
+describe(
+    "Core Language Features",
+    fn() {
+        it(
+            "can define and call functions",
+            fn() {
+                let greet = fn(name) {
+                    "Hello, " + name;
+                }
+
+                assertEqual(greet("World"), "Hello, World", "basic function");
+            }
+        )
+
+        it(
+            "can use let and const",
+            fn() {
+                let x = 10;
+                const y = 20;
+                assertEqual(x + y, 30, "let + const");
+            }
+        )
+
+        it(
+            "can use if/else",
+            fn() {
+                let result = "";
+
+                                if (2 > 1) {
+                    result = "true";
+                } else {
+                    result = "false";
+                }
+
+                assertEqual(result, "true", "if/else");
+            }
+        )
+
+        it(
+            "can use while loops",
+            fn() {
+                let i = 0;
+                let sum = 0;
+
+                while (i < 5) {
+                    sum = sum + i;
+                    i = i + 1;
+                }
+
+                assertEqual(sum, 10, "while loop");
+            }
+        )
+
+        it(
+            "can use for loops",
+            fn() {
+                let sum = 0;
+
+                for (let i = 0; i < 5; i = i + 1) {
+                    sum = sum + i;
+                }
+
+                assertEqual(sum, 10, "for loop");
+            }
+        )
+
+        it(
+            "can use for-in loop on array",
+            fn() {
+                let arr = [10, 20, 30];
+                let sum = 0;
+
+                for (val in arr) {
+                    sum = sum + val;
+                }
+
+                assertEqual(sum, 60, "for-in array");
+            }
+        )
+
+        it(
+            "can use switch",
+            fn() {
+                let x = 2;
+                let result = "";
+
+                switch (x) {
+                    case 1:
+                        result = "one";
+                    case 2:
+                        result = "two";
+                    default:
+                        result = "other";
+                }
+
+                assertEqual(result, "two", "switch");
+            }
+        )
+
+        it(
+            "can return early",
+            fn() {
+                let f = fn(x) {
+                                        if (x < 0) {
+                        return "negative";
+                    }
+
+                    "positive";
+                }
+
+                assertEqual(f(-1), "negative", "early return");
+                assertEqual(f(1), "positive", "normal return");
+            }
+        )
+
+        it(
+            "supports closures with captured variables",
+            fn() {
+                let makeCounter = fn(start) {
+                    let count = start;
+
+                    let inner = fn() {
+                        count = count + 1;
+                        count;
+                    }
+
+                    inner;
+                }
+
+                let counter = makeCounter(0);
+                assertEqual(counter(), 1, "counter 1");
+                assertEqual(counter(), 2, "counter 2");
+                assertEqual(counter(), 3, "counter 3");
+            }
+        )
+
+        it(
+            "supports arrow functions",
+            fn() {
+                let double = x => x * 2;
+                assertEqual(double(5), 10, "arrow function");
+            }
+        )
+
+        it(
+            "supports recursion via named function",
+            fn() {
+                let fact = fn(n, self) {
+                                        if (n <= 1) {
+                        1;
+                    } else {
+                        n * self(n - 1, self);
+                    }
+                }
+
+                let factorial = fn(n) {
+                    fact(n, fact);
+                }
+
+                assertEqual(factorial(5), 120, "factorial(5)");
+            }
+        )
+
+        it(
+            "supports ternary operator",
+            fn() {
+                let x = 5;
+                let result = x > 3 ? "big" : "small";
+                assertEqual(result, "big", "ternary true");
+                let result2 = x < 3 ? "big" : "small";
+                assertEqual(result2, "small", "ternary false");
+            }
+        )
+
+        it(
+            "supports nullish coalescing ??",
+            fn() {
+                let a = null;
+                let b = 42;
+                let r1 = a ?? b;
+                assertEqual(r1, 42, "null ?? value");
+                let r2 = 0 ?? 99;
+                assertEqual(r2, 0, "0 ?? value");
+            }
+        )
+
+        it(
+            "supports optional chaining ?.",
+            fn() {
+                let user = null;
+                let userName = user?.name;
+                assertNull(userName, "null?.prop is null");
+            }
+        )
+
+        it(
+            "supports logical operators",
+            fn() {
+                assertTrue(true && true, "and true");
+                assertFalse(true && false, "and false");
+                assertTrue(true || false, "or true");
+                assertFalse(false || false, "or false");
+                assertTrue(!false, "not false");
+                assertFalse(!true, "not true");
+            }
+        )
+
+        it(
+            "supports comparison operators",
+            fn() {
+                assertTrue(5 == 5, "equal");
+                assertTrue(5 != 3, "not equal");
+                assertTrue(5 > 3, "greater");
+                assertTrue(3 < 5, "less");
+                assertTrue(5 >= 5, "gte");
+                assertTrue(5 <= 5, "lte");
+            }
+        )
+
+        it(
+            "supports arithmetic operators",
+            fn() {
+                assertEqual(10 + 5, 15, "add");
+                assertEqual(10 - 5, 5, "subtract");
+                assertEqual(10 * 5, 50, "multiply");
+                assertEqual(10 / 3, 3, "int divide");
+                assertEqual(10 % 3, 1, "modulo");
+            }
+        )
+
+        it(
+            "supports compound assignment",
+            fn() {
+                let x = 5;
+                x = x + 1;
+                assertEqual(x, 6, "compound add");
+            }
+        )
+    }
+)

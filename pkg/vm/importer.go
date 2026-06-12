@@ -141,8 +141,8 @@ func (ml *ModuleLoader) compileContent(source, originalName, name, cacheKey stri
 	exports := make(map[object.HashKey]object.HashPair)
 	for symName, sym := range bytecode.SymbolTable.GetStore() {
 		if sym.Scope == symbol.GlobalScope && sym.IsExported {
-			if sym.Index < len(moduleVM.globals) {
-				val := moduleVM.globals[sym.Index]
+			if sym.Index < moduleVM.globals.Len() {
+				val := moduleVM.globals.Get(sym.Index)
 				if val != nil {
 					key := &object.String{Value: symName}
 					exports[key.HashKey()] = object.HashPair{Key: key, Value: val}
@@ -158,7 +158,7 @@ func (ml *ModuleLoader) compileContent(source, originalName, name, cacheKey stri
 }
 
 func (ml *ModuleLoader) resolvePath(name string) (string, error) {
-	filename := name
+	filename := filepath.Clean(name)
 	if filepath.Ext(filename) == "" {
 		filename += ".jb"
 	}
@@ -166,6 +166,23 @@ func (ml *ModuleLoader) resolvePath(name string) (string, error) {
 	if filepath.IsAbs(filename) || strings.HasPrefix(filename, ".") {
 		abs, err := filepath.Abs(filename)
 		if err == nil {
+			abs = filepath.Clean(abs)
+			// Ensure the resolved path is within one of the allowed search paths
+			withinSearchPath := false
+			for _, p := range ml.paths {
+				absPath, err := filepath.Abs(p)
+				if err != nil {
+					continue
+				}
+				absPath = filepath.Clean(absPath)
+				if strings.HasPrefix(abs, absPath+string(filepath.Separator)) || abs == absPath {
+					withinSearchPath = true
+					break
+				}
+			}
+			if !withinSearchPath {
+				return "", fmt.Errorf("module '%s' resolves to '%s' which is outside module search paths", name, abs)
+			}
 			if _, err := os.Stat(abs); err == nil {
 				return abs, nil
 			}
@@ -176,6 +193,7 @@ func (ml *ModuleLoader) resolvePath(name string) (string, error) {
 	for _, path := range ml.paths {
 		fullPath := filepath.Join(path, filename)
 		if info, err := os.Stat(fullPath); err == nil {
+			fullPath, _ = filepath.Abs(fullPath)
 			if info.IsDir() {
 				// Try dir/main.jb
 				mainPath := filepath.Join(fullPath, "main.jb")
@@ -183,7 +201,7 @@ func (ml *ModuleLoader) resolvePath(name string) (string, error) {
 					return filepath.Abs(mainPath)
 				}
 			} else {
-				return filepath.Abs(fullPath)
+				return fullPath, nil
 			}
 		}
 

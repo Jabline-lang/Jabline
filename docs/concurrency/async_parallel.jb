@@ -1,0 +1,17 @@
+// Running async tasks in parallel - launch multiple async calls
+// Run with: jabline run async_parallel.jb
+
+async fn compute(id, n) {
+    return id * n
+}
+
+let f1 = compute(1, 10)
+let f2 = compute(2, 20)
+let f3 = compute(3, 30)
+
+let r1 = await f1
+let r2 = await f2
+let r3 = await f3
+
+echo("results: " + toString(r1) + ", " + toString(r2) + ", " + toString(r3))
+echo("sum: " + toString(r1 + r2 + r3))

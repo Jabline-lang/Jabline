@@ -1,0 +1,13 @@
+// connect.jb - demonstrates Redis connection
+
+import redis
+
+fn main() {
+    let client = redis.connect("localhost", 6379)
+    println("Connected to Redis")
+
+    let pong = client.ping()
+    println("Ping: " + pong)
+
+    client.close()
+}

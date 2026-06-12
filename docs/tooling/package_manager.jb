@@ -1,0 +1,18 @@
+// Package Manager - JPM (Jabline Package Manager)
+// Usage: jpm init, jpm install, jpm publish, jpm update
+
+struct Package {
+    name: string,
+    version: string,
+    description: string,
+    dependencies: []
+}
+
+let pkg = Package{
+    name: "my-lib",
+    version: "1.0.0",
+    description: "Example package",
+    dependencies: []
+}
+
+print("Package: " + pkg.name + "@" + pkg.version)

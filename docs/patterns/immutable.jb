@@ -1,0 +1,26 @@
+// Immutable - Immutable data patterns
+
+fn update(obj, key, value) {
+    let newObj = {}
+    let keys = ["name", "age", "email"]
+    let i = 0
+    while (i < len(keys)) {
+        let k = keys[i]
+        if (k == key) {
+            newObj[k] = value
+        } else if (obj[k] != null) {
+            newObj[k] = obj[k]
+        }
+        i = i + 1
+    }
+    return newObj
+}
+
+let user = {"name": "Alice", "age": 30, "email": "alice@test.com"}
+let updated = update(user, "age", 31)
+
+print("Original: " + stringify(user))
+print("Updated:  " + stringify(updated))
+assertFalse(user == updated, "different objects")
+assertEqual(user["age"], 30, "original unchanged")
+assertEqual(updated["age"], 31, "updated changed")

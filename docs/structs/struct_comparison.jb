@@ -1,0 +1,15 @@
+// Comparing structs (field-by-field equality)
+
+struct Color {
+    r: int,
+    g: int,
+    b: int
+}
+
+let c1 = Color { r: 255, g: 0, b: 0 }
+let c2 = Color { r: 255, g: 0, b: 0 }
+let c3 = Color { r: 0, g: 255, b: 0 }
+
+echo("c1 == c2: " + toString(c1 == c2))
+echo("c1 == c3: " + toString(c1 == c3))
+echo("c1 != c3: " + toString(c1 != c3))

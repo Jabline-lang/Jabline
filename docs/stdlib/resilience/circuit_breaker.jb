@@ -1,0 +1,21 @@
+// circuit_breaker.jb - demonstrates circuit breaker
+
+import resilience
+
+let cb = resilience.circuit_breaker("db", {"threshold": 3, "reset_timeout": 5.0})
+
+fn query_db(q) {
+    if !cb.allow() {
+        println("Circuit open, fast-failing")
+        return "fallback response"
+    }
+
+    let result = cb.execute(fn() { return "query result for: " + q })
+    println("Query result: " + result)
+}
+
+fn main() {
+    query_db("SELECT 1")
+    query_db("SELECT 2")
+    println("State: " + cb.state())
+}

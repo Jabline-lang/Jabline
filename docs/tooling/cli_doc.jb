@@ -1,0 +1,13 @@
+// CLI Doc - Generate documentation from code
+// Usage: jabline doc cli_doc.jb --format markdown
+//        jabline doc --serve --port 8080
+
+fn calculate(x, y) {
+    // Returns the sum of two numbers
+    return x + y
+}
+
+fn formatName(first, last) {
+    // Combines first and last name with a space
+    return first + " " + last
+}

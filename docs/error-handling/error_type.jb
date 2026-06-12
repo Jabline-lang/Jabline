@@ -1,0 +1,23 @@
+// Error() function and error type - structured error objects
+// Run with: jabline run error_type.jb
+
+let err1 = Error("something went wrong")
+let err2 = Error("file not found")
+
+echo("err1: " + toString(err1))
+echo("err2: " + toString(err2))
+echo("is err1 an error? " + toString(is_error(err1)))
+
+fn readFile(name) {
+    if (name == "") {
+        return Error("filename is empty")
+    }
+    return "contents of " + name
+}
+
+let result = readFile("")
+if (is_error(result)) {
+    echo("failed: " + toString(result))
+} else {
+    echo("ok: " + toString(result))
+}

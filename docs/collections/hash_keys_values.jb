@@ -1,0 +1,18 @@
+// keys() and values() builtins for hashes
+
+let inventory = {
+    "apples": 50,
+    "oranges": 30,
+    "bananas": 20
+}
+
+let ks = keys(inventory)
+let vs = values(inventory)
+
+echo("keys:   " + toString(ks))
+echo("values: " + toString(vs))
+
+// Iterate through hash using keys
+for (k in ks) {
+    echo(k + ": " + toString(inventory[k]))
+}

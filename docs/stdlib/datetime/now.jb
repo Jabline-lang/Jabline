@@ -1,0 +1,14 @@
+// now.jb - demonstrates current datetime
+
+import datetime
+
+fn main() {
+    let now = datetime.now()
+    println("Now: " + now)
+
+    let utc = datetime.utc_now()
+    println("UTC: " + utc)
+
+    let today = datetime.today()
+    println("Today: " + today)
+}

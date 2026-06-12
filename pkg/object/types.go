@@ -51,6 +51,9 @@ const (
 	HASH_OBJ                  = "HASH"
 	PROMISE_OBJ               = "PROMISE"
 	CHANNEL_OBJ               = "CHANNEL"
+	DATETIME_OBJ              = "DATETIME"
+	REGEX_OBJ                 = "REGEX"
+	IMAGE_OBJ                 = "IMAGE"
 )
 
 type Object interface {

@@ -1,0 +1,16 @@
+// connect.jb - demonstrates SSH connection
+
+import ssh
+
+fn main() {
+    let config = {
+        "host": "example.com",
+        "port": 22,
+        "user": "admin",
+        "key_file": "~/.ssh/id_rsa"
+    }
+
+    let client = ssh.connect(config)
+    println("Connected to " + config["host"])
+    client.close()
+}

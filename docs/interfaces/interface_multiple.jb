@@ -1,0 +1,26 @@
+// A struct can implement multiple interfaces
+
+interface Reader {
+    Read(): string
+}
+
+interface Writer {
+    Write(data: string)
+}
+
+struct File {
+    name: string,
+    content: string
+}
+
+fn (f File) Read(): string {
+    return f.content
+}
+
+fn (f File) Write(data: string) {
+    f.content = data
+}
+
+let file = File { name: "test.txt", content: "hello" }
+file.Write("hello world")
+echo("read: " + file.Read())

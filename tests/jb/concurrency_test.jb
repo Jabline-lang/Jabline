@@ -1,0 +1,179 @@
+describe(
+    "Concurrency",
+    fn() {
+        it(
+            "supports channel creation",
+            fn() {
+                let ch = channel();
+                assertNotNull(ch, "channel created");
+            }
+        )
+
+        it(
+            "supports send and receive",
+            fn() {
+                let ch = channel();
+                spawn fn() {
+                    ch <- 42;
+                }();
+                let val = <-ch;
+                assertEqual(val, 42, "received value");
+            }
+        )
+
+        it(
+            "supports spawn with closure vars",
+            fn() {
+                let ch = channel();
+                let msg = "hello";
+                spawn fn() {
+                    ch <- msg;
+                }();
+                let val = <-ch;
+                assertEqual(val, "hello", "closure var");
+            }
+        )
+
+        it(
+            "supports multiple channels",
+            fn() {
+                let a = channel();
+                let b = channel();
+                spawn fn() {
+                    a <- 10;
+                }();
+                spawn fn() {
+                    b <- 20;
+                }();
+                assertEqual(<-a, 10, "first channel");
+                assertEqual(<-b, 20, "second channel");
+            }
+        )
+
+        it(
+            "supports async function definition and await",
+            fn() {
+                let ch = channel();
+
+                async fn compute(x) {
+                    ch <- x * 2;
+                    return x * 2;
+                }
+
+                let result = await compute(21);
+                assertEqual(result, 42, "async/await result");
+            }
+        )
+
+        it(
+            "supports multiple async calls",
+            fn() {
+                async fn double(x) {
+                    return x * 2;
+                }
+
+                let a = await double(5);
+                let b = await double(10);
+                assertEqual(a, 10, "first async result");
+                assertEqual(b, 20, "second async result");
+            }
+        )
+
+        it(
+            "supports async with spawn",
+            fn() {
+                let ch = channel();
+
+                async fn writeLater(val) {
+                    ch <- val;
+                    return val;
+                }
+
+                spawn fn() {
+                    await writeLater(99);
+                }();
+
+                let val = <-ch;
+                assertEqual(val, 99, "async with spawn");
+            }
+        )
+
+        it(
+            "supports select with recv case",
+            fn() {
+                let ch = channel();
+                spawn fn() {
+                    ch <- 99;
+                }();
+                select {
+                    case <-ch:
+                        assertEqual(1, 1, "recv case executed");
+                }
+            }
+        )
+
+        it(
+            "supports select with default case",
+            fn() {
+                let ch = channel();
+                select {
+                    case <-ch:
+                        assertEqual(1, 0, "recv should not execute");
+                    default:
+                        assertEqual(1, 1, "default case executed");
+                }
+            }
+        )
+
+        it(
+            "supports buffered channel without goroutine",
+            fn() {
+                let ch = channel(3);
+                ch <- 10;
+                ch <- 20;
+                ch <- 30;
+                assertEqual(<-ch, 10, "first buffered");
+                assertEqual(<-ch, 20, "second buffered");
+                assertEqual(<-ch, 30, "third buffered");
+            }
+        )
+
+        it(
+            "supports for-in over channel",
+            fn() {
+                let ch = channel(3);
+                ch <- 10;
+                ch <- 20;
+                ch <- 30;
+                close(ch);
+                let sum = 0;
+                for (x in ch) {
+                    sum = sum + x;
+                }
+                assertEqual(sum, 60, "sum of channel values");
+            }
+        )
+
+        it(
+            "supports for-in over array",
+            fn() {
+                let sum = 0;
+                for (x in [1, 2, 3]) {
+                    sum = sum + x;
+                }
+                assertEqual(sum, 6, "sum of array values");
+            }
+        )
+
+        it(
+            "supports for-in over string",
+            fn() {
+                let chars = "";
+                for (c in "abc") {
+                    chars = chars + c;
+                }
+                assertEqual(chars, "abc", "chars from string");
+            }
+        )
+    }
+)

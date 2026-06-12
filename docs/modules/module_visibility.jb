@@ -1,0 +1,22 @@
+// Public vs private symbols - controlling what is exported
+// Run with: jabline run module_visibility.jb
+
+// Export makes a symbol public, otherwise it's module-private
+export const PUBLIC_KEY = "shared-secret"
+const INTERNAL_KEY = "internal-only"
+
+export fn publicFunction() {
+    return "anyone can call this"
+}
+
+fn privateHelper() {
+    return "only visible within this module"
+}
+
+export fn bridge() {
+    return "public bridge: " + privateHelper()
+}
+
+echo("public const: " + PUBLIC_KEY)
+echo(publicFunction())
+echo(bridge())

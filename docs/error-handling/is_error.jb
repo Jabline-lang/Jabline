@@ -1,0 +1,22 @@
+// is_error() check - test if a value is an error object
+// Run with: jabline run is_error.jb
+
+fn safeDivide(a, b) {
+    if (b == 0) {
+        return Error("cannot divide by zero")
+    }
+    return a / b
+}
+
+let r1 = safeDivide(10, 2)
+let r2 = safeDivide(10, 0)
+
+echo("r1 = " + toString(r1) + ", is_error: " + toString(is_error(r1)))
+echo("r2 = " + toString(r2) + ", is_error: " + toString(is_error(r2)))
+
+if (is_error(r2)) {
+    echo("handled error: " + toString(r2))
+}
+
+let nonError = 42
+echo("nonError is_error: " + toString(is_error(nonError)))

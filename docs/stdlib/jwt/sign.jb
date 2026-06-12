@@ -1,0 +1,17 @@
+// sign.jb - demonstrates JWT signing
+
+import jwt
+
+let secret = "my-secret-key"
+
+fn main() {
+    let payload = {
+        "sub": "user123",
+        "name": "Alice",
+        "iat": jwt.now()
+    }
+
+    let token = jwt.sign(payload, secret)
+    println("Signed JWT:")
+    println(token)
+}

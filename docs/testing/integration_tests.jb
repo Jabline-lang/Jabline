@@ -1,0 +1,23 @@
+// Integration Tests - Testing multiple components together
+
+fn validate(input) {
+    if (input == null || input == "") {
+        return {"valid": false, "error": "empty"}
+    }
+    return {"valid": true, "data": input}
+}
+
+fn process(data) {
+    let validation = validate(data)
+    if (!validation["valid"]) {
+        return {"error": validation["error"]}
+    }
+    return {"result": "processed: " + validation["data"]}
+}
+
+describe("Integration", fn() {
+    it("full pipeline works", fn() {
+        let result = process("test")
+        assertEqual(result["result"], "processed: test", "pipeline ok")
+    })
+})

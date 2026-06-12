@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
@@ -51,20 +50,44 @@ func (c *Compiler) compileOptionalChainingExpression(node *ast.OptionalChainingE
 		return err
 	}
 
-	// a?.b
 	// If a is null, return null.
 	jumpNotNullPos := c.emit(code.OpJumpNotNull, 9999)
 
 	// Here a is null. Just leave it or replace with explicit null if needed.
-	// Actually OpJumpNotNull peeks. So Null is still on stack.
 	jumpEndPos := c.emit(code.OpJump, 9999)
 
 	afterNullPos := len(c.currentInstructions())
 	c.changeOperand(jumpNotNullPos, afterNullPos)
 
 	// Here a is NOT null.
-	if err := c.Compile(node.Right); err != nil { // Right is usually Identifier or Index
-		return err
+	switch right := node.Right.(type) {
+	case *ast.Identifier:
+		// a?.b — property access
+		propName := right.Value
+		propIdx := c.addConstant(&object.String{Value: propName})
+		c.emit(code.OpConstant, propIdx)
+		c.emit(code.OpIndex)
+
+	case *ast.CallExpression:
+		// a?.() — optional function call
+		// Left is already on stack as the callee
+		for _, arg := range right.Arguments {
+			if err := c.Compile(arg); err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpCall, int(len(right.Arguments)))
+
+	case *ast.ArrayIndexExpression:
+		// a?.[0] — optional indexing
+		// Left is already on stack as the indexed object
+		if err := c.Compile(right.Index); err != nil {
+			return err
+		}
+		c.emit(code.OpIndex)
+
+	default:
+		return c.errorPos("optional chaining: unexpected right type after ?., got %T", node.Right)
 	}
 
 	afterRightPos := len(c.currentInstructions())
@@ -101,7 +124,7 @@ func (c *Compiler) compileTernaryExpression(node *ast.TernaryExpression) error {
 func (c *Compiler) compileIdentifier(node *ast.Identifier) error {
 	sym, ok := c.symbolTable.Resolve(node.Value) // Renamed variable
 	if !ok {
-		return fmt.Errorf("undefined variable %s", node.Value)
+		return c.errorPos("undefined variable %s", node.Value)
 	}
 
 	switch sym.Scope { // Use sym.Scope
@@ -159,6 +182,28 @@ func (c *Compiler) compileArrayIndexExpression(node *ast.ArrayIndexExpression) e
 	return nil
 }
 
+func (c *Compiler) compileSliceExpression(node *ast.SliceExpression) error {
+	if err := c.Compile(node.Left); err != nil {
+		return err
+	}
+	if node.Low != nil {
+		if err := c.Compile(node.Low); err != nil {
+			return err
+		}
+	} else {
+		c.emit(code.OpNull)
+	}
+	if node.High != nil {
+		if err := c.Compile(node.High); err != nil {
+			return err
+		}
+	} else {
+		c.emit(code.OpNull)
+	}
+	c.emit(code.OpSlice)
+	return nil
+}
+
 func (c *Compiler) compilePrefixExpression(node *ast.PrefixExpression) error {
 	if err := c.Compile(node.Right); err != nil {
 		return err
@@ -174,7 +219,7 @@ func (c *Compiler) compilePrefixExpression(node *ast.PrefixExpression) error {
 	case "<-":
 		c.emit(code.OpRecvChannel)
 	default:
-		return fmt.Errorf("unknown operator %s", node.Operator)
+		return c.errorPos("unknown operator %s", node.Operator)
 	}
 
 	return nil
@@ -319,8 +364,12 @@ func literalToObject(node ast.Node) (object.Object, bool) {
 }
 
 func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
+	// === ALGEBRAIC SIMPLIFICATION ===
+	if simplified, ok := TryAlgebraicSimplify(node); ok {
+		return c.Compile(simplified)
+	}
+
 	// === CONSTANT FOLDING OPTIMIZATION ===
-	// If both sides are compile-time constants, fold them into a single OpConstant.
 	if folded, ok := tryFoldConstants(node); ok {
 		c.emit(code.OpConstant, c.addConstant(folded))
 		return nil
@@ -461,7 +510,7 @@ func (c *Compiler) compileInfixExpression(node *ast.InfixExpression) error {
 	case "<-":
 		c.emit(code.OpSendChannel)
 	default:
-		return fmt.Errorf("unknown operator %s", node.Operator)
+		return c.errorPos("unknown operator %s", node.Operator)
 	}
 
 	return nil
@@ -530,8 +579,10 @@ func (c *Compiler) compileIfExpression(node *ast.IfExpression) error {
 }
 
 func (c *Compiler) compileCallExpression(node *ast.CallExpression) error {
-	// Optimization: Detect obj.method(args) and use OpCallMethodFast
-	if indexExpr, ok := node.Function.(*ast.IndexExpression); ok {
+	// Optimization: Detect obj.method(args) and use OpCallMethodFast.
+	// Skip for tail-call positions — OpCallMethodFast can't be converted to
+	// OpTailCall, so we fall back to OpCall which the TCO pass handles.
+	if indexExpr, ok := node.Function.(*ast.IndexExpression); ok && !c.tailCallReturn {
 		var methodName string
 		if ident, ok := indexExpr.Index.(*ast.Identifier); ok {
 			methodName = ident.Value
@@ -563,13 +614,35 @@ func (c *Compiler) compileCallExpression(node *ast.CallExpression) error {
 		return err
 	}
 
-	for _, arg := range node.Arguments {
-		if err := c.Compile(arg); err != nil {
-			return err
+	if len(node.TypeArguments) > 0 {
+		for _, ta := range node.TypeArguments {
+			typeIdx := c.addConstant(&object.String{Value: ta.Value})
+			c.emit(code.OpConstant, typeIdx)
+		}
+		c.emit(code.OpInstantiate, len(node.TypeArguments))
+	}
+
+	hasSpread := false
+	spreadMask := uint16(0)
+	for i, arg := range node.Arguments {
+		if se, ok := arg.(*ast.SpreadExpr); ok {
+			hasSpread = true
+			spreadMask |= 1 << i
+			if err := c.Compile(se.Right); err != nil {
+				return err
+			}
+		} else {
+			if err := c.Compile(arg); err != nil {
+				return err
+			}
 		}
 	}
 
-	c.emit(code.OpCall, len(node.Arguments))
+	if hasSpread {
+		c.emit(code.OpCallSpread, len(node.Arguments), int(spreadMask))
+	} else {
+		c.emit(code.OpCall, len(node.Arguments))
+	}
 	return nil
 }
 
@@ -585,12 +658,34 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 		c.symbolTable.DefineType(tp.Value)
 	}
 
+	var paramSymbols []symbol.Symbol
 	for _, p := range node.Parameters {
 		paramType := ""
 		if p.Type != nil {
 			paramType = p.Type.Value
 		}
-		c.symbolTable.DefineWithType(p.Value, paramType)
+		sym := c.symbolTable.DefineWithType(p.Value, paramType)
+		paramSymbols = append(paramSymbols, sym)
+	}
+
+	// Emit default value initialization prologue for parameters with defaults
+	for i, p := range node.Parameters {
+		if p.DefaultValue != nil {
+			sym := paramSymbols[i]
+			c.emit(code.OpGetLocal, sym.Index)
+			jumpNotNullPos := c.emit(code.OpJumpNotNull, 9999)
+			c.emit(code.OpPop)
+			if err := c.Compile(p.DefaultValue); err != nil {
+				return err
+			}
+			c.emit(code.OpSetLocal, sym.Index)
+			jumpEndPos := c.emit(code.OpJump, 9999)
+			skipPos := len(c.currentInstructions())
+			c.changeOperand(jumpNotNullPos, skipPos)
+			c.emit(code.OpPop)
+			endPos := len(c.currentInstructions())
+			c.changeOperand(jumpEndPos, endPos)
+		}
 	}
 
 	if err := c.Compile(node.Body); err != nil {
@@ -606,6 +701,7 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions() // Access via getter // Corrected
+	fnSymTable := c.symbolTable
 	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
@@ -626,12 +722,19 @@ func (c *Compiler) compileFunctionLiteral(node *ast.FunctionLiteral) error {
 		typeParams = append(typeParams, tp.Value)
 	}
 
+	isVariadic := false
+	if len(node.Parameters) > 0 && node.Parameters[len(node.Parameters)-1].Variadic {
+		isVariadic = true
+	}
+
 	compiledFn := &object.CompiledFunction{
 		Instructions:   instructions,
 		NumLocals:      numLocals,
 		NumParameters:  len(node.Parameters),
 		SourceMap:      sourceMap,
+		IsVariadic:     isVariadic,
 		TypeParameters: typeParams,
+		SymTable:       fnSymTable,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -650,12 +753,34 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 		c.symbolTable.DefineType(tp.Value)
 	}
 
+	var paramSymbols []symbol.Symbol
 	for _, p := range node.Parameters {
 		paramType := ""
 		if p.Type != nil {
 			paramType = p.Type.Value
 		}
-		c.symbolTable.DefineWithType(p.Value, paramType)
+		sym := c.symbolTable.DefineWithType(p.Value, paramType)
+		paramSymbols = append(paramSymbols, sym)
+	}
+
+	// Emit default value initialization prologue for parameters with defaults
+	for i, p := range node.Parameters {
+		if p.DefaultValue != nil {
+			sym := paramSymbols[i]
+			c.emit(code.OpGetLocal, sym.Index)
+			jumpNotNullPos := c.emit(code.OpJumpNotNull, 9999)
+			c.emit(code.OpPop)
+			if err := c.Compile(p.DefaultValue); err != nil {
+				return err
+			}
+			c.emit(code.OpSetLocal, sym.Index)
+			jumpEndPos := c.emit(code.OpJump, 9999)
+			skipPos := len(c.currentInstructions())
+			c.changeOperand(jumpNotNullPos, skipPos)
+			c.emit(code.OpPop)
+			endPos := len(c.currentInstructions())
+			c.changeOperand(jumpEndPos, endPos)
+		}
 	}
 
 	if err := c.Compile(node.Body); err != nil {
@@ -671,6 +796,7 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
+	fnSymTable := c.symbolTable
 	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
@@ -691,13 +817,20 @@ func (c *Compiler) compileAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) e
 		typeParams = append(typeParams, tp.Value)
 	}
 
+	isVariadic := false
+	if len(node.Parameters) > 0 && node.Parameters[len(node.Parameters)-1].Variadic {
+		isVariadic = true
+	}
+
 	compiledFn := &object.CompiledFunction{
 		Instructions:   instructions,
 		NumLocals:      numLocals,
 		NumParameters:  len(node.Parameters),
 		SourceMap:      sourceMap,
 		IsAsync:        true,
+		IsVariadic:     isVariadic,
 		TypeParameters: typeParams,
+		SymTable:       fnSymTable,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -728,13 +861,14 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 	// Validate expression type against return type if specified
 	bodyType := c.inferType(node.Body)
 	if err := c.checkTypeMatch(returnType, bodyType, node.Body); err != nil {
-		return fmt.Errorf("compile error: arrow function return type mismatch - %s", err)
+		return c.errorPos("compile error: arrow function return type mismatch - %s", err)
 	}
 
 	c.emit(code.OpReturnValue)
 
 	freeSymbols := c.symbolTable.FreeSymbols
 	numLocals := c.symbolTable.NumDefinitions()
+	fnSymTable := c.symbolTable
 	instructions, sourceMap := c.leaveScope()
 
 	for _, s := range freeSymbols {
@@ -750,11 +884,18 @@ func (c *Compiler) compileArrowFunction(node *ast.ArrowFunction) error {
 		}
 	}
 
+	isVariadic := false
+	if len(node.Parameters) > 0 && node.Parameters[len(node.Parameters)-1].Variadic {
+		isVariadic = true
+	}
+
 	compiledFn := &object.CompiledFunction{
 		Instructions:  instructions,
 		NumLocals:     numLocals,
 		NumParameters: len(node.Parameters),
 		SourceMap:     sourceMap,
+		IsVariadic:    isVariadic,
+		SymTable:      fnSymTable,
 	}
 	c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 
@@ -816,12 +957,12 @@ func (c *Compiler) compileStructLiteral(node *ast.StructLiteral) error {
 func (c *Compiler) compilePostfixExpression(node *ast.PostfixExpression) error {
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
-		return fmt.Errorf("postfix operator only supported for identifiers")
+		return c.errorPos("postfix operator only supported for identifiers")
 	}
 
 	sym, ok := c.symbolTable.Resolve(ident.Value)
 	if !ok {
-		return fmt.Errorf("undefined variable %s", ident.Value)
+		return c.errorPos("undefined variable %s", ident.Value)
 	}
 
 	// For postfix, we usually need to return the OLD value if used in an expression.
@@ -847,7 +988,7 @@ func (c *Compiler) compilePostfixExpression(node *ast.PostfixExpression) error {
 			c.emit(code.OpDecGlobal, sym.Index)
 		}
 	} else {
-		return fmt.Errorf("postfix operator not supported for scope %s", sym.Scope)
+		return c.errorPos("postfix operator not supported for scope %s", sym.Scope)
 	}
 
 	return nil

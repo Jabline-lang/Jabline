@@ -1,0 +1,30 @@
+// http — HTTP client and server utilities
+// Wraps native _http module for easier use
+
+export fn get(self, url) {
+    return self.request(url, "GET", "");
+}
+
+export fn post(self, url, body) {
+    return self.request(url, "POST", body);
+}
+
+export fn request(self, url, method, body) {
+    // Using native HTTP module
+    let resp = nativeRequest(url, method, body);
+    return resp;
+}
+
+export fn parseStatus(code) {
+    if (code == 200) { return "OK"; }
+    if (code == 201) { return "Created"; }
+    if (code == 204) { return "No Content"; }
+    if (code == 400) { return "Bad Request"; }
+    if (code == 401) { return "Unauthorized"; }
+    if (code == 403) { return "Forbidden"; }
+    if (code == 404) { return "Not Found"; }
+    if (code == 500) { return "Internal Server Error"; }
+    if (code == 502) { return "Bad Gateway"; }
+    if (code == 503) { return "Service Unavailable"; }
+    return "Unknown";
+}

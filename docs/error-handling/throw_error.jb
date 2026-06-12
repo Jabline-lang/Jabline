@@ -1,0 +1,25 @@
+// throw keyword - raise errors manually
+// Run with: jabline run throw_error.jb
+
+fn validateAge(age) {
+    if (age < 0) {
+        throw "age cannot be negative"
+    }
+    if (age < 18) {
+        throw "must be 18 or older"
+    }
+    return "age " + toString(age) + " is valid"
+}
+
+try {
+    echo(validateAge(25))
+    echo(validateAge(-1))
+} catch (e) {
+    echo("validation error: " + toString(e))
+}
+
+try {
+    echo(validateAge(15))
+} catch (e) {
+    echo("validation error: " + toString(e))
+}

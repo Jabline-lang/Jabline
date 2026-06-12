@@ -1,0 +1,30 @@
+// Generic function with interface constraint
+// Using match to verify interface implementation
+
+interface Comparable {
+    Compare(other: Any): int
+}
+
+struct Num {
+    val: int
+}
+
+fn (a Num) Compare(b): int {
+    if (a.val > b.val) { return 1 }
+    if (a.val < b.val) { return -1 }
+    return 0
+}
+
+fn maxOf<T>(a: T, b: T): T {
+    match (a) {
+        case Comparable:
+            if (a.Compare(b) >= 0) { return a }
+            return b
+        default:
+            return a
+    }
+}
+
+let x = Num { val: 10 }
+let y = Num { val: 20 }
+echo("max: " + toString(maxOf(x, y).val))

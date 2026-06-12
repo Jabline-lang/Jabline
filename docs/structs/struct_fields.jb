@@ -1,0 +1,23 @@
+// Struct fields with various types
+
+struct Person {
+    name: string,
+    age: int,
+    height: float,
+    active: boolean,
+    tags: array
+}
+
+let p = Person {
+    name: "Alice",
+    age: 30,
+    height: 5.7,
+    active: true,
+    tags: ["admin", "user"]
+}
+
+echo("name:   " + p.name)
+echo("age:    " + toString(p.age))
+echo("height: " + toString(p.height))
+echo("active: " + toString(p.active))
+echo("tags:   " + toString(p.tags))

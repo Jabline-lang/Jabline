@@ -1,0 +1,13 @@
+// c_call.jb - demonstrates calling C functions
+
+import ffi
+
+fn main() {
+    let lib = ffi.load("libc.so.6")
+
+    let rand = lib.func("rand", "int", [])
+    let result = rand.call()
+    println("Random number (C): " + result)
+
+    lib.close()
+}

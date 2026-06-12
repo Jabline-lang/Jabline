@@ -1,0 +1,14 @@
+// Exit Codes - Returning status to the OS
+// 0 = success, non-zero = error
+
+let arg = input("Enter a number: ")
+let num = parseInt(arg)
+
+if num < 0 {
+    print("Error: negative number")
+    // os.exit(1)  -- uncomment to exit with code 1
+} else {
+    print("You entered: " + toString(num))
+    print("Exiting with code 0 (success)")
+    // os.exit(0)
+}

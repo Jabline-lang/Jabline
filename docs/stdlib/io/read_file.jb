@@ -1,0 +1,9 @@
+// read_file.jb - demonstrates file reading
+
+import io
+
+fn main() {
+    let content = io.read_file("data.txt")
+    println("File content:")
+    println(content)
+}

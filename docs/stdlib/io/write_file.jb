@@ -1,0 +1,13 @@
+// write_file.jb - demonstrates file writing
+
+import io
+
+fn main() {
+    let data = "Hello, Jabline!\nThis is a test file."
+
+    io.write_file("output.txt", data)
+    println("Written to output.txt")
+
+    let verify = io.read_file("output.txt")
+    println("Verified:\n" + verify)
+}

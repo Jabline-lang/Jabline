@@ -1,0 +1,18 @@
+// Tail Recursion - Recursive calls in tail position
+
+fn factorialTail(n, acc = 1) {
+    if n <= 1 {
+        return acc
+    }
+    return factorialTail(n - 1, n * acc)
+}
+
+fn sumTail(n, acc = 0) {
+    if n <= 0 {
+        return acc
+    }
+    return sumTail(n - 1, acc + n)
+}
+
+print("factorial(5) = " + toString(factorialTail(5)))
+print("sum 1-100 = " + toString(sumTail(100)))

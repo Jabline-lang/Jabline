@@ -1,0 +1,20 @@
+// Basic enum definition
+// Enum values are integers starting at 0
+
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+enum Direction {
+    North,
+    South,
+    East,
+    West
+}
+
+echo("Color.Red:   " + toString(Color.Red))
+echo("Color.Green: " + toString(Color.Green))
+echo("Color.Blue:  " + toString(Color.Blue))
+echo("Direction.North: " + toString(Direction.North))

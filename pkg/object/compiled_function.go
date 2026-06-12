@@ -11,8 +11,10 @@ type CompiledFunction struct {
 	NumParameters  int
 	SourceMap      code.SourceMap
 	IsAsync        bool
+	IsVariadic     bool
 	Name           string
 	TypeParameters []string
+	SymTable       interface{} // *symbol.SymbolTable set by compiler for variable name resolution
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }

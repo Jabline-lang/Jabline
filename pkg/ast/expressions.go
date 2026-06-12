@@ -54,6 +54,27 @@ func (aie *ArrayIndexExpression) String() string {
 	return "(" + aie.Left.String() + "[" + aie.Index.String() + "])"
 }
 
+type SliceExpression struct {
+	Token token.Token
+	Left  Expression
+	Low   Expression
+	High  Expression
+}
+
+func (se *SliceExpression) expressionNode()      {}
+func (se *SliceExpression) TokenLiteral() string { return se.Token.Literal }
+func (se *SliceExpression) String() string {
+	lowStr := ""
+	if se.Low != nil {
+		lowStr = se.Low.String()
+	}
+	highStr := ""
+	if se.High != nil {
+		highStr = se.High.String()
+	}
+	return "(" + se.Left.String() + "[" + lowStr + ":" + highStr + "])"
+}
+
 type IndexExpression struct {
 	Token token.Token
 	Left  Expression
@@ -100,7 +121,12 @@ type OptionalChainingExpression struct {
 func (oce *OptionalChainingExpression) expressionNode()      {}
 func (oce *OptionalChainingExpression) TokenLiteral() string { return oce.Token.Literal }
 func (oce *OptionalChainingExpression) String() string {
-	return "(" + oce.Left.String() + "?." + oce.Right.String() + ")"
+	rightStr := oce.Right.String()
+	// If right side is a string literal, strip quotes for display
+	if sl, ok := oce.Right.(*StringLiteral); ok {
+		rightStr = sl.Value
+	}
+	return "(" + oce.Left.String() + "?." + rightStr + ")"
 }
 
 type SpawnExpression struct {
@@ -143,6 +169,8 @@ func (node *PostfixExpression) GetToken() token.Token { return node.Token }
 
 func (node *ArrayIndexExpression) GetToken() token.Token { return node.Token }
 
+func (node *SliceExpression) GetToken() token.Token { return node.Token }
+
 func (node *IndexExpression) GetToken() token.Token { return node.Token }
 
 func (node *TernaryExpression) GetToken() token.Token { return node.Token }
@@ -154,3 +182,15 @@ func (node *OptionalChainingExpression) GetToken() token.Token { return node.Tok
 func (node *SpawnExpression) GetToken() token.Token { return node.Token }
 
 func (node *InstantiatedExpression) GetToken() token.Token { return node.Token }
+
+type SpreadExpr struct {
+	Token token.Token
+	Right Expression
+}
+
+func (se *SpreadExpr) expressionNode()      {}
+func (se *SpreadExpr) TokenLiteral() string { return se.Token.Literal }
+func (se *SpreadExpr) String() string {
+	return "..." + se.Right.String()
+}
+func (node *SpreadExpr) GetToken() token.Token { return node.Token }

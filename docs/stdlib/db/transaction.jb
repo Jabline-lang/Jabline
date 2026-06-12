@@ -1,0 +1,22 @@
+// transaction.jb - demonstrates database transactions
+
+import db
+
+let conn = db.connect("sqlite://mydb.sqlite")
+
+fn main() {
+    conn.begin()
+
+    let ok = conn.insert("accounts", {"id": 1, "balance": 1000})
+    ok = ok && conn.insert("accounts", {"id": 2, "balance": 500})
+
+    if ok {
+        conn.commit()
+        println("Transaction committed")
+    } else {
+        conn.rollback()
+        println("Transaction rolled back")
+    }
+
+    conn.close()
+}

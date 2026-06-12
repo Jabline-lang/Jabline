@@ -1,0 +1,18 @@
+// Setting hash values
+
+let scores = {
+    "alice": 95,
+    "bob": 87
+}
+
+// Dot assignment
+scores.alice = 100
+echo("updated: " + toString(scores))
+
+// Bracket assignment
+scores["charlie"] = 92
+echo("added:   " + toString(scores))
+
+// Using set() builtin
+set(scores, "diana", 88)
+echo("set():   " + toString(scores))

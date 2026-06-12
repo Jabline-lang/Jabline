@@ -1,0 +1,19 @@
+// with_value.jb - demonstrates context with values
+
+import context
+
+fn handler(ctx) {
+    let user = ctx.value("user")
+    let role = ctx.value("role")
+
+    println("User: " + user)
+    println("Role: " + role)
+}
+
+fn main() {
+    let ctx = context.background()
+        .with_value("user", "alice")
+        .with_value("role", "admin")
+
+    handler(ctx)
+}

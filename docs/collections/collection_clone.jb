@@ -1,0 +1,15 @@
+// clone() creates shallow copies of arrays, hashes, and structs
+
+// Clone an array
+let arr = [1, 2, [3, 4]]
+let arrCopy = clone(arr)
+arrCopy[0] = 99
+echo("arr copy: " + toString(arrCopy))
+echo("original: " + toString(arr))
+
+// Clone a hash
+let h = { "a": 1, "b": 2 }
+let hCopy = clone(h)
+hCopy["a"] = 99
+echo("hash original: " + toString(h))
+echo("hash copy:     " + toString(hCopy))

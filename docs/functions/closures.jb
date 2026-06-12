@@ -1,0 +1,13 @@
+// Closures - Functions capturing outer scope
+
+fn makeGreeter(greeting) {
+    return fn(name) {
+        print(greeting + ", " + name + "!")
+    }
+}
+
+let sayHi = makeGreeter("Hello")
+let sayBye = makeGreeter("Goodbye")
+
+sayHi("Alice")
+sayBye("Bob")

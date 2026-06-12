@@ -1,0 +1,18 @@
+// Booleans - true and false values
+
+let isReady = true
+let isDone = false
+
+let result = 10 > 5       // true
+let equal  = 3 == 4       // false
+
+if isReady {
+    print("Ready!")
+}
+
+if not isDone {
+    print("Not done yet")
+}
+
+print("10 > 5 is " + toString(result))
+print("3 == 4 is " + toString(equal))

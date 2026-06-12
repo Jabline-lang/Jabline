@@ -1,0 +1,12 @@
+// Builtin functions: first(), last(), rest()
+
+let arr = [10, 20, 30, 40, 50]
+
+let firstEl = first(arr)
+let lastEl = last(arr)
+let tail = rest(arr)
+
+echo("arr:       " + toString(arr))
+echo("first():   " + toString(firstEl))
+echo("last():    " + toString(lastEl))
+echo("rest():    " + toString(tail))

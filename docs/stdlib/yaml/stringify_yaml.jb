@@ -1,0 +1,18 @@
+// stringify_yaml.jb - demonstrates YAML output
+
+import yaml
+
+let config = {
+    "app": "webapp",
+    "port": 8080,
+    "debug": false,
+    "database": {
+        "host": "localhost",
+        "port": 5432
+    }
+}
+
+fn main() {
+    let output = yaml.stringify(config)
+    println(output)
+}

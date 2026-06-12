@@ -1,0 +1,14 @@
+// deflate.jb - demonstrates deflate compression
+
+import compress
+
+let payload = "Jabline is a modern programming language. " * 50
+
+fn main() {
+    let deflated = compress.deflate(payload)
+    println("Original: " + len(payload) + " bytes")
+    println("Deflated: " + len(deflated) + " bytes")
+
+    let inflated = compress.inflate(deflated)
+    println("Round-trip OK: " + (inflated == payload))
+}

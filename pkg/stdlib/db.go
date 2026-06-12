@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"jabline/pkg/object"
+	"time"
 
 	_ "github.com/lib/pq"
 	_ "modernc.org/sqlite"
@@ -58,8 +59,14 @@ func dbOpen(args ...object.Object) object.Object {
 		return newError("failed to open database: %s", err.Error())
 	}
 
+	// Set connection pool limits to prevent resource exhaustion
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
 	// Ping to verify connection
 	if err := db.Ping(); err != nil {
+		db.Close()
 		return newError("failed to connect to database: %s", err.Error())
 	}
 

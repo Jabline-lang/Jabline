@@ -1,0 +1,15 @@
+// call.jb - demonstrates making RPC calls
+
+import rpc
+
+fn main() {
+    let client = rpc.connect("localhost:9090")
+
+    let sum = client.call("add", {"a": 10, "b": 32})
+    println("10 + 32 = " + sum)
+
+    let greeting = client.call("greet", {"name": "Jabline"})
+    println(greeting)
+
+    client.close()
+}

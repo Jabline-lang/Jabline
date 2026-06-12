@@ -1,0 +1,15 @@
+// Using empty interface as "any" type
+// An interface with no methods is satisfied by all types
+
+interface Any {
+}
+
+fn printValue(val: Any) {
+    echo("value: " + toString(val) + " (type: " + type(val) + ")")
+}
+
+printValue(42)
+printValue("hello")
+printValue(true)
+printValue([1, 2, 3])
+printValue({ "key": "val" })

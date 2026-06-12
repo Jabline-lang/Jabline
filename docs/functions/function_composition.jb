@@ -1,0 +1,21 @@
+// Function Composition - Combining functions
+
+fn compose(f, g) {
+    return fn(x) {
+        return f(g(x))
+    }
+}
+
+fn double(x) {
+    return x * 2
+}
+
+fn addOne(x) {
+    return x + 1
+}
+
+let doubleThenAddOne = compose(addOne, double)
+let addOneThenDouble = compose(double, addOne)
+
+print("doubleThenAddOne(5) = " + toString(doubleThenAddOne(5)))
+print("addOneThenDouble(5) = " + toString(addOneThenDouble(5)))

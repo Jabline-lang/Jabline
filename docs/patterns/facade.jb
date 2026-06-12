@@ -1,0 +1,23 @@
+// Facade - Simplified interface to complex subsystems
+
+fn cpuInit() { print("  CPU initialized") }
+fn memoryInit() { print("  Memory initialized") }
+fn diskInit() { print("  Disk initialized") }
+fn networkInit() { print("  Network initialized") }
+
+fn startComputer() {
+    print("Starting computer...")
+    cpuInit()
+    memoryInit()
+    diskInit()
+    networkInit()
+    print("Computer ready!")
+}
+
+fn shutdownComputer() {
+    print("Shutting down...")
+    print("  All subsystems stopped")
+}
+
+startComputer()
+shutdownComputer()

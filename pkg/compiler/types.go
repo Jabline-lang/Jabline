@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 )
 
@@ -35,8 +34,6 @@ func (c *Compiler) inferType(node ast.Node) string {
 			res = n.ReturnType.Value
 		}
 	}
-	// Uncomment for noisy debug
-	// fmt.Printf("DEBUG: inferType(%T) -> %q\n", node, res)
 	return res
 }
 
@@ -83,7 +80,6 @@ func (c *Compiler) inferCallType(node *ast.CallExpression) string {
 }
 
 func (c *Compiler) checkTypeMatch(expected, actual string, node ast.Node) error {
-	// fmt.Printf("DEBUG: checkTypeMatch(expected=%q, actual=%q)\n", expected, actual)
 	if expected == "" || actual == "" || expected == "any" || actual == "any" {
 		return nil
 	}
@@ -94,7 +90,7 @@ func (c *Compiler) checkTypeMatch(expected, actual string, node ast.Node) error 
 		if expected == "float" && actual == "int" {
 			return nil
 		}
-		return fmt.Errorf("type mismatch: expected %s, got %s", expected, actual)
+		return c.errorPos("type mismatch: expected %s, got %s", expected, actual)
 	}
 
 	return nil

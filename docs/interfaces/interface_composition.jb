@@ -1,0 +1,30 @@
+// Interface embedding (composition)
+
+interface Reader {
+    Read(): string
+}
+
+interface Writer {
+    Write(data: string)
+}
+
+interface ReadWriter {
+    Read(): string,
+    Write(data: string)
+}
+
+struct Buffer {
+    data: string
+}
+
+fn (b Buffer) Read(): string {
+    return b.data
+}
+
+fn (b Buffer) Write(data: string) {
+    b.data = data
+}
+
+let buf = Buffer { data: "original" }
+buf.Write("updated")
+echo("buffer: " + buf.Read())

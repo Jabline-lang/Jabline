@@ -1,0 +1,17 @@
+// random.jb - demonstrates random() function
+
+import math
+
+fn main() {
+    let r1 = math.random()
+    let r2 = math.random()
+    let r3 = math.random()
+
+    println("Three random numbers between 0 and 1:")
+    println(r1)
+    println(r2)
+    println(r3)
+
+    let rolled = math.floor(math.random() * 6) + 1
+    println("Dice roll: " + rolled)
+}

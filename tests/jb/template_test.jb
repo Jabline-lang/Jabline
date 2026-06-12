@@ -1,0 +1,45 @@
+describe(
+    "Template Literals",
+    fn() {
+        it(
+            "supports basic template literals",
+            fn() {
+                assertEqual(`hello`, "hello", "basic template");
+            }
+        )
+
+        it(
+            "supports variable interpolation",
+            fn() {
+                let name = "world";
+                assertEqual(`hello, ${name}`, "hello, world", "var interpolation");
+            }
+        )
+
+        it(
+            "supports expression interpolation",
+            fn() {
+                let a = 5;
+                let b = 3;
+                assertEqual(`${a} + ${b} = ${a + b}`, "5 + 3 = 8", "expr interpolation");
+            }
+        )
+
+        it(
+            "supports multiple interpolations",
+            fn() {
+                let x = "foo";
+                let y = "bar";
+                assertEqual(`${x} and ${y}`, "foo and bar", "multi interpolation");
+            }
+        )
+
+        it(
+            "supports nested interpolation",
+            fn() {
+                let arr = [1, 2, 3];
+                assertEqual(`len=${len(arr)}`, "len=3", "nested call in interpolation");
+            }
+        )
+    }
+)

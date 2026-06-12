@@ -1,0 +1,14 @@
+// Variables - let, const, and reassignment
+
+let name = "Alice"       // mutable variable
+const pi = 3.14159       // immutable constant
+
+name = "Bob"             // allowed: let is mutable
+// pi = 3.0              // error: const cannot be reassigned
+
+let count = 10
+count = count + 5        // reassignment works
+
+print("Name: " + name)
+print("Pi: " + toString(pi))
+print("Count: " + toString(count))

@@ -1,0 +1,22 @@
+// Methods on generic structs
+
+struct Wrapper<T> {
+    data: T
+}
+
+fn (w Wrapper<T>) get(): T {
+    return w.data
+}
+
+fn (w Wrapper<T>) set(val: T) {
+    w.data = val
+}
+
+let w = Wrapper<int> { data: 10 }
+echo("initial: " + toString(w.get()))
+
+w.set(99)
+echo("after set: " + toString(w.get()))
+
+let sw = Wrapper<string> { data: "hello" }
+echo("string get: " + sw.get())

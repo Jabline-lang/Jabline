@@ -1,0 +1,128 @@
+describe(
+    "Structs and Objects",
+    fn() {
+        it(
+            "can define a struct and create instances",
+            fn() {
+                struct Point {
+                    x: int,
+                    y: int
+                }
+
+                let p = Point {
+                    x: 10,
+                    y: 20
+                };
+                assertEqual(p.x, 10, "field x");
+                assertEqual(p.y, 20, "field y");
+            }
+        )
+
+        it(
+            "supports struct field assignment",
+            fn() {
+                struct Counter {
+                    value: int
+                }
+
+                let c = Counter {
+                    value: 0
+                };
+                c.value = 42;
+                assertEqual(c.value, 42, "assigned field");
+            }
+        )
+
+        it(
+            "supports nested structs",
+            fn() {
+                struct Inner {
+                    val: int
+                }
+
+                struct Outer {
+                    inner: Inner,
+                    name: string
+                }
+
+                let o = Outer {
+                    inner: Inner {
+                        val: 99
+                    },
+                    name: "test"
+                };
+                assertEqual(o.inner.val, 99, "nested field");
+                assertEqual(o.name, "test", "name field");
+            }
+        )
+
+        it(
+            "supports structs with methods",
+            fn() {
+                struct Vec2 {
+                    x: int,
+                    y: int
+                }
+
+                fn (v Vec2) mag2(): int {
+                    return v.x * v.x + v.y * v.y;
+                }
+
+                let v = Vec2 {
+                    x: 3,
+                    y: 4
+                };
+                assertEqual(v.mag2(), 25, "method returns 25");
+            }
+        )
+
+        it(
+            "supports generic structs",
+            fn() {
+                struct Box<T> {
+                    value: T
+                }
+
+                let intBox = Box<int> {
+                    value: 42
+                };
+                let strBox = Box<string> {
+                    value: "hello"
+                };
+                assertEqual(intBox.value, 42, "generic int field");
+                assertEqual(strBox.value, "hello", "generic string field");
+            }
+        )
+
+        it(
+            "supports multi-param generic structs",
+            fn() {
+                struct Pair<T, U> {
+                    first: T,
+                    second: U
+                }
+
+                let p = Pair<int, string> {
+                    first: 1,
+                    second: "two"
+                };
+                assertEqual(p.first, 1, "first");
+                assertEqual(p.second, "two", "second");
+            }
+        )
+
+        it(
+            "struct type uses type() function",
+            fn() {
+                struct MyType {
+                    a: int
+                }
+
+                let obj = MyType {
+                    a: 1
+                };
+                assertEqual(type(obj), "INSTANCE", "type is INSTANCE");
+            }
+        )
+    }
+)

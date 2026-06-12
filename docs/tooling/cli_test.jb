@@ -1,0 +1,13 @@
+// CLI Test - Run test suites
+// Usage: jabline test cli_test.jb
+//        jabline test --coverage cli_test.jb
+//        jabline test --benchmark cli_test.jb
+
+describe("Math", fn() {
+    it("adds numbers", fn() {
+        assertEqual(1 + 1, 2, "1+1=2")
+    })
+    it("multiplies", fn() {
+        assertEqual(3 * 4, 12, "3*4=12")
+    })
+})

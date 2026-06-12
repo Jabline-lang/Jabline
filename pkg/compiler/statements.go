@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"fmt"
 	"jabline/pkg/ast"
 	"jabline/pkg/code"
 	"jabline/pkg/object" // New import
@@ -9,6 +8,14 @@ import (
 )
 
 func (c *Compiler) compileLetStatement(node *ast.LetStatement) error {
+	if node.Destructure != nil {
+		return c.compileDestructuring(
+			node.Destructure,
+			node.Value,
+			false, // not const
+		)
+	}
+
 	if err := c.Compile(node.Value); err != nil {
 		return err
 	}
@@ -17,6 +24,11 @@ func (c *Compiler) compileLetStatement(node *ast.LetStatement) error {
 
 	if node.Type != nil {
 		typeName = node.Type.Value
+
+		// Resolve type alias to underlying type
+		if resolved, ok := c.typeAliases[typeName]; ok {
+			typeName = resolved
+		}
 
 		typeIdx := c.addConstant(&object.String{Value: typeName})
 		c.emit(code.OpCheckType, typeIdx)
@@ -31,6 +43,73 @@ func (c *Compiler) compileLetStatement(node *ast.LetStatement) error {
 		c.emit(code.OpSetGlobal, sym.Index)
 	} else {
 		c.emit(code.OpSetLocal, sym.Index)
+	}
+
+	return nil
+}
+
+func (c *Compiler) compileDestructuring(pattern *ast.DestructuringPattern, value ast.Expression, isConst bool) error {
+	if err := c.Compile(value); err != nil {
+		return err
+	}
+
+	// Collect variables to extract with their indices in the source
+	type varInfo struct {
+		sym    symbol.Symbol
+		field  ast.DestructuringField
+		srcIdx int // index in array (or for rest)
+		isRest bool
+	}
+	var vars []varInfo
+
+	for i, field := range pattern.Fields {
+		if field.Value == nil {
+			continue
+		}
+		var sym symbol.Symbol
+		if isConst {
+			sym = c.symbolTable.DefineConstWithType(field.Value.Value, "")
+		} else {
+			sym = c.symbolTable.DefineWithType(field.Value.Value, "")
+		}
+		vars = append(vars, varInfo{sym: sym, field: field, srcIdx: i, isRest: field.Rest})
+	}
+
+	// Emit extraction code for each variable.
+	// For all fields except the last, Dup the source so the next extraction can still use it.
+	for j, vi := range vars {
+		isLast := j == len(vars)-1
+		if !isLast {
+			c.emit(code.OpDup)
+		}
+
+		if pattern.IsHash {
+			key := vi.field.Key.String()
+			keyIdx := c.addConstant(&object.String{Value: key})
+			c.emit(code.OpConstant, keyIdx)
+			c.emit(code.OpIndex)
+		} else if vi.isRest {
+			// For ...rest, get arr[i:] — use builtin slice or manual copy
+			// For now, fall back to just getting the element
+			idx := c.addConstant(&object.Integer{Value: int64(vi.srcIdx)})
+			c.emit(code.OpConstant, idx)
+			c.emit(code.OpIndex)
+		} else {
+			idx := c.addConstant(&object.Integer{Value: int64(vi.srcIdx)})
+			c.emit(code.OpConstant, idx)
+			c.emit(code.OpIndex)
+		}
+
+		if vi.sym.Scope == symbol.GlobalScope {
+			c.emit(code.OpSetGlobal, vi.sym.Index)
+		} else {
+			c.emit(code.OpSetLocal, vi.sym.Index)
+		}
+	}
+
+	// If no variables were extracted, discard the source value
+	if len(vars) == 0 {
+		c.emit(code.OpPop)
 	}
 
 	return nil
@@ -133,17 +212,17 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 	// We only support assignment to identifiers for now (e.g. x = 5)
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
-		return fmt.Errorf("assignment target must be an identifier")
+		return c.errorPos("assignment target must be an identifier")
 	}
 
 	// Reject assignments to constants
 	if c.symbolTable.IsConstant(ident.Value) {
-		return fmt.Errorf("cannot assign to constant '%s'", ident.Value)
+		return c.errorPos("cannot assign to constant '%s'", ident.Value)
 	}
 
 	sym, ok := c.symbolTable.Resolve(ident.Value)
 	if !ok {
-		return fmt.Errorf("undefined variable %s", ident.Value)
+		return c.errorPos("undefined variable %s", ident.Value)
 	}
 
 	// Optimization: Detect i = i + 1 or i = i - 1
@@ -184,7 +263,7 @@ func (c *Compiler) compileAssignmentStatement(node *ast.AssignmentStatement) err
 	case symbol.FreeScope:
 		c.emit(code.OpSetFree, sym.Index)
 	default:
-		return fmt.Errorf("cannot assign to %s scope", sym.Scope)
+		return c.errorPos("cannot assign to %s scope", sym.Scope)
 	}
 
 	return nil
@@ -232,6 +311,47 @@ func (c *Compiler) compileBlockStatement(node *ast.BlockStatement) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (c *Compiler) compileDeferStatement(node *ast.DeferStatement) error {
+	// Compile the call expression normally (pushes fn + args + OpCall)
+	if err := c.Compile(node.Call); err != nil {
+		return err
+	}
+	// Replace the last instruction (OpCall or OpCallSpread) with OpDefer.
+	// OpDefer has the same operand layout (1 byte numArgs).
+	lastIns := c.scopes[c.scopeIndex].lastInstruction
+	if lastIns.Opcode == code.OpCall || lastIns.Opcode == code.OpCallSpread {
+		numArgs := int(c.currentInstructions()[lastIns.Position+1])
+		newIns := code.Make(code.OpDefer, numArgs)
+		c.replaceInstruction(lastIns.Position, newIns)
+	}
+	return nil
+}
+
+func (c *Compiler) compileDoWhileStatement(node *ast.DoWhileStatement) error {
+	startPos := len(c.currentInstructions())
+
+	c.enterLoop(startPos)
+
+	if err := c.Compile(node.Body); err != nil {
+		return err
+	}
+
+	if err := c.Compile(node.Condition); err != nil {
+		return err
+	}
+
+	c.emit(code.OpJumpIfTrue, startPos)
+
+	loop := c.leaveLoop()
+	afterPos := len(c.currentInstructions())
+
+	for _, breakPos := range loop.BreakPos {
+		c.changeOperand(breakPos, afterPos)
+	}
+
 	return nil
 }
 
@@ -322,7 +442,7 @@ func (c *Compiler) compileForStatement(node *ast.ForStatement) error {
 func (c *Compiler) compileBreakStatement(node *ast.BreakStatement) error {
 	jumpPos := c.emit(code.OpJump, 9999)
 	if c.loopIndex < 0 {
-		return fmt.Errorf("break statement outside of loop")
+		return c.errorPos("break statement outside of loop")
 	}
 	c.loops[c.loopIndex].BreakPos = append(c.loops[c.loopIndex].BreakPos, jumpPos)
 	return nil
@@ -330,7 +450,7 @@ func (c *Compiler) compileBreakStatement(node *ast.BreakStatement) error {
 
 func (c *Compiler) compileContinueStatement(node *ast.ContinueStatement) error {
 	if c.loopIndex < 0 {
-		return fmt.Errorf("continue statement outside of loop")
+		return c.errorPos("continue statement outside of loop")
 	}
 	pos := c.loops[c.loopIndex].ContinuePos
 	if pos == -1 {
@@ -537,81 +657,107 @@ func (c *Compiler) compileThrowStatement(node *ast.ThrowStatement) error {
 	return nil
 }
 func (c *Compiler) compileTryStatement(node *ast.TryStatement) error {
-	// Do NOT create a new CompilationScope (c.enterScope), because that resets instruction offsets.
-	// We want OpTry/OpJump offsets to be relative to the current function's bytecode.
-	// However, we DO want a new SymbolScope for the catch block variables.
+	// Use the enclosing scope directly — no enclosed scope needed.
+	// Variables defined inside try/catch blocks use the parent's indices,
+	// avoiding free-variable confusion since try is NOT a closure.
 
-	// Manually create a new symbol scope
-	originalSymbolTable := c.symbolTable
-	c.symbolTable = symbol.NewEnclosedSymbolTable(originalSymbolTable)
+	// OpTry: placeholder for CatchIP and FinallyIP
+	opTryPos := c.emit(code.OpTry, 9999, 9999)
 
-	// Restore symbol table on exit
-	defer func() {
-		c.symbolTable = originalSymbolTable
-	}()
-
-	// 1. Emit OpTry with a placeholder operand (points to catch block start)
-	opTryPos := c.emit(code.OpTry, 9999) // Placeholder for CatchIP
-
-	// 2. Compile TryBlock
+	// Compile TryBlock
 	if err := c.Compile(node.TryBlock); err != nil {
 		return err
 	}
-
-	// Remove potential OpPop after TryBlock if it's the last instruction
 	if c.lastInstructionIs(code.OpPop) {
 		c.removeLastPop()
 	}
-
-	// Emit OpEndTry immediately after TryBlock (path of success)
 	c.emit(code.OpEndTry)
 
-	// 3. Emit OpJump with a placeholder operand (points after catch block)
-	jumpAfterCatchPos := c.emit(code.OpJump, 9999) // Placeholder to jump over catch block
+	// Jump to finally (or past catch) on success
+	jumpToFinally := c.emit(code.OpJump, 9999)
 
-	// 4. Mark catch block start and patch OpTry operand
-	catchStartPos := len(c.currentInstructions())
-	c.changeOperand(opTryPos, catchStartPos) // OpTry now points to catch block
-
-	// Handle CatchBlock if present
-	if node.CatchBlock != nil {
-		// If CatchParam is defined, define it in the symbol table and store the exception object
-		if node.CatchParam != nil {
-			var sym symbol.Symbol
-			if originalSymbolTable.Outer == nil {
-				// At top level, define as global to avoid being overwritten by stack operations
-				sym = originalSymbolTable.Define(node.CatchParam.Value)
-			} else {
-				sym = c.symbolTable.Define(node.CatchParam.Value)
-			}
-
-			// The VM pushes the exception object onto the stack before jumping to catchStartPos
-			// So, we need to pop it and set it as a local/global variable.
-			if sym.Scope == symbol.GlobalScope {
-				c.emit(code.OpSetGlobal, sym.Index)
-			} else {
-				c.emit(code.OpSetLocal, sym.Index)
-			}
-		} else {
-			// If no catch param, pop the exception object from the stack
-			c.emit(code.OpPop)
-		}
-
-		// Compile CatchBlock
-		if err := c.Compile(node.CatchBlock); err != nil {
+	// === Finally Block (compiled BEFORE catch so catch follows it) ===
+	finallyStartPos := len(c.currentInstructions())
+	var afterFinallyJump int
+	if node.Finally != nil {
+		c.emit(code.OpFinally)
+		if err := c.Compile(node.Finally); err != nil {
 			return err
 		}
-		// Remove potential OpPop after CatchBlock
-		if c.lastInstructionIs(code.OpPop) {
-			c.removeLastPop()
-		}
-	} else {
-		c.emit(code.OpPop) // Pop the exception that OpTry pushed on failed try.
+		c.emit(code.OpEndFinally)
+		// On success path (no exception), skip over the catch block
+		afterFinallyJump = c.emit(code.OpJump, 9999)
 	}
 
-	// 5. Mark end of try/catch and patch OpJump operand
-	endTryPos := len(c.currentInstructions())
-	c.changeOperand(jumpAfterCatchPos, endTryPos) // Jump after catch block
+	// === Catch Block ===
+	catchStartPos := len(c.currentInstructions())
+	if node.CatchBlock != nil {
+		if node.CatchType != nil {
+			typeIdx := c.addConstant(&object.String{Value: node.CatchType.Value})
+			c.emit(code.OpIsType, typeIdx)
+			skipCatch := c.emit(code.OpJumpNotTruthy, 9999)
+
+			if node.CatchParam != nil {
+				sym, existed := c.symbolTable.Resolve(node.CatchParam.Value)
+				if !existed {
+					sym = c.symbolTable.Define(node.CatchParam.Value)
+				}
+				if sym.Scope == symbol.GlobalScope {
+					c.emit(code.OpSetGlobal, sym.Index)
+				} else {
+					c.emit(code.OpSetLocal, sym.Index)
+				}
+			} else {
+				c.emit(code.OpPop)
+			}
+
+			if err := c.Compile(node.CatchBlock); err != nil {
+				return err
+			}
+			if c.lastInstructionIs(code.OpPop) {
+				c.removeLastPop()
+			}
+
+			c.emit(code.OpJump, 9999)
+
+			rethrowPos := len(c.currentInstructions())
+			c.changeOperand(skipCatch, rethrowPos)
+			c.emit(code.OpThrow)
+		} else {
+			if node.CatchParam != nil {
+				sym, existed := c.symbolTable.Resolve(node.CatchParam.Value)
+				if !existed {
+					sym = c.symbolTable.Define(node.CatchParam.Value)
+				}
+				if sym.Scope == symbol.GlobalScope {
+					c.emit(code.OpSetGlobal, sym.Index)
+				} else {
+					c.emit(code.OpSetLocal, sym.Index)
+				}
+			} else {
+				c.emit(code.OpPop)
+			}
+			if err := c.Compile(node.CatchBlock); err != nil {
+				return err
+			}
+			if c.lastInstructionIs(code.OpPop) {
+				c.removeLastPop()
+			}
+		}
+	} else {
+		c.emit(code.OpPop)
+	}
+
+	// === Patching ===
+	afterCatchPos := len(c.currentInstructions())
+	if node.Finally != nil {
+		c.changeOperand(opTryPos, catchStartPos, finallyStartPos)
+		c.changeOperand(jumpToFinally, finallyStartPos)
+		c.changeOperand(afterFinallyJump, afterCatchPos)
+	} else {
+		c.changeOperand(opTryPos, catchStartPos, 0)
+		c.changeOperand(jumpToFinally, afterCatchPos)
+	}
 
 	return nil
 }
@@ -668,7 +814,84 @@ func (c *Compiler) compileSwitchStatement(node *ast.SwitchStatement) error {
 
 	return nil
 }
+func (c *Compiler) compileSelectStatement(node *ast.SelectStatement) error {
+	numCases := len(node.Cases)
+	hasDefault := 0
+	if node.DefaultCase != nil {
+		hasDefault = 1
+	}
+
+	// 1. Compile all channel/value expressions onto the stack
+	for _, cas := range node.Cases {
+		if err := c.Compile(cas.Channel); err != nil {
+			return err
+		}
+		if cas.IsSend {
+			if err := c.Compile(cas.Value); err != nil {
+				return err
+			}
+		}
+	}
+
+	// 2. Emit OpSelect opcode + operands (3 bytes total)
+	c.emit(code.OpSelect, numCases, hasDefault)
+
+	// 3. Write case descriptors (flags + 2-byte offset) inline
+	descStart := len(c.currentInstructions())
+	for _, cas := range node.Cases {
+		flags := byte(0)
+		if cas.IsSend {
+			flags |= 1
+		}
+		c.setInstructions(append(c.currentInstructions(), flags, 0, 0))
+	}
+	if hasDefault != 0 {
+		c.setInstructions(append(c.currentInstructions(), 0, 0))
+	}
+
+	// 4. Compile each case body with backpatched offsets
+	var jumpToEnds []int
+	for i, cas := range node.Cases {
+		bodyStart := len(c.currentInstructions())
+		// Write body offset into descriptor
+		off := descStart + i*3 + 1
+		code.WriteUint16(c.currentInstructions(), off, uint16(bodyStart))
+
+		for _, s := range cas.Statements {
+			if err := c.Compile(s); err != nil {
+				return err
+			}
+		}
+		jumpToEnds = append(jumpToEnds, c.emit(code.OpJump, 9999))
+	}
+
+	// 5. Compile default body
+	if node.DefaultCase != nil {
+		bodyStart := len(c.currentInstructions())
+		defaultOff := descStart + numCases*3
+		code.WriteUint16(c.currentInstructions(), defaultOff, uint16(bodyStart))
+		for _, s := range node.DefaultCase.Statements {
+			if err := c.Compile(s); err != nil {
+				return err
+			}
+		}
+		jumpToEnds = append(jumpToEnds, c.emit(code.OpJump, 9999))
+	}
+
+	// 6. Backpatch all jumps to end
+	endPos := len(c.currentInstructions())
+	for _, pos := range jumpToEnds {
+		c.changeOperand(pos, endPos)
+	}
+
+	return nil
+}
+
 func (c *Compiler) compileConstStatement(node *ast.ConstStatement) error {
+	if node.Destructure != nil {
+		return c.compileDestructuring(node.Destructure, node.Value, true)
+	}
+
 	if err := c.Compile(node.Value); err != nil {
 		return err
 	}
@@ -676,6 +899,11 @@ func (c *Compiler) compileConstStatement(node *ast.ConstStatement) error {
 	var typeName string
 	if node.Type != nil {
 		typeName = node.Type.Value
+
+		// Resolve type alias to underlying type
+		if resolved, ok := c.typeAliases[typeName]; ok {
+			typeName = resolved
+		}
 
 		typeIdx := c.addConstant(&object.String{Value: typeName})
 		c.emit(code.OpCheckType, typeIdx)
@@ -721,7 +949,7 @@ func (c *Compiler) compileEnumStatement(node *ast.EnumStatement) error {
 func (c *Compiler) compileEchoStatement(node *ast.EchoStatement) error {
 	sym, ok := c.symbolTable.Resolve("echo") // Renamed variable
 	if !ok {
-		return fmt.Errorf("builtin 'echo' not found")
+		return c.errorPos("builtin 'echo' not found")
 	}
 
 	c.emit(code.OpGetBuiltin, sym.Index) // Use sym.Index
@@ -847,38 +1075,9 @@ func (c *Compiler) compileForEachStatement(node *ast.ForEachStatement) error {
 
 	loopStartPos := len(c.currentInstructions()) // Mark the start of the loop
 
-	// 3. Condition: while (index < len(iterable))
 	c.enterLoop(-1) // Use -1 so continue statements are collected and patched to increment
 
-	// Get length of iterable
-	lenSym, ok := c.symbolTable.Resolve("len") // Assume 'len' builtin is available
-	if !ok {
-		return fmt.Errorf("builtin 'len' not found for ForEachStatement")
-	}
-	c.emit(code.OpGetBuiltin, lenSym.Index)
-
-	if iterableSym.Scope == symbol.GlobalScope {
-		c.emit(code.OpGetGlobal, iterableSym.Index)
-	} else {
-		c.emit(code.OpGetLocal, iterableSym.Index)
-	}
-
-	c.emit(code.OpCall, 1) // Call len(iterable)
-
-	// Get current index
-	if indexSym.Scope == symbol.GlobalScope {
-		c.emit(code.OpGetGlobal, indexSym.Index)
-	} else {
-		c.emit(code.OpGetLocal, indexSym.Index)
-	}
-
-	// Compare: index < len(iterable)
-	c.emit(code.OpGreaterThan) // Stack: [len, index]. OpGreaterThan -> [len > index] (true if elements remain)
-
-	// Jump if not truthy (i.e., len <= index, loop finished)
-	jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999) // Placeholder to jump out of loop
-
-	// 4. Get current item: let item = iterable[index];
+	// 3. Get next item from iterable: OpNextItem pops (index, iterable), pushes (value, nextIndex, hasNext)
 	if iterableSym.Scope == symbol.GlobalScope {
 		c.emit(code.OpGetGlobal, iterableSym.Index)
 	} else {
@@ -891,17 +1090,27 @@ func (c *Compiler) compileForEachStatement(node *ast.ForEachStatement) error {
 		c.emit(code.OpGetLocal, indexSym.Index)
 	}
 
-	c.emit(code.OpIndex) // Stack: [item]
+	c.emit(code.OpNextItem)
 
-	// Store item in the user-defined variable for the loop body
-	itemVarSym := c.symbolTable.Define(node.Variable.Value) // Define user's loop variable
+	// hasNext is on top — jump if falsy (exhausted iterable)
+	jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
+
+	// 4. Store nextIndex back into the index slot (it's now on top)
+	if indexSym.Scope == symbol.GlobalScope {
+		c.emit(code.OpSetGlobal, indexSym.Index)
+	} else {
+		c.emit(code.OpSetLocal, indexSym.Index)
+	}
+
+	// 5. Store value (now on top) in the user-defined loop variable
+	itemVarSym := c.symbolTable.Define(node.Variable.Value)
 	if itemVarSym.Scope == symbol.GlobalScope {
 		c.emit(code.OpSetGlobal, itemVarSym.Index)
 	} else {
 		c.emit(code.OpSetLocal, itemVarSym.Index)
 	}
 
-	// 5. Compile Body
+	// 6. Compile Body
 	if err := c.Compile(node.Body); err != nil {
 		return err
 	}
@@ -913,36 +1122,22 @@ func (c *Compiler) compileForEachStatement(node *ast.ForEachStatement) error {
 
 	// Handle continue statements
 	loopScope := c.leaveLoop()
-	// Update continue jumps to point to increment step
 	continuePos := len(c.currentInstructions())
-
-	// 6. Increment index: index = index + 1;
-	if indexSym.Scope == symbol.GlobalScope {
-		c.emit(code.OpGetGlobal, indexSym.Index)
-	} else {
-		c.emit(code.OpGetLocal, indexSym.Index)
-	}
-
-	c.emit(code.OpConstant, c.addConstant(&object.Integer{Value: 1}))
-	c.emit(code.OpAdd)
-
-	if indexSym.Scope == symbol.GlobalScope {
-		c.emit(code.OpSetGlobal, indexSym.Index)
-	} else {
-		c.emit(code.OpSetLocal, indexSym.Index)
-	}
 
 	// 7. Jump back to loop start
 	c.emit(code.OpJump, loopStartPos)
 
-	// Patch continue jumps to point to increment
+	// Patch continue jumps to point to after-loop (same as jump back)
 	for _, pos := range loopScope.ContinueJumps {
 		c.changeOperand(pos, continuePos)
 	}
 
-	// 8. Patch jump out of loop (after loop body)
+	// 8. Exit point: pop the Null sentinels left by OpNextItem on exhaustion
 	afterLoopPos := len(c.currentInstructions())
 	c.changeOperand(jumpNotTruthyPos, afterLoopPos)
+
+	c.emit(code.OpPop) // pop nextIndex (Null)
+	c.emit(code.OpPop) // pop value (Null)
 
 	// Handle break statements
 	for _, breakPos := range loopScope.BreakPos {
@@ -987,7 +1182,7 @@ func (c *Compiler) compileMatchStatement(node *ast.MatchStatement) error {
 			// Call len($$match_arr$$) and compare with pattern element count.
 			lenSym, ok := c.symbolTable.Resolve("len")
 			if !ok {
-				return fmt.Errorf("builtin 'len' not found for structural match")
+				return c.errorPos("builtin 'len' not found for structural match")
 			}
 			c.emit(code.OpGetBuiltin, lenSym.Index)
 			if tmpArrSym.Scope == symbol.GlobalScope {

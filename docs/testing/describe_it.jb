@@ -1,0 +1,23 @@
+// Describe/It - BDD-style test organization
+
+describe("Calculator", fn() {
+    it("handles basic arithmetic", fn() {
+        assertEqual(2 + 3, 5, "addition")
+        assertEqual(10 - 4, 6, "subtraction")
+    })
+
+    it("handles multiplication", fn() {
+        assertEqual(3 * 4, 12, "multiplication")
+        assertEqual(0 * 5, 0, "zero multiplication")
+    })
+
+    it("handles division", fn() {
+        assertEqual(10 / 2, 5, "division")
+    })
+})
+
+describe("Edge Cases", fn() {
+    it("handles empty inputs", fn() {
+        assertEqual(0, 0, "zero")
+    })
+})

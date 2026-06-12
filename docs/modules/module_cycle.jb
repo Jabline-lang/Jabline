@@ -1,0 +1,22 @@
+// Circular dependency handling - patterns to avoid import cycles
+// Run with: jabline run module_cycle.jb
+
+// Circular deps are resolved by Jabline's module system.
+// Best practice: extract shared types into a common module.
+
+export struct SharedType {
+    name: string,
+    value: int
+}
+
+export fn createShared(name, value) {
+    return SharedType { name: name, value: value }
+}
+
+export fn processShared(s) {
+    return "processing " + s.name + "=" + toString(s.value)
+}
+
+let obj = createShared("test", 42)
+echo(processShared(obj))
+echo("Circular deps detected at compile time")

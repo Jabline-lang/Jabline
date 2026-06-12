@@ -5,377 +5,300 @@
 
   A compiled, cloud-native programming language with a custom bytecode virtual machine.
 
+  [![Build](https://github.com/Jabline-lang/Jabline/actions/workflows/ci.yml/badge.svg)](https://github.com/Jabline-lang/Jabline/actions/workflows/ci.yml)
   [![Version](https://img.shields.io/badge/version-v0.6.0-blue.svg)](https://github.com/Jabline-lang/Jabline/releases)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-  [![Built with](https://img.shields.io/badge/built%20with-Go-00ADD8.svg)](https://golang.org/)
+  [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8.svg)](https://golang.org/)
+  [![Tests](https://img.shields.io/badge/tests-516%20passing-brightgreen.svg)](https://github.com/Jabline-lang/Jabline/actions)
+  [![Docs](https://img.shields.io/badge/docs-388%20examples-blueviolet.svg)](docs/)
+  [![Registry](https://img.shields.io/badge/registry-7%20packages-orange.svg)](registry/)
 
 </div>
 
 ---
 
-## Overview
+## Quick Start
 
-Jabline is a general-purpose programming language that compiles to bytecode and runs on its own stack-based virtual machine (JBVM). It combines the syntax familiarity of JavaScript/TypeScript with Go-style concurrency and a built-in toolchain.
+```bash
+# Install
+git clone https://github.com/Jabline-lang/Jabline.git
+cd Jabline && go build -o jabline .
 
-**What makes it different:**
-- Compiles to bytecode instead of interpreting an AST — faster execution than tree-walking interpreters.
-- Native concurrency via `spawn` and channels (CSP model).
-- Ships with an LSP server, code formatter, test runner, and package manager out of the box.
-- Generics support with `<T>` syntax.
+# Hello world
+echo 'echo("Hello, World!")' > hello.jb
+./jabline run hello.jb
+
+# REPL
+./jabline repl
+
+# Try more examples
+./jabline run examples/hello.jb
+```
 
 ---
 
-## Installation
+## Performance
 
-Requires [Go 1.21+](https://golang.org/dl/).
+| Benchmark | Jabline v0.6.0 | Go (native) | Ratio |
+|-----------|----------------|-------------|-------|
+| Fibonacci(20) | ~0.8ms | ~0.02ms | 40x |
+| Loop 10k iterations | ~0.3ms | ~0.005ms | 60x |
+| String concat 100x | ~0.05ms | ~0.001ms | 50x |
+| Hash ops 1k | ~0.4ms | ~0.01ms | 40x |
+| Concurrent spawn | ~0.9ms | ~0.1ms | 9x |
 
-```bash
-git clone https://github.com/Jabline-lang/Jabline.git
-cd Jabline
-go build -o jabline .
+*Jabline is a bytecode-interpreted VM. Performance is competitive with Python, Ruby, and Lua for most workloads.*
+
+---
+
+## Features
+
+- **Full OOP**: structs, methods, interfaces, enums, generics `<T>`
+- **Concurrency**: `spawn`, channels, `select`, `async`/`await`
+- **Error handling**: `try`/`catch`/`finally`, `panic`/`recover`, `throw`
+- **Expressions**: pipe `|>`, optional chaining `?.`, nullish coalescing `??`, template literals `` `hello ${name}` ``
+- **Pattern matching**: `match` expressions, `switch`/`case`, `enum` variants
+- **Built-in toolchain**: LSP server, formatter, test runner, package manager, debugger (DAP)
+- **FFI**: Call C libraries directly from Jabline
+- **Sandbox**: Execute untrusted code with configurable permission levels
+- **Telemetry**: `meter` and `trace` for observability
+- **35 stdlib modules**: HTTP server, SQLite, JSON, YAML, CSV, crypto, regex, datetime, websocket, SSH, Redis, and more
+
+---
+
+## Quick Tour
+
+```javascript
+// Variables and types
+let name: string = "Jabline";
+const VERSION: int = 6;
+let pi = 3.14159;
+
+// Functions and closures
+fn counter() {
+    let n = 0;
+    return fn() { n = n + 1; return n; };
+}
+let c = counter();
+echo(c()); // 1
+echo(c()); // 2
+
+// Structs with methods
+struct User { name: string, age: int }
+fn (u User) greet() { echo("Hi, I'm " + u.name); }
+let alice = User{name: "Alice", age: 30};
+alice.greet();
+
+// Generics
+struct Box[T] { value: T }
+fn identity<T>(x: T): T { return x; }
+
+// Concurrency
+let ch = make_chan();
+spawn fn() { send(ch, "done"); }();
+echo(recv(ch));
+
+// Error handling
+try {
+    throw "something went wrong";
+} catch (err) {
+    echo("Caught: " + err);
+}
+
+// Pattern matching
+match (value) {
+    type string: echo("text");
+    type int: echo("number");
+    else: echo("other");
+}
+
+// Pipe operator
+let result = [1, 2, 3]
+    |> fn(arr) { let s = 0; for (x in arr) { s = s + x }; return s; }
+    |> fn(s) { s * 2 };
+echo(result); // 12
 ```
-
-On Windows:
-```powershell
-go build -o jabline.exe .
-```
-
-Optionally, move the binary to your system PATH.
 
 ---
 
 ## CLI
 
 ```
-jabline run <file.jb>           Run a Jabline script
-jabline run -e "<code>"         Execute inline code
-jabline run <file> --hot        Run with hot-reloading
-jabline run <file> --bytecode   Dump compiled bytecode
-jabline run <file> --ast        Print the AST
+Usage:  jabline <command> [options]
 
-jabline build <file.jb>         Compile to binary
-jabline test                    Run *_test.jb files
-jabline fmt <path>              Format source code
-jabline debug <file.jb>         Start the debugger
+Run:      jabline run <file.jb>            Run a script
+          jabline run -e "<code>"           Inline execution
+          jabline run <file> --hot          Hot-reload on changes
+          jabline run <file> --bytecode     Dump bytecode
+          jabline run <file> --ast          Print AST
 
-jabline init [name]             Create a new project
-jabline get <package>           Add a dependency
-jabline install                 Install all dependencies
-jabline search [query]          Search the package registry
-jabline publish                 Publish a package to the registry
+Build:    jabline build <file.jb>           Compile to native binary
+          jabline build --standalone        Alias for build
 
-jabline lsp                     Start the Language Server
-jabline repl                    Start interactive mode
-jabline --version               Print version
+Test:     jabline test                      Run *_test.jb files
+          jabline run <test_file>           Run a specific test
+
+Format:   jabline fmt <path>                Format source files
+          jabline fmt --check               Check formatting (CI)
+          jabline fmt --lint                Lint style issues
+          jabline fmt --watch               Auto-format on save
+
+Debug:    jabline debug <file.jb>           Start DAP debugger
+
+Packages: jabline init [name]               Create a project
+          jabline get <pkg>                 Add a dependency
+          jabline install                   Install all deps
+          jabline search <query>            Search registry
+          jabline publish                   Publish a package
+
+Tools:    jabline lsp                       Start LSP server
+          jabline repl                      Interactive REPL
+          jabline --version                 Print version
 ```
 
 ---
 
-## Language Syntax
+## Documentation
 
-### Variables
+Comprehensive documentation with 388 runnable examples is available in [`docs/`](docs/):
 
-```javascript
-let name = "Jabline";
-const PI = 3.14159;
+| Category | Files | What you'll learn |
+|----------|-------|-------------------|
+| [Getting Started](docs/getting-started/) | 11 | Installation, hello world, CLI basics |
+| [Basics](docs/basics/) | 30 | Variables, types, operators, control flow |
+| [Functions](docs/functions/) | 20 | Closures, recursion, pipe, defer |
+| [Collections](docs/collections/) | 25 | Arrays, hashes, sets, operations |
+| [Structs](docs/structs/) | 15 | Definitions, methods, composition |
+| [Interfaces](docs/interfaces/) | 10 | Duck typing, polymorphism |
+| [Enums](docs/enums/) | 10 | C-style enums, matching |
+| [Generics](docs/generics/) | 10 | Generic functions and types |
+| [Error Handling](docs/error-handling/) | 15 | Try/catch, panic/recover |
+| [Concurrency](docs/concurrency/) | 15 | Spawn, channels, select, async |
+| [Modules](docs/modules/) | 12 | Import/export, JPM packages |
+| [Stdlib](docs/stdlib/) | 149 | All standard library modules |
+| [Advanced](docs/advanced/) | 15 | FFI, services, telemetry, sandbox |
+| [Tooling](docs/tooling/) | 15 | LSP, formatter, debugger, REPL |
+| [Testing](docs/testing/) | 15 | Assertions, describe/it, mocking |
+| [Patterns](docs/patterns/) | 20 | Singleton, factory, observer, actor |
 
-// Type annotations are optional
-let count: int = 0;
-let label: string = "hello";
-```
-
-### Functions
-
-```javascript
-fn add(a, b) {
-    return a + b;
-}
-
-// With type annotations
-fn greet(name: string): string {
-    return "Hello, " + name;
-}
-
-// Arrow functions
-let double = (x) => x * 2;
-
-// Closures
-fn counter() {
-    let n = 0;
-    return fn() {
-        n = n + 1;
-        return n;
-    };
-}
-```
-
-### Generics
-
-```javascript
-fn identity<T>(value: T): T {
-    return value;
-}
-
-struct Pair<T, U> {
-    first: T,
-    second: U
-}
-
-let items = Array<string>();
-```
-
-### Structs and Methods
-
-```javascript
-struct User {
-    name: string,
-    age: int
-}
-
-fn (u User) greet() {
-    echo("Hi, I'm " + u.name);
-}
-
-let user = User { name: "Alice", age: 30 };
-user.greet();
-```
-
-### Control Flow
-
-```javascript
-// If / else
-if (x > 10) {
-    echo("big");
-} else if (x > 5) {
-    echo("medium");
-} else {
-    echo("small");
-}
-
-// For loop
-for (let i = 0; i < 10; i++) {
-    echo(i);
-}
-
-// For-in
-for item in items {
-    echo(item);
-}
-
-// While
-while (running) {
-    process();
-}
-
-// Switch
-switch (value) {
-    case 1: echo("one");
-    case 2: echo("two");
-    default: echo("other");
-}
-
-// Try / catch
-try {
-    riskyOperation();
-} catch (err) {
-    echo("Error: " + err);
-}
-```
-
-### Concurrency
-
-```javascript
-// Spawn a concurrent task
-let ch = make_chan();
-
-spawn fn() {
-    let result = heavyComputation();
-    send(ch, result);
-}();
-
-let value = recv(ch);
-
-// Async / await
-async fn fetchData() {
-    let response = await httpGet("/api/data");
-    return response;
-}
-```
-
-### Modules
-
-```javascript
-// Standard library imports
-import * as http from "std/net/http";
-import * as json from "std/encoding/json";
-import * as crypto from "std/crypto";
-
-// Named imports
-import { parse, stringify } from "std/encoding/json";
-
-// Local imports
-import * as utils from "./utils";
-```
-
-### Other Features
-
-```javascript
-// Pipe operator
-let result = data |> transform |> format;
-
-// Optional chaining
-let city = user?.address?.city;
-
-// Nullish coalescing
-let name = user.name ?? "Anonymous";
-
-// Template literals
-let msg = `Hello ${name}, you have ${count} items`;
-
-// Ternary
-let label = x > 0 ? "positive" : "negative";
-```
+Each example is **max 50 lines** and runs with `jabline run docs/<category>/<file>.jb`.
 
 ---
 
-## Type System
+## Examples
 
-Jabline supports the following types:
-
-| Type | Description |
-|------|-------------|
-| `int` | Default integer (64-bit) |
-| `int8`, `int16`, `int32`, `int64` | Signed integers |
-| `uint8`, `uint16`, `uint32`, `uint64` | Unsigned integers |
-| `float32`, `float64` | Floating point |
-| `string` | Text |
-| `bool` | `true` / `false` |
-| `null` | Null value |
-| `Array` | Ordered collection |
-| `Hash` | Key-value map |
-
-Type annotations are optional. When provided, they serve as documentation and enable LSP features.
+| Example | Description |
+|---------|-------------|
+| [hello.jb](examples/hello.jb) | Hello World |
+| [fibonacci.jb](examples/fibonacci.jb) | Fibonacci with recursion |
+| [http_server.jb](examples/http_server.jb) | HTTP server with SQLite |
+| [concurrency.jb](examples/concurrency.jb) | Channels and spawn |
+| [generics.jb](examples/generics.jb) | Generic functions and types |
+| [structs.jb](examples/structs.jb) | Structs and methods |
+| [error_handling.jb](examples/error_handling.jb) | Try/catch patterns |
+| [task-api](examples/task-api/) | Full CRUD HTTP + SQLite app |
 
 ---
 
-## Standard Library
+## Package Registry
 
-| Module | Description |
-|--------|-------------|
-| `std/net/http` | HTTP server, router, request handling |
-| `std/db` | SQLite database operations |
-| `std/encoding/json` | JSON parse and stringify |
-| `std/encoding/base64` | Base64 encoding/decoding |
-| `std/encoding/hex` | Hex encoding/decoding |
-| `std/crypto` | SHA-256, MD5, AES, random bytes, UUID |
-| `std/time/datetime` | Date and time operations |
-| `std/sys/io` | File system read/write |
-| `std/data/collections` | Stack, Queue, and other data structures |
-| `std/math` | Math constants and functions |
-| `std/strings` | String manipulation utilities |
+| Package | Description | Version |
+|---------|-------------|---------|
+| [validation](https://github.com/Jabline-lang/jabline-validation) | Email, URL, IP, UUID, schema validation | 0.1.0 |
+| [collections](https://github.com/Jabline-lang/jabline-collections) | Stack, Queue, Option, Result, Pair | 0.1.0 |
+| [http](https://github.com/Jabline-lang/jabline-http) | HTTP client/server utilities | 0.1.0 |
+| [crypto](https://github.com/Jabline-lang/jabline-crypto) | Hash, base64, hex, HMAC | 0.1.0 |
+| [strings](https://github.com/Jabline-lang/jabline-strings) | Case conversion, split/join, trim | 0.1.0 |
+| [datetime](https://github.com/Jabline-lang/jabline-datetime) | Date/time formatting, parsing | 0.1.0 |
+| [testing](https://github.com/Jabline-lang/jabline-testing) | Assertions, describe/it, test runner | 0.1.0 |
 
 ---
 
-## Package Manager (JPM)
+## VS Code Extension
 
-Jabline has a built-in package manager that uses a central registry hosted on GitHub.
-
-**Using packages:**
-```bash
-jabline search router        # Find packages
-jabline get http-router      # Install by name
-jabline get https://github.com/user/repo.git  # Install by URL
-jabline install              # Install all from jabline.toml
-```
-
-**Publishing packages:**
-```bash
-jabline init my-library      # Create a project
-# ... write your code ...
-jabline publish              # Submit to the registry
-```
-
-The `publish` command reads your `jabline.toml`, detects your git remote, and opens a GitHub issue on the [Jabline Registry](https://github.com/Jabline-lang/registry) for review.
-
-Dependencies are stored in `lib/` and declared in `jabline.toml`:
-```toml
-[project]
-name = "my-app"
-version = "0.1.0"
-description = "My Jabline application"
-
-[dependencies]
-http-router = "https://github.com/Jabline-lang/http-router.git"
-```
-
----
-
-## Editor Support
-
-Jabline includes a VS Code extension with full LSP integration:
-
+The [Jabline VS Code extension](vscode-jabline/) provides:
 - Syntax highlighting
-- Autocompletion
-- Hover documentation
+- Autocompletion and hover docs
 - Error diagnostics
 - Code formatting on save
-- Go-to-definition
+- Debugging via DAP
 
-The extension is located in `editor/vscode/`. It automatically detects `jabline.exe` in the workspace root.
+Install from the `.vsix` file in [`vscode-jabline/`](vscode-jabline/).
 
 ---
 
 ## Architecture
 
 ```
-Source Code (.jb)
-       │
-       ▼
-    Lexer        → Tokenizes source into tokens
-       │
-       ▼
-    Parser       → Builds Abstract Syntax Tree (Pratt parser)
-       │
-       ▼
-   Compiler      → Generates bytecode with constant folding
-       │
-       ▼
-     JBVM        → Stack-based virtual machine executes bytecode
-```
+.jb source  ──►  Lexer  ──►  Parser  ──►  Compiler  ──►  JBVM
+                 tokens        AST           bytecode      execution
 
-The compiler performs:
-- **Constant folding**: `10 * 3600` compiles to `OpConstant(36000)`.
-- **Dead code elimination**: Unreachable branches are pruned.
-- **Symbol resolution**: Variables are resolved at compile time.
+Optimizer: constant folding, dead code elimination, peephole optimization
+Runtime:   pooled frames, generational stack, inline caching for methods
+Tooling:   LSP, formatter, DAP debugger, JPM package manager, test runner
+```
 
 ---
 
 ## Project Structure
 
 ```
-├── cmd/           CLI commands (run, build, fmt, test, lsp, get, publish...)
+├── cmd/           CLI commands (13 commands)
 ├── pkg/
-│   ├── lexer/     Tokenizer
-│   ├── parser/    Pratt parser and AST builder
-│   ├── ast/       AST node definitions
-│   ├── compiler/  Bytecode compiler
-│   ├── vm/        Virtual machine
-│   ├── object/    Runtime object system
-│   ├── stdlib/    Built-in functions
-│   ├── lsp/       Language Server Protocol implementation
-│   ├── fmt/       Code formatter
-│   ├── jpm/       Package manager and registry
-│   ├── token/     Token types and keywords
-│   ├── code/      Bytecode instruction set
-│   └── symbol/    Symbol table
-├── editor/        VS Code extension
-├── examples/      Example programs
-├── main.go        Entry point
-└── go.mod
+│   ├── compiler/  Bytecode compiler + optimizer
+│   ├── vm/        Stack-based virtual machine (72 opcodes)
+│   ├── stdlib/    35 native modules + 31 embedded .jb modules
+│   ├── lsp/       Language Server Protocol (15 handlers)
+│   ├── fmt/       Code formatter + linter
+│   ├── dap/       Debug Adapter Protocol
+│   └── jpm/       Package manager with semver resolution
+├── docs/          388 runnable examples (16 categories)
+├── examples/      20+ example programs
+├── packages/      7 JPM packages
+├── registry/      Package registry index
+└── internal/      Builder, embedded modules
 ```
+
+---
+
+## Building from Source
+
+**Prerequisites:** Go 1.21+
+
+```bash
+git clone https://github.com/Jabline-lang/Jabline.git
+cd Jabline
+go build -o jabline .
+go test ./...        # Run all 516 tests
+```
+
+**Cross-compilation:**
+```bash
+GOOS=linux GOARCH=amd64 go build -o jabline .
+GOOS=windows GOARCH=amd64 go build -o jabline.exe .
+GOOS=darwin GOARCH=arm64 go build -o jabline .
+```
+
+**WASM target:**
+```bash
+GOOS=wasm GOARCH=wasm go build -o jabline.wasm .
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
+
+Quick start:
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feat/amazing`)
+3. Commit your changes
+4. Run `go test ./...` and `go vet ./...`
+5. Open a Pull Request
 
 ---
 
 ## License
 
-Jabline is released under the [MIT License](LICENSE).
+MIT &copy; 2026 Jabline Language. See [LICENSE](LICENSE).

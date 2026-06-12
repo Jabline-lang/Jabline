@@ -1,0 +1,9 @@
+#! /usr/bin/env jabline
+// Shebang line for Unix-like systems
+// Makes the file directly executable:
+//   chmod +x shebang.jb
+//   ./shebang.jb
+
+print("This file was run directly!")
+print("The #! line tells the OS to use Jabline.")
+print("Works on Linux, macOS, and WSL.")

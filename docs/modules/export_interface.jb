@@ -1,0 +1,38 @@
+// export interface - export interface types for abstraction
+// Run with: jabline run export_interface.jb
+
+export interface Shape {
+    area(),
+    name()
+}
+
+export struct Circle {
+    radius: int
+}
+
+export struct Square {
+    side: int
+}
+
+fn (c Circle) area() {
+    return 3.14159 * c.radius * c.radius
+}
+
+fn (c Circle) name() {
+    return "Circle"
+}
+
+fn (s Square) area() {
+    return s.side * s.side
+}
+
+fn (s Square) name() {
+    return "Square"
+}
+
+let shapes = [Circle { radius: 5 }, Square { side: 4 }]
+let i = 0
+while (i < len(shapes)) {
+    echo(shapes[i].name() + " area: " + toString(shapes[i].area()))
+    i = i + 1
+}

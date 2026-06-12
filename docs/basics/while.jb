@@ -1,0 +1,19 @@
+// While loops - Repeat while a condition is true
+
+let count = 0
+let sum = 0
+
+while count <= 10 {
+    sum = sum + count
+    count = count + 1
+}
+
+print("Sum 0-10: " + toString(sum))
+
+// Countdown
+let n = 5
+while n > 0 {
+    print(toString(n))
+    n = n - 1
+}
+print("Blast off!")

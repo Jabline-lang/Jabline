@@ -1,0 +1,12 @@
+// read_csv.jb - demonstrates reading CSV files
+
+import csv
+
+fn main() {
+    let rows = csv.read_file("data.csv")
+    println("Read " + len(rows) + " rows")
+
+    for row in rows {
+        println(row[0] + " | " + row[1] + " | " + row[2])
+    }
+}

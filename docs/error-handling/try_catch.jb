@@ -1,0 +1,18 @@
+// Basic try/catch - catch and handle runtime errors
+// Run with: jabline run try_catch.jb
+
+fn divide(a, b) {
+    if (b == 0) {
+        throw "division by zero"
+    }
+    return a / b
+}
+
+try {
+    echo("10 / 2 = " + toString(divide(10, 2)))
+    echo("10 / 0 = " + toString(divide(10, 0)))
+} catch (e) {
+    echo("caught error: " + toString(e))
+}
+
+echo("program continues after catch")

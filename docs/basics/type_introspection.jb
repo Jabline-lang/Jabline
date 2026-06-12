@@ -1,0 +1,13 @@
+// Type Introspection - Using the type() builtin
+
+let x = 42
+let y = 3.14
+let z = "hello"
+let w = true
+let v = null
+
+print("type(42) = " + type(x))
+print("type(3.14) = " + type(y))
+print("type('hello') = " + type(z))
+print("type(true) = " + type(w))
+print("type(null) = " + type(v))

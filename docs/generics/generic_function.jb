@@ -1,0 +1,13 @@
+// Generic function with type parameter T
+
+fn identity<T>(x): T {
+    return x
+}
+
+let a = identity<int>(42)
+let b = identity<string>("hello")
+let c = identity<boolean>(true)
+
+echo("int:    " + toString(a))
+echo("string: " + b)
+echo("bool:   " + toString(c))

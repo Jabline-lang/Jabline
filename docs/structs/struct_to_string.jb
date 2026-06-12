@@ -1,0 +1,20 @@
+// Custom string representation via a String method
+
+struct Book {
+    title: string,
+    author: string,
+    pages: int
+}
+
+fn (b Book) String() {
+    return b.title + " by " + b.author + " (" + toString(b.pages) + " pages)"
+}
+
+let book = Book {
+    title: "Jabline in Action",
+    author: "Jane Dev",
+    pages: 350
+}
+
+echo("toString: " + toString(book))
+echo("custom:   " + book.String())

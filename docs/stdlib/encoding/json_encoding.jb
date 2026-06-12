@@ -1,0 +1,17 @@
+// json_encoding.jb - demonstrates JSON encoding utilities
+
+import encoding
+import json
+
+let payload = {"type": "test", "value": 42}
+
+fn main() {
+    let raw = json.stringify(payload)
+    println("JSON string: " + raw)
+
+    let b64 = encoding.base64_encode(raw)
+    println("Base64 JSON: " + b64)
+
+    let decoded = encoding.base64_decode(b64)
+    println("Restored: " + decoded)
+}

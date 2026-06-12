@@ -1,0 +1,213 @@
+{
+  "Function declaration": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:params}) {",
+      "\t${3:body}",
+      "}"
+    ],
+    "description": "Function declaration"
+  },
+  "Async function declaration": {
+    "prefix": "async",
+    "body": [
+      "async fn ${1:name}(${2:params}) {",
+      "\t${3:body}",
+      "}"
+    ],
+    "description": "Async function declaration"
+  },
+  "Variable declaration": {
+    "prefix": "let",
+    "body": "let ${1:name} = ${2:value};",
+    "description": "Variable declaration"
+  },
+  "Constant declaration": {
+    "prefix": "const",
+    "body": "const ${1:name} = ${2:value};",
+    "description": "Constant declaration"
+  },
+  "If statement": {
+    "prefix": "if",
+    "body": [
+      "if (${1:condition}) {",
+      "\t${2:body}",
+      "}"
+    ],
+    "description": "If statement"
+  },
+  "If else statement": {
+    "prefix": "ife",
+    "body": [
+      "if (${1:condition}) {",
+      "\t${2:body}",
+      "} else {",
+      "\t${3:elseBody}",
+      "}"
+    ],
+    "description": "If else statement"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": [
+      "for (let ${1:i} = 0; ${1:i} < ${2:len}; ${1:i}++) {",
+      "\t${3:body}",
+      "}"
+    ],
+    "description": "For loop"
+  },
+  "For-in loop": {
+    "prefix": "forin",
+    "body": [
+      "for (let ${1:item} in ${2:collection}) {",
+      "\t${3:body}",
+      "}"
+    ],
+    "description": "For-each loop"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": [
+      "while (${1:condition}) {",
+      "\t${2:body}",
+      "}"
+    ],
+    "description": "While loop"
+  },
+  "Return statement": {
+    "prefix": "return",
+    "body": "return ${1:value};",
+    "description": "Return statement"
+  },
+  "Struct definition": {
+    "prefix": "struct",
+    "body": [
+      "struct ${1:Name} {",
+      "\t${2:field}: ${3:type}",
+      "}"
+    ],
+    "description": "Struct definition"
+  },
+  "Interface definition": {
+    "prefix": "interface",
+    "body": [
+      "interface ${1:Name} {",
+      "\t${2:method}(${3:params}): ${4:type}",
+      "}"
+    ],
+    "description": "Interface definition"
+  },
+  "Enum definition": {
+    "prefix": "enum",
+    "body": [
+      "enum ${1:Name} {",
+      "\t${2:Variant1},",
+      "\t${3:Variant2}",
+      "}"
+    ],
+    "description": "Enum definition"
+  },
+  "Service definition": {
+    "prefix": "service",
+    "body": [
+      "service ${1:Name} {",
+      "\t${2:port}: ${3:8080}",
+      "}"
+    ],
+    "description": "Service definition"
+  },
+  "Try catch block": {
+    "prefix": "try",
+    "body": [
+      "try {",
+      "\t${1:body}",
+      "} catch (${2:err}) {",
+      "\t${3:handler}",
+      "}"
+    ],
+    "description": "Try catch block"
+  },
+  "Try catch finally": {
+    "prefix": "tryf",
+    "body": [
+      "try {",
+      "\t${1:body}",
+      "} catch (${2:err}) {",
+      "\t${3:handler}",
+      "} finally {",
+      "\t${4:cleanup}",
+      "}"
+    ],
+    "description": "Try catch finally block"
+  },
+  "Import module": {
+    "prefix": "import",
+    "body": "import * as ${1:alias} from \"${2:module}\";",
+    "description": "Import module"
+  },
+  "Import named": {
+    "prefix": "importn",
+    "body": "import { ${1:name} } from \"${2:module}\";",
+    "description": "Named import"
+  },
+  "Echo": {
+    "prefix": "echo",
+    "body": "echo(${1:value});",
+    "description": "Print to stdout"
+  },
+  "Match expression": {
+    "prefix": "match",
+    "body": [
+      "match (${1:value}) {",
+      "\t${2:pattern} => ${3:result},",
+      "\t_ => ${4:default}",
+      "}"
+    ],
+    "description": "Match expression"
+  },
+  "Switch statement": {
+    "prefix": "switch",
+    "body": [
+      "switch (${1:value}) {",
+      "\tcase ${2:pattern}:",
+      "\t\t${3:body}",
+      "\t\tbreak;",
+      "\tdefault:",
+      "\t\t${4:defaultBody}",
+      "}"
+    ],
+    "description": "Switch statement"
+  },
+  "Retry block": {
+    "prefix": "retry",
+    "body": [
+      "retry {",
+      "\t${1:body}",
+      "}"
+    ],
+    "description": "Retry block"
+  },
+  "Meter block": {
+    "prefix": "meter",
+    "body": [
+      "meter(\"${1:metric_name}\") {",
+      "\t${2:body}",
+      "}"
+    ],
+    "description": "Meter block"
+  },
+  "Trace block": {
+    "prefix": "trace",
+    "body": [
+      "trace(\"${1:span_name}\") {",
+      "\t${2:body}",
+      "}"
+    ],
+    "description": "Trace block"
+  },
+  "Spawn": {
+    "prefix": "spawn",
+    "body": "${1:result} = spawn ${2:fn}(${3:args});",
+    "description": "Spawn async process"
+  }
+}

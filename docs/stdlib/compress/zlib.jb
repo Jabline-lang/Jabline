@@ -1,0 +1,14 @@
+// zlib.jb - demonstrates zlib compression
+
+import compress
+
+let data = "Repeat " * 200
+
+fn main() {
+    let z = compress.zlib(data)
+    println("Original: " + len(data) + " bytes")
+    println("Zlib: " + len(z) + " bytes")
+
+    let back = compress.inflate(z)
+    println("Restored: " + (back == data))
+}

@@ -1,0 +1,27 @@
+// Closing channels - signal that no more values will be sent
+// Run with: jabline run channel_close.jb
+
+fn producer(ch) {
+    let i = 0
+    while (i < 3) {
+        ch <- i * 10
+        i = i + 1
+    }
+    close(ch)
+}
+
+let ch = channel(3)
+spawn producer(ch)
+
+// Read until channel is closed
+let val = <-ch
+while (val != null) {
+    echo("read: " + toString(val))
+    val = <-ch
+}
+
+echo("channel closed, producer done")
+
+// Closing an already closed channel is safe
+close(ch)
+echo("closed again - no error")

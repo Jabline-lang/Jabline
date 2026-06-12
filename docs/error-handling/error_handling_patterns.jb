@@ -1,0 +1,33 @@
+// Common error handling patterns - idiomatic Jabline approaches
+// Run with: jabline run error_handling_patterns.jb
+
+// Pattern 1: Guard clause with throw
+fn divide(a, b) {
+    if (b == 0) { throw "division by zero" }
+    return a / b
+}
+
+// Pattern 2: Return error tuple pattern
+fn parseInt(s) {
+    let n = 0
+    for (c in s) {
+        if (c < "0" || c > "9") {
+            return Error("not a number: " + s)
+        }
+        n = n * 10 + (int(c) - 48)
+    }
+    return n
+}
+
+try {
+    echo("divide: " + toString(divide(10, 2)))
+} catch (e) {
+    echo("error: " + toString(e))
+}
+
+let parsed = parseInt("42")
+if (is_error(parsed)) {
+    echo("parse failed")
+} else {
+    echo("parsed: " + toString(parsed))
+}

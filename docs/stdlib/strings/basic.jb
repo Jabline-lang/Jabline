@@ -1,0 +1,16 @@
+// basic.jb - demonstrates len, concat, repeat
+
+import strings
+
+let greeting = "Hello"
+let name = "Jabline"
+
+fn main() {
+    println("len('" + greeting + "') = " + strings.len(greeting))
+
+    let combined = strings.concat(greeting, ", ", name, "!")
+    println(combined)
+
+    let stars = strings.repeat("*", 20)
+    println(stars)
+}
