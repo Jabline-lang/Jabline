@@ -1,0 +1,16 @@
+// insert.jb - demonstrates database insert operations
+
+import db
+
+let conn = db.connect("sqlite://mydb.sqlite")
+
+fn main() {
+    conn.execute("CREATE TABLE IF NOT EXISTS products (id INT, name TEXT, price REAL)")
+
+    conn.insert("products", {"id": 1, "name": "Widget", "price": 9.99})
+    conn.insert("products", {"id": 2, "name": "Gadget", "price": 24.99})
+    conn.insert("products", {"id": 3, "name": "Doohickey", "price": 4.99})
+
+    println("Inserted 3 products")
+    conn.close()
+}

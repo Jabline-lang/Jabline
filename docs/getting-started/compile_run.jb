@@ -1,0 +1,8 @@
+// Compile and Run Process
+// Compile: jabline build compile_run.jb
+// Run:     jabline run compile_run.jb
+// Both:    jabline run compile_run.jb (auto-compiles)
+
+print("Step 1: Source -> Bytecode")
+print("Step 2: Bytecode -> VM Execution")
+print("All in one command: jabline run")

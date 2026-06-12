@@ -1,0 +1,14 @@
+// Hash literals use { "key": value } syntax
+// Keys must be strings, values can be any type
+
+let user = {
+    "name": "Alice",
+    "age": 30,
+    "active": true
+}
+
+echo("user: " + toString(user))
+
+// Dot access for hash fields
+echo("name: " + user.name)
+echo("age:  " + toString(user.age))

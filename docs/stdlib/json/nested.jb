@@ -1,0 +1,23 @@
+// nested.jb - demonstrates nested JSON objects
+
+import json
+
+let raw = '{
+    "company": "ACME",
+    "address": {
+        "street": "123 Main St",
+        "city": "Springfield",
+        "zip": "12345"
+    },
+    "contacts": [
+        {"name": "Bob", "role": "dev"},
+        {"name": "Carol", "role": "qa"}
+    ]
+}'
+
+fn main() {
+    let data = json.parse(raw)
+    println("Company: " + data["company"])
+    println("City: " + data["address"]["city"])
+    println("First contact: " + data["contacts"][0]["name"])
+}

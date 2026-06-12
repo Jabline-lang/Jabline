@@ -1,0 +1,11 @@
+// Array literals using [ ] syntax
+// Arrays can hold mixed types
+
+let empty = []
+let nums = [1, 2, 3, 4, 5]
+let mixed = [1, "hello", true, null]
+
+echo("empty:  " + toString(empty))
+echo("nums:   " + toString(nums))
+echo("mixed:  " + toString(mixed))
+echo("length of nums: " + toString(len(nums)))

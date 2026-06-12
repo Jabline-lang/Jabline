@@ -1,0 +1,37 @@
+// Polymorphic functions using interfaces
+
+interface Shape {
+    Area(): int,
+    Name(): string
+}
+
+struct Circle {
+    radius: int
+}
+
+fn (c Circle) Area(): int {
+    return 3 * c.radius * c.radius
+}
+
+fn (c Circle) Name(): string {
+    return "Circle"
+}
+
+struct Square {
+    side: int
+}
+
+fn (s Square) Area(): int {
+    return s.side * s.side
+}
+
+fn (s Square) Name(): string {
+    return "Square"
+}
+
+fn printShapeInfo(s: Shape) {
+    echo(s.Name() + " area = " + toString(s.Area()))
+}
+
+printShapeInfo(Circle { radius: 5 })
+printShapeInfo(Square { side: 4 })

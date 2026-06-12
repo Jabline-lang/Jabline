@@ -1,0 +1,13 @@
+// format.jb - demonstrates log formatting
+
+import log
+
+fn main() {
+    log.set_format("{timestamp} [{level}] {message}")
+
+    log.info("This is an info message")
+    log.warn("This is a warning")
+
+    log.set_format("{level}: {message}")
+    log.info("Simplified format")
+}

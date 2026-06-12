@@ -1,0 +1,19 @@
+// REPL Features - Interactive shell capabilities
+// .history shows command history
+// Tab completion for builtins and variables
+// Multi-line editing support
+
+let stats = {
+    "history_size": 100,
+    "tab_completion": true,
+    "syntax_highlight": true,
+    "multi_line": true
+}
+
+print("REPL features: ")
+let keys = ["history_size", "tab_completion", "syntax_highlight", "multi_line"]
+let i = 0
+while (i < len(keys)) {
+    print("  " + keys[i] + " = " + toString(stats[keys[i]]))
+    i = i + 1
+}

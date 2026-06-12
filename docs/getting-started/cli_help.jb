@@ -1,0 +1,13 @@
+// CLI Commands Overview
+// jabline repl          - Start interactive REPL
+// jabline run file.jb   - Compile and run a file
+// jabline build file.jb - Compile to bytecode only
+// jabline fmt file.jb   - Format source code
+// jabline version       - Show version info
+
+print("Jabline CLI commands:")
+print("  repl   - Interactive mode")
+print("  run    - Compile + execute")
+print("  build  - Compile only")
+print("  fmt    - Format code")
+print("  version - Version info")

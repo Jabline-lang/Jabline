@@ -51,6 +51,11 @@ const (
 	MATCH        = "MATCH"
 	METER        = "METER"
 	TRACE        = "TRACE"
+	FINALLY      = "FINALLY"
+	ALIAS        = "ALIAS"
+	DO           = "DO"
+	DEFER        = "DEFER"
+	SELECT       = "SELECT"
 )
 
 var keywords = map[string]TokenType{
@@ -78,6 +83,7 @@ var keywords = map[string]TokenType{
 	"catch":     CATCH,
 	"throw":     THROW,
 	"retry":     RETRY,
+	"finally":   FINALLY,
 	"async":     ASYNC,
 	"await":     AWAIT,
 	"import":    IMPORT,
@@ -104,6 +110,10 @@ var keywords = map[string]TokenType{
 	"match":     MATCH,
 	"meter":     METER,
 	"trace":     TRACE,
+	"alias":     ALIAS,
+	"do":        DO,
+	"defer":     DEFER,
+	"select":    SELECT,
 }
 
 func LookupIdent(ident string) TokenType {

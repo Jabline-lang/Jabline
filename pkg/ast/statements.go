@@ -7,10 +7,11 @@ import (
 )
 
 type LetStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Type  *TypeExpression
-	Value Expression
+	Token       token.Token
+	Name        *Identifier
+	Destructure *DestructuringPattern
+	Type        *TypeExpression
+	Value       Expression
 }
 
 func (ls *LetStatement) statementNode()       {}
@@ -20,6 +21,9 @@ func (ls *LetStatement) String() string {
 	if ls.Type != nil {
 		typeStr = ": " + ls.Type.String()
 	}
+	if ls.Destructure != nil {
+		return fmt.Sprintf("%s = %s;", ls.Destructure.String(), ls.Value.String())
+	}
 	if ls.Value != nil {
 		return fmt.Sprintf("%s%s = %s;", ls.Name.String(), typeStr, ls.Value.String())
 	}
@@ -27,10 +31,11 @@ func (ls *LetStatement) String() string {
 }
 
 type ConstStatement struct {
-	Token token.Token
-	Name  *Identifier
-	Type  *TypeExpression
-	Value Expression
+	Token       token.Token
+	Name        *Identifier
+	Destructure *DestructuringPattern
+	Type        *TypeExpression
+	Value       Expression
 }
 
 func (cs *ConstStatement) statementNode()       {}
@@ -39,6 +44,9 @@ func (cs *ConstStatement) String() string {
 	typeStr := ""
 	if cs.Type != nil {
 		typeStr = ": " + cs.Type.String()
+	}
+	if cs.Destructure != nil {
+		return fmt.Sprintf("const %s = %s;", cs.Destructure.String(), cs.Value.String())
 	}
 	if cs.Value != nil {
 		return fmt.Sprintf("const %s%s = %s;", cs.Name.String(), typeStr, cs.Value.String())
@@ -136,6 +144,18 @@ func (cs *ContinueStatement) statementNode()       {}
 func (cs *ContinueStatement) TokenLiteral() string { return cs.Token.Literal }
 func (cs *ContinueStatement) String() string       { return "continue;" }
 
+type TypeAliasStatement struct {
+	Token token.Token
+	Name  *Identifier
+	Type  Expression
+}
+
+func (tas *TypeAliasStatement) statementNode()       {}
+func (tas *TypeAliasStatement) TokenLiteral() string { return tas.Token.Literal }
+func (tas *TypeAliasStatement) String() string {
+	return fmt.Sprintf("alias %s = %s;", tas.Name.String(), tas.Type.String())
+}
+
 func (node *LetStatement) GetToken() token.Token { return node.Token }
 
 func (node *ConstStatement) GetToken() token.Token { return node.Token }
@@ -153,3 +173,49 @@ func (node *AssignmentStatement) GetToken() token.Token { return node.Token }
 func (node *BreakStatement) GetToken() token.Token { return node.Token }
 
 func (node *ContinueStatement) GetToken() token.Token { return node.Token }
+
+func (node *TypeAliasStatement) GetToken() token.Token { return node.Token }
+
+// DestructuringPattern represents [a, b, ...rest] or {x, y} destructuring
+type DestructuringField struct {
+	Key   *Identifier // field name for hash {key: var}, nil for array items
+	Value *Identifier // variable to bind to
+	Rest  bool        // ...rest (array only)
+}
+
+type DestructuringPattern struct {
+	Token  token.Token
+	Fields []DestructuringField
+	IsHash bool // true for {x, y}, false for [a, b]
+}
+
+func (dp *DestructuringPattern) expressionNode()      {}
+func (dp *DestructuringPattern) TokenLiteral() string  { return dp.Token.Literal }
+func (dp *DestructuringPattern) String() string {
+	out := ""
+	if dp.IsHash {
+		out += "{"
+	} else {
+		out += "["
+	}
+	for i, f := range dp.Fields {
+		if i > 0 {
+			out += ", "
+		}
+		if f.Rest {
+			out += "..."
+		}
+		if dp.IsHash && f.Key != nil {
+			out += f.Key.String() + ": "
+		}
+		if f.Value != nil {
+			out += f.Value.String()
+		}
+	}
+	if dp.IsHash {
+		out += "}"
+	} else {
+		out += "]"
+	}
+	return out
+}

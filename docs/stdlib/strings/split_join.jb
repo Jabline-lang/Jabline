@@ -1,0 +1,16 @@
+// split_join.jb - demonstrates split(), join()
+
+import strings
+
+let csv = "apple,banana,cherry,dragonfruit"
+
+fn main() {
+    let parts = strings.split(csv, ",")
+    println("split into " + strings.len(parts) + " parts:")
+    for p in parts {
+        println("  - " + p)
+    }
+
+    let rejoined = strings.join(parts, " | ")
+    println("joined: " + rejoined)
+}

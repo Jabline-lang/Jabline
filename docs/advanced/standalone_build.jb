@@ -1,0 +1,14 @@
+// Standalone Build - Create self-contained executables
+// Build with: jabline build --standalone standalone_build.jb
+
+fn main() {
+    print("Standalone Jabline executable")
+    print("Args:")
+    let i = 0
+    while (i < len(args)) {
+        print("  [" + toString(i) + "] " + args[i])
+        i = i + 1
+    }
+}
+
+main()

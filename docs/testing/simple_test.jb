@@ -1,0 +1,18 @@
+// Simple Test - Basic test structure with describe/it
+
+describe("Arithmetic", fn() {
+    it("adds two numbers", fn() {
+        assertEqual(1 + 1, 2, "addition works")
+    })
+
+    it("subtracts numbers", fn() {
+        assertEqual(5 - 3, 2, "subtraction works")
+    })
+})
+
+describe("Strings", fn() {
+    it("concatenation", fn() {
+        let result = "hello " + "world"
+        assertEqual(result, "hello world", "concat works")
+    })
+})

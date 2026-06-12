@@ -34,6 +34,12 @@ var workspaceStore = &WorkspaceSymbolStore{
 	analyzingDocuments: make(map[string]bool),
 }
 
+func (ws *WorkspaceSymbolStore) RemoveDocument(uri string) {
+	ws.Mutex.Lock()
+	defer ws.Mutex.Unlock()
+	delete(ws.Documents, uri)
+}
+
 func (ws *WorkspaceSymbolStore) AddAnalyzingDocument(uri string) {
 	ws.analysisMutex.Lock()
 	defer ws.analysisMutex.Unlock()

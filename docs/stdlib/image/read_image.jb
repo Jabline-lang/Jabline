@@ -1,0 +1,11 @@
+// read_image.jb - demonstrates reading images
+
+import image
+
+fn main() {
+    let img = image.read("photo.jpg")
+    println("Width: " + img.width + " px")
+    println("Height: " + img.height + " px")
+    println("Format: " + img.format)
+    println("Size: " + img.size + " bytes")
+}

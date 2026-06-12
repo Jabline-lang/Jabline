@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"jabline/pkg/log"
 	"jabline/pkg/object"
 	"net/http"
 	"strings"
@@ -16,7 +17,7 @@ func (vm *VM) StartService(service *object.Service) object.Object {
 	}
 	port := fmt.Sprintf("%d", portVal.(*object.Integer).Value)
 
-	fmt.Printf("Service '%s' listening on port %s...\n", service.Name, port)
+	log.Info("Service listening", "name", service.Name, "port", port)
 
 	httpLimiter := make(chan struct{}, 10000)
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +57,7 @@ func (vm *VM) StartService(service *object.Service) object.Object {
 
 		// Push args onto stack: receiver (this), then request
 		reqVM.push(service)
+		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 		reqVM.push(requestToObject(r))
 
 		// Set up a frame pointing to the closure's instructions, with basePointer at the start of args
@@ -68,7 +70,12 @@ func (vm *VM) StartService(service *object.Service) object.Object {
 
 		err := reqVM.Run()
 		if err != nil {
-			fmt.Println("Runtime Error:", err)
+			if reqVM.framesIndex > 0 && reqVM.frames[0] == frame {
+				reqVM.frames[0] = nil
+				reqVM.framesIndex = 0
+				ReleaseFrame(frame)
+			}
+			log.Error("Service handler error", "error", err)
 			http.Error(w, err.Error(), 500)
 			return
 		}

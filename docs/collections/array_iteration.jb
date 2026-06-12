@@ -1,0 +1,17 @@
+// Iterating arrays with for-in loops
+
+let nums = [10, 20, 30, 40, 50]
+let sum = 0
+
+for (val in nums) {
+    sum = sum + val
+}
+
+echo("sum: " + toString(sum))
+
+// Iterate with index using range
+let squares = []
+for (i in range(len(nums))) {
+    squares = push(squares, nums[i] * nums[i])
+}
+echo("squares: " + toString(squares))

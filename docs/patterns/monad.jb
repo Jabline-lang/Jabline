@@ -1,0 +1,30 @@
+// Monad - Maybe/Option pattern for safe value handling
+
+fn createMaybe(value) {
+    return {
+        "value": value,
+        "isNothing": fn(self) { return self["value"] == null },
+        "map": fn(self, fn) {
+            if (self["value"] == null) {
+                return createMaybe(null)
+            }
+            return createMaybe(fn(self["value"]))
+        },
+        "unwrapOr": fn(self, default) {
+            if (self["value"] == null) {
+                return default
+            }
+            return self["value"]
+        }
+    }
+}
+
+let safe = createMaybe(42)
+                    .map(fn(x) { return x * 2 })
+                    .map(fn(x) { return x + 1 })
+
+print("Result: " + toString(safe.unwrapOr(0)))
+
+let nothing = createMaybe(null)
+                    .map(fn(x) { return x * 2 })
+print("Nothing: " + toString(nothing.unwrapOr("default")))

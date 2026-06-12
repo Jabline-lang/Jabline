@@ -1,0 +1,12 @@
+// substring.jb - demonstrates slice, substring operations
+
+import strings
+
+let text = "Hello, Jabline!"
+
+fn main() {
+    println("slice(0, 5): '" + strings.slice(text, 0, 5) + "'")
+    println("slice(7): '" + strings.slice(text, 7) + "'")
+    println("slice(-7): '" + strings.slice(text, -7) + "'")
+    println("slice(-7, -1): '" + strings.slice(text, -7, -1) + "'")
+}

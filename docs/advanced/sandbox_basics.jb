@@ -1,0 +1,13 @@
+// Sandbox - Restricted execution mode for untrusted code
+
+sandbox {
+    let x = 10
+    let y = 20
+    print("Sandbox result: " + toString(x + y))
+}
+
+sandbox {
+    let code = "1 + 1"
+    let result = eval(code)
+    print("Eval in sandbox: " + toString(result))
+}

@@ -78,7 +78,11 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 	case *ast.LetStatement:
 		writeIndent(out, indent)
 		out.WriteString("let ")
-		out.WriteString(n.Name.Value)
+		if n.Destructure != nil {
+			formatDestructuringPattern(out, n.Destructure)
+		} else {
+			out.WriteString(n.Name.Value)
+		}
 		if n.Type != nil {
 			out.WriteString(": ")
 			out.WriteString(n.Type.String())
@@ -92,7 +96,11 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 	case *ast.ConstStatement:
 		writeIndent(out, indent)
 		out.WriteString("const ")
-		out.WriteString(n.Name.Value)
+		if n.Destructure != nil {
+			formatDestructuringPattern(out, n.Destructure)
+		} else {
+			out.WriteString(n.Name.Value)
+		}
 		if n.Type != nil {
 			out.WriteString(": ")
 			out.WriteString(n.Type.String())
@@ -165,6 +173,20 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 		writeIndent(out, indent)
 		formatIf(out, n, indent)
 
+	case *ast.DeferStatement:
+		writeIndent(out, indent)
+		out.WriteString("defer ")
+		formatNode(out, n.Call, 0)
+		out.WriteString(";")
+
+	case *ast.DoWhileStatement:
+		writeIndent(out, indent)
+		out.WriteString("do ")
+		formatNode(out, n.Body, indent)
+		out.WriteString(" while (")
+		formatNode(out, n.Condition, 0)
+		out.WriteString(")")
+
 	case *ast.WhileStatement:
 		writeIndent(out, indent)
 		out.WriteString("while (")
@@ -208,6 +230,45 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 			writeIndent(out, indent+1)
 			out.WriteString("case ")
 			formatNode(out, c.Value, 0)
+			out.WriteString(":\n")
+			for _, stmt := range c.Statements {
+				formatNode(out, stmt, indent+2)
+				out.WriteString("\n")
+			}
+		}
+		if n.DefaultCase != nil {
+			writeIndent(out, indent+1)
+			out.WriteString("default:\n")
+			for _, stmt := range n.DefaultCase.Statements {
+				formatNode(out, stmt, indent+2)
+				out.WriteString("\n")
+			}
+		}
+		writeIndent(out, indent)
+		out.WriteString("}")
+
+	case *ast.SelectStatement:
+		writeIndent(out, indent)
+		out.WriteString("select {\n")
+		for _, c := range n.Cases {
+			writeIndent(out, indent+1)
+			out.WriteString("case ")
+			if c.IsSend {
+				formatNode(out, c.Channel, 0)
+				out.WriteString(" <- ")
+				formatNode(out, c.Value, 0)
+			} else {
+				if c.BindingName != "" {
+					out.WriteString(c.BindingName)
+					if c.BindingIsNew {
+						out.WriteString(" := ")
+					} else {
+						out.WriteString(" = ")
+					}
+				}
+				out.WriteString("<- ")
+				formatNode(out, c.Channel, 0)
+			}
 			out.WriteString(":\n")
 			for _, stmt := range c.Statements {
 				formatNode(out, stmt, indent+2)
@@ -413,6 +474,18 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 		formatNode(out, n.Index, 0)
 		out.WriteString("]")
 
+	case *ast.SliceExpression:
+		formatNode(out, n.Left, 0)
+		out.WriteString("[")
+		if n.Low != nil {
+			formatNode(out, n.Low, 0)
+		}
+		out.WriteString(":")
+		if n.High != nil {
+			formatNode(out, n.High, 0)
+		}
+		out.WriteString("]")
+
 	case *ast.InstantiatedExpression:
 		formatNode(out, n.Left, 0)
 		out.WriteString("[")
@@ -448,6 +521,10 @@ func formatNode(out *bytes.Buffer, node ast.Node, indent int) {
 	case *ast.SpawnExpression:
 		out.WriteString("spawn ")
 		formatNode(out, n.Call, indent)
+
+	case *ast.SpreadExpr:
+		out.WriteString("...")
+		formatNode(out, n.Right, indent)
 
 	// ─── Literals ────────────────────────────────────────────────────────────
 	case *ast.Identifier:
@@ -897,6 +974,7 @@ func isHeavy(node ast.Node) bool {
 		*ast.EnumStatement,
 		*ast.SwitchStatement,
 		*ast.MatchStatement,
+		*ast.SelectStatement,
 		*ast.TryStatement,
 		*ast.RetryStatement,
 		*ast.ServiceStatement,
@@ -946,4 +1024,40 @@ func exprEndsWithBlock(node ast.Node) bool {
 		}
 	}
 	return false
+}
+
+func formatDestructuringPattern(out *bytes.Buffer, pattern *ast.DestructuringPattern) {
+	if pattern.IsHash {
+		out.WriteString("{")
+		for i, field := range pattern.Fields {
+			if i > 0 {
+				out.WriteString(", ")
+			}
+			if field.Key != nil {
+				out.WriteString(field.Key.String())
+				out.WriteString(": ")
+			}
+			if field.Rest {
+				out.WriteString("...")
+			}
+			if field.Value != nil {
+				out.WriteString(field.Value.Value)
+			}
+		}
+		out.WriteString("}")
+	} else {
+		out.WriteString("[")
+		for i, field := range pattern.Fields {
+			if i > 0 {
+				out.WriteString(", ")
+			}
+			if field.Rest {
+				out.WriteString("...")
+			}
+			if field.Value != nil {
+				out.WriteString(field.Value.Value)
+			}
+		}
+		out.WriteString("]")
+	}
 }

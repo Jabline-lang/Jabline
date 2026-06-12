@@ -44,6 +44,7 @@ Thumbs.db
 /build/
 /bin/
 jabline.exe
+*.vsix
 
 # Local configuration
 .env
@@ -79,3 +80,6 @@ test_*.jb
 
 # Ignore scripts directory
 scripts
+
+# Example data files
+todos.json

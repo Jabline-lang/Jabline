@@ -1,0 +1,10 @@
+// len() builtin returns element count
+
+let empty = []
+let nums = [5, 10, 15]
+let nested = [[1, 2], [3, 4, 5]]
+
+echo("len(empty):    " + toString(len(empty)))
+echo("len(nums):     " + toString(len(nums)))
+echo("len(nested):   " + toString(len(nested)))
+echo("len(nested[0]): " + toString(len(nested[0])))

@@ -1,0 +1,34 @@
+// Pipeline with channels - chain processing stages
+// Run with: jabline run pipeline_concurrency.jb
+
+fn stage1(input, output) {
+    for (val in input) {
+        output <- val * 2
+    }
+    close(output)
+}
+
+fn stage2(input, output) {
+    for (val in input) {
+        output <- "result: " + toString(val)
+    }
+    close(output)
+}
+
+let source = channel(5)
+let middle = channel(5)
+let sink = channel(5)
+
+spawn stage1(source, middle)
+spawn stage2(middle, sink)
+
+source <- 1
+source <- 2
+source <- 3
+source <- 4
+source <- 5
+close(source)
+
+for (result in sink) {
+    echo(result)
+}

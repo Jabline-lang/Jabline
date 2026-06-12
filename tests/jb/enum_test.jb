@@ -1,0 +1,34 @@
+describe(
+    "Enum",
+    fn() {
+        it(
+            "can define and use enums",
+            fn() {
+                enum Color {
+                    Red,
+                    Green,
+                    Blue
+                }
+
+                assertEqual(Color.Red, 0, "Red is 0");
+                assertEqual(Color.Green, 1, "Green is 1");
+                assertEqual(Color.Blue, 2, "Blue is 2");
+            }
+        )
+
+        it(
+            "enum values are integers",
+            fn() {
+                enum Status {
+                    OK,
+                    Error,
+                    Pending
+                }
+
+                let s = Status.OK;
+                assertEqual(s, 0, "enum value is integer");
+                assertEqual(type(s), "INTEGER", "enum value type is INTEGER");
+            }
+        )
+    }
+)

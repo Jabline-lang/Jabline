@@ -1,0 +1,17 @@
+// command.jb - demonstrates remote SSH commands
+
+import ssh
+
+fn main() {
+    let client = ssh.connect({"host": "example.com", "user": "admin"})
+
+    let result = client.run("uname -a")
+    println("Exit code: " + result.code)
+    println("Output: " + result.stdout)
+
+    if result.stderr != "" {
+        println("Stderr: " + result.stderr)
+    }
+
+    client.close()
+}

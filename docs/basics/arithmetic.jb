@@ -1,0 +1,10 @@
+// Arithmetic - +, -, *, /, % operators
+
+let a = 15, b = 4
+
+print("a = " + toString(a) + ", b = " + toString(b))
+print("a + b = " + toString(a + b))
+print("a - b = " + toString(a - b))
+print("a * b = " + toString(a * b))
+print("a / b = " + toString(a / b))
+print("a %% b = " + toString(a % b))

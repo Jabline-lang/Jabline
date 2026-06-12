@@ -22,6 +22,13 @@ func New() *Checker {
 // Check is the main entry point to type check a program.
 // Returns a list of error messages. If empty, the program is type-safe.
 func (c *Checker) Check(program *ast.Program) []string {
+	// First pass: register type aliases before checking statements
+	for _, stmt := range program.Statements {
+		if alias, ok := stmt.(*ast.TypeAliasStatement); ok {
+			c.checkTypeAliasStatement(alias)
+		}
+	}
+	// Second pass: check all statements
 	for _, stmt := range program.Statements {
 		c.checkStatement(stmt)
 	}
@@ -60,6 +67,10 @@ func (c *Checker) checkStatement(stmt ast.Statement) {
 		c.checkFunctionStatement(node)
 	case *ast.AsyncFunctionStatement:
 		c.checkAsyncFunctionStatement(node)
+	case *ast.DeferStatement:
+		c.checkDeferStatement(node)
+	case *ast.DoWhileStatement:
+		c.checkDoWhileStatement(node)
 	case *ast.WhileStatement:
 		c.checkWhileStatement(node)
 	case *ast.ForStatement:
@@ -70,6 +81,8 @@ func (c *Checker) checkStatement(stmt ast.Statement) {
 		c.checkSwitchStatement(node)
 	case *ast.MatchStatement:
 		c.checkMatchStatement(node)
+	case *ast.SelectStatement:
+		c.checkSelectStatement(node)
 	case *ast.TryStatement:
 		c.checkTryStatement(node)
 	case *ast.RetryStatement:
@@ -98,7 +111,27 @@ func (c *Checker) checkStatement(stmt ast.Statement) {
 		c.checkTraceStatement(node)
 	case *ast.AssignmentStatement:
 		c.checkAssignmentStatement(node)
+	case *ast.TypeAliasStatement:
+		c.checkTypeAliasStatement(node)
 	}
+}
+
+func (c *Checker) checkTypeAliasStatement(node *ast.TypeAliasStatement) {
+	// Get the target type name from the expression (e.g. "int", "string", "MyType")
+	typeName := fmt.Sprintf("%s", node.Type)
+	targetType := ParseASTType(&ast.TypeExpression{Value: typeName}, c.env)
+	// Check for alias cycles (A -> A) or (A -> B -> A)
+	if string(targetType) == node.Name.Value {
+		c.addError(node, "type alias cycle: %s refers to itself", node.Name.Value)
+		return
+	}
+	// Check for name collisions with built-in types
+	builtinCheck := ParseASTType(&ast.TypeExpression{Value: node.Name.Value}, nil)
+	if builtinCheck != TypeType(node.Name.Value) {
+		c.addError(node, "cannot redefine built-in type '%s' as alias", node.Name.Value)
+		return
+	}
+	c.env.DefineAlias(node.Name.Value, targetType)
 }
 
 func (c *Checker) checkLetStatement(node *ast.LetStatement) {
@@ -107,9 +140,28 @@ func (c *Checker) checkLetStatement(node *ast.LetStatement) {
 		valType = c.checkExpression(node.Value)
 	}
 
+	// Handle destructuring: let [a, b] = arr
+	if node.Destructure != nil {
+		for _, field := range node.Destructure.Fields {
+			if field.Value != nil {
+				fieldType := TypeAny
+				c.env.Set(field.Value.Value, fieldType)
+			}
+		}
+		return
+	}
+
+	if node.Name == nil {
+		return
+	}
+
+	if c.env.ExistsInCurrentScope(node.Name.Value) {
+		c.addError(node, "variable '%s' shadows existing declaration in the same scope", node.Name.Value)
+	}
+
 	declaredType := TypeAny
 	if node.Type != nil {
-		declaredType = ParseASTType(node.Type)
+		declaredType = ParseASTType(node.Type, c.env)
 	} else {
 		declaredType = valType
 	}
@@ -130,9 +182,28 @@ func (c *Checker) checkConstStatement(node *ast.ConstStatement) {
 		valType = c.checkExpression(node.Value)
 	}
 
+	// Handle destructuring: const [a, b] = arr
+	if node.Destructure != nil {
+		for _, field := range node.Destructure.Fields {
+			if field.Value != nil {
+				fieldType := TypeAny
+				c.env.Set(field.Value.Value, fieldType)
+			}
+		}
+		return
+	}
+
+	if node.Name == nil {
+		return
+	}
+
+	if c.env.ExistsInCurrentScope(node.Name.Value) {
+		c.addError(node, "variable '%s' shadows existing declaration in the same scope", node.Name.Value)
+	}
+
 	declaredType := TypeAny
 	if node.Type != nil {
-		declaredType = ParseASTType(node.Type)
+		declaredType = ParseASTType(node.Type, c.env)
 	} else {
 		declaredType = valType
 	}
@@ -145,6 +216,7 @@ func (c *Checker) checkConstStatement(node *ast.ConstStatement) {
 	}
 
 	c.env.Set(node.Name.Value, declaredType)
+	c.env.MarkConst(node.Name.Value)
 }
 
 func (c *Checker) checkReturnStatement(node *ast.ReturnStatement) {
@@ -183,7 +255,7 @@ func (c *Checker) checkFunctionStatement(node *ast.FunctionStatement) {
 
 	expectedReturn := TypeAny
 	if node.ReturnType != nil {
-		expectedReturn = ParseASTType(node.ReturnType)
+		expectedReturn = ParseASTType(node.ReturnType, c.env)
 	}
 
 	previousEnv := c.env
@@ -193,7 +265,7 @@ func (c *Checker) checkFunctionStatement(node *ast.FunctionStatement) {
 	for _, param := range node.Parameters {
 		paramType := TypeAny
 		if param.Type != nil {
-			paramType = ParseASTType(param.Type)
+			paramType = ParseASTType(param.Type, c.env)
 		}
 		c.env.Set(param.Value, paramType)
 	}
@@ -209,7 +281,7 @@ func (c *Checker) checkAsyncFunctionStatement(node *ast.AsyncFunctionStatement) 
 
 	expectedReturn := TypeAny
 	if node.ReturnType != nil {
-		expectedReturn = ParseASTType(node.ReturnType)
+		expectedReturn = ParseASTType(node.ReturnType, c.env)
 	}
 
 	previousEnv := c.env
@@ -219,12 +291,31 @@ func (c *Checker) checkAsyncFunctionStatement(node *ast.AsyncFunctionStatement) 
 	for _, param := range node.Parameters {
 		paramType := TypeAny
 		if param.Type != nil {
-			paramType = ParseASTType(param.Type)
+			paramType = ParseASTType(param.Type, c.env)
 		}
 		c.env.Set(param.Value, paramType)
 	}
 
 	c.checkBlockStatement(node.Body)
+
+	c.env = previousEnv
+}
+
+func (c *Checker) checkDeferStatement(node *ast.DeferStatement) {
+	c.checkExpression(node.Call)
+}
+
+func (c *Checker) checkDoWhileStatement(node *ast.DoWhileStatement) {
+	previousEnv := c.env
+	c.env = NewEnclosedEnvironment(previousEnv)
+	c.env.loopDepth++
+
+	c.checkBlockStatement(node.Body)
+
+	condType := c.checkExpression(node.Condition)
+	if condType != TypeBool && condType != TypeAny {
+		c.addError(node, "do-while condition must be a boolean, got %s", condType)
+	}
 
 	c.env = previousEnv
 }
@@ -327,6 +418,26 @@ func (c *Checker) checkMatchStatement(node *ast.MatchStatement) {
 	}
 }
 
+func (c *Checker) checkSelectStatement(node *ast.SelectStatement) {
+	for _, cas := range node.Cases {
+		chType := c.checkExpression(cas.Channel)
+		if chType != TypeAny && chType != TypeChannel {
+			c.addError(cas, "select case channel must be a channel type, got %s", chType)
+		}
+		if cas.IsSend {
+			c.checkExpression(cas.Value)
+		}
+		for _, s := range cas.Statements {
+			c.checkStatement(s)
+		}
+	}
+	if node.DefaultCase != nil {
+		for _, s := range node.DefaultCase.Statements {
+			c.checkStatement(s)
+		}
+	}
+}
+
 func (c *Checker) checkTryStatement(node *ast.TryStatement) {
 	c.checkBlockStatement(node.TryBlock)
 
@@ -401,7 +512,7 @@ func (c *Checker) checkStructStatement(node *ast.StructStatement) {
 	c.env.Set(node.Name.Value, TypeType(node.Name.Value))
 
 	for _, fieldType := range node.Fields {
-		ParseASTType(fieldType)
+		ParseASTType(fieldType, c.env)
 	}
 }
 
@@ -471,6 +582,11 @@ func (c *Checker) checkAssignmentStatement(node *ast.AssignmentStatement) {
 			return
 		}
 
+		if c.env.IsConst(ident.Value) {
+			c.addError(node, "cannot assign to const variable '%s'", ident.Value)
+			return
+		}
+
 		valType := c.checkExpression(node.Value)
 		if targetType != TypeAny && valType != TypeAny && targetType != valType {
 			// Allow implicit numeric conversions
@@ -530,6 +646,8 @@ func (c *Checker) checkExpression(expr ast.Expression) TypeType {
 		return c.checkIndexExpression(node)
 	case *ast.ArrayIndexExpression:
 		return c.checkArrayIndexExpression(node)
+	case *ast.SliceExpression:
+		return TypeArray
 	case *ast.TernaryExpression:
 		return c.checkTernaryExpression(node)
 	case *ast.NullishCoalescingExpression:
@@ -542,6 +660,8 @@ func (c *Checker) checkExpression(expr ast.Expression) TypeType {
 		return c.checkAwaitExpression(node)
 	case *ast.InstantiatedExpression:
 		return c.checkInstantiatedExpression(node)
+	case *ast.SpreadExpr:
+		return c.checkExpression(node.Right)
 	}
 	return TypeAny
 }
@@ -725,7 +845,7 @@ func (c *Checker) checkCallExpression(node *ast.CallExpression) TypeType {
 func (c *Checker) checkFunctionLiteral(node *ast.FunctionLiteral) TypeType {
 	expectedReturn := TypeAny
 	if node.ReturnType != nil {
-		expectedReturn = ParseASTType(node.ReturnType)
+		expectedReturn = ParseASTType(node.ReturnType, c.env)
 	}
 
 	previousEnv := c.env
@@ -735,7 +855,7 @@ func (c *Checker) checkFunctionLiteral(node *ast.FunctionLiteral) TypeType {
 	for _, param := range node.Parameters {
 		paramType := TypeAny
 		if param.Type != nil {
-			paramType = ParseASTType(param.Type)
+			paramType = ParseASTType(param.Type, c.env)
 		}
 		c.env.Set(param.Value, paramType)
 	}
@@ -749,7 +869,7 @@ func (c *Checker) checkFunctionLiteral(node *ast.FunctionLiteral) TypeType {
 func (c *Checker) checkAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) TypeType {
 	expectedReturn := TypeAny
 	if node.ReturnType != nil {
-		expectedReturn = ParseASTType(node.ReturnType)
+		expectedReturn = ParseASTType(node.ReturnType, c.env)
 	}
 
 	previousEnv := c.env
@@ -759,7 +879,7 @@ func (c *Checker) checkAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) Type
 	for _, param := range node.Parameters {
 		paramType := TypeAny
 		if param.Type != nil {
-			paramType = ParseASTType(param.Type)
+			paramType = ParseASTType(param.Type, c.env)
 		}
 		c.env.Set(param.Value, paramType)
 	}
@@ -773,7 +893,7 @@ func (c *Checker) checkAsyncFunctionLiteral(node *ast.AsyncFunctionLiteral) Type
 func (c *Checker) checkArrowFunction(node *ast.ArrowFunction) TypeType {
 	expectedReturn := TypeAny
 	if node.ReturnType != nil {
-		expectedReturn = ParseASTType(node.ReturnType)
+		expectedReturn = ParseASTType(node.ReturnType, c.env)
 	}
 
 	previousEnv := c.env
@@ -783,7 +903,7 @@ func (c *Checker) checkArrowFunction(node *ast.ArrowFunction) TypeType {
 	for _, param := range node.Parameters {
 		paramType := TypeAny
 		if param.Type != nil {
-			paramType = ParseASTType(param.Type)
+			paramType = ParseASTType(param.Type, c.env)
 		}
 		c.env.Set(param.Value, paramType)
 	}
@@ -828,6 +948,13 @@ func (c *Checker) checkIndexExpression(node *ast.IndexExpression) TypeType {
 func (c *Checker) checkArrayIndexExpression(node *ast.ArrayIndexExpression) TypeType {
 	leftType := c.checkExpression(node.Left)
 	indexType := c.checkExpression(node.Index)
+
+	if leftType == TypeHash {
+		if indexType != TypeString && indexType != TypeAny {
+			c.addError(node, "hash index must be a string, got %s", indexType)
+		}
+		return TypeAny
+	}
 
 	if indexType != TypeInt && indexType != TypeAny {
 		c.addError(node, "array index must be an integer, got %s", indexType)
@@ -894,7 +1021,7 @@ func (c *Checker) checkAwaitExpression(node *ast.AwaitExpression) TypeType {
 func (c *Checker) checkInstantiatedExpression(node *ast.InstantiatedExpression) TypeType {
 	c.checkExpression(node.Left)
 	for _, arg := range node.TypeArguments {
-		ParseASTType(arg)
+		ParseASTType(arg, c.env)
 	}
 	return TypeFunction
 }

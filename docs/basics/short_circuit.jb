@@ -1,0 +1,18 @@
+// Short-Circuit Evaluation - && and || stop early
+
+fn dangerous() {
+    print("  dangerous() was called!")
+    return true
+}
+
+print("false && dangerous():")
+if false && dangerous() {
+    // dangerous() is NOT called - short-circuited
+}
+
+print("true || dangerous():")
+if true || dangerous() {
+    // dangerous() is NOT called - short-circuited
+}
+
+print("Done - dangerous() never runs")

@@ -1,0 +1,17 @@
+// type_cast.jb - demonstrates type casting
+
+import types
+
+fn main() {
+    let s = "42"
+    let n = types.to_int(s)
+    println("String '42' -> int: " + (n + 10))
+
+    let pi = "3.14"
+    let f = types.to_float(pi)
+    println("String '3.14' -> float: " + (f * 2))
+
+    let val = 100
+    let str = types.to_string(val)
+    println("Int 100 -> string: '" + str + "'")
+}

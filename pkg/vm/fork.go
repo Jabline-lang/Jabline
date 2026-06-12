@@ -10,25 +10,42 @@ import (
 // Cada fork tiene su propio stack y frames independientes.
 func (parent *VM) Fork() *VM {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Deep copy methods to avoid data races between parent and child VMs
+	methodsCopy := make(map[string]map[string]*object.Closure, len(parent.methods))
+	for k, v := range parent.methods {
+		innerCopy := make(map[string]*object.Closure, len(v))
+		for mk, mv := range v {
+			innerCopy[mk] = mv
+		}
+		methodsCopy[k] = innerCopy
+	}
+	typesCopy := make(map[string]object.Object, len(parent.Types))
+	for k, v := range parent.Types {
+		typesCopy[k] = v
+	}
+
 	child := &VM{
-		// Compartido (solo lectura — el fork no modifica globals del padre
-		// durante la ejecución de un request)
 		constants: parent.constants,
-		globals:   parent.globals,
-		methods:   parent.methods,
-		Types:     parent.Types,
+		globals:   GlobalStoreFromSlice(parent.globals.Snapshot()),
+		methods:   methodsCopy,
+		Types:     typesCopy,
 		loader:    parent.loader,
 		filename:  parent.filename,
 		Telemetry: parent.Telemetry,
 
 		// Privado del fork — empieza pequeño y crece bajo demanda
-		stack:       make([]object.Object, InitialStackSize),
-		sp:          0,
-		frames:      make([]*Frame, InitialFrames),
-		framesIndex: 0,
-		handlers:    []ExceptionHandler{},
-		Ctx:         ctx,
-		Cancel:      cancel,
+		stack:           make([]object.Object, InitialStackSize),
+		sp:              0,
+		frames:          make([]*Frame, InitialFrames),
+		framesIndex:     0,
+		handlers:        []ExceptionHandler{},
+		finallyHandlers: []FinallyHandler{},
+		Ctx:             ctx,
+		Cancel:          cancel,
+
+		// Sandbox: hereda la política del padre
+		Sandbox: parent.Sandbox,
 	}
 	return child
 }
@@ -61,6 +78,11 @@ func (vm *VM) RunClosure(cl *object.Closure, args []object.Object) object.Object
 	vm.sp = frame.basePointer + cl.Fn.NumLocals
 
 	if err := vm.Run(); err != nil {
+		if vm.framesIndex > 0 {
+			vm.frames[0] = nil
+			vm.framesIndex = 0
+			ReleaseFrame(frame)
+		}
 		return &object.Error{Message: err.Error()}
 	}
 

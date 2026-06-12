@@ -1,0 +1,16 @@
+// delete() removes a key from a hash
+// delete(hash, key) returns null
+
+let config = {
+    "host": "localhost",
+    "port": 8080,
+    "temp": "remove_me"
+}
+
+echo("before: " + toString(config))
+echo("len:    " + toString(len(config)))
+
+delete(config, "temp")
+
+echo("after:  " + toString(config))
+echo("len:    " + toString(len(config)))

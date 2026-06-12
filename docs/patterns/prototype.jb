@@ -1,0 +1,18 @@
+// Prototype - Clone objects instead of creating from scratch
+
+fn createPrototype(data) {
+    return {
+        "data": data,
+        "clone": fn(self) {
+            return createPrototype(self["data"])
+        },
+        "getData": fn(self) { return self["data"] }
+    }
+}
+
+let original = createPrototype({"x": 1, "y": 2})
+let cloned = original.clone()
+
+print("Original: " + stringify(original.getData()))
+print("Cloned: " + stringify(cloned.getData()))
+assertFalse(original == cloned, "different instances")

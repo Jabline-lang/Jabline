@@ -1,0 +1,20 @@
+// filesystem.jb - demonstrates file system operations
+
+import os
+
+fn main() {
+    os.mkdir("examples")
+    println("Created 'examples' directory")
+
+    let cwd = os.getcwd()
+    println("Current dir: " + cwd)
+
+    let items = os.listdir(".")
+    println("Current directory contents:")
+    for item in items {
+        println("  " + item)
+    }
+
+    os.rmdir("examples")
+    println("Removed 'examples' directory")
+}

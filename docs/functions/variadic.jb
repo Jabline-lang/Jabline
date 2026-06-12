@@ -1,0 +1,24 @@
+// Variadic Functions - Variable number of arguments with ...
+
+fn sum(...numbers) {
+    let total = 0
+    for n in numbers {
+        total = total + n
+    }
+    return total
+}
+
+fn join(separator, ...parts) {
+    let result = ""
+    for i in range(length(parts)) {
+        if i > 0 {
+            result = result + separator
+        }
+        result = result + parts[i]
+    }
+    return result
+}
+
+print("sum(1, 2, 3) = " + toString(sum(1, 2, 3)))
+print("sum(4, 5) = " + toString(sum(4, 5)))
+print(join(", ", "a", "b", "c"))

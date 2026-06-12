@@ -1,0 +1,31 @@
+// Composite - Treats individual and group objects uniformly
+
+fn createFile(name) {
+    return {"type": "file", "name": name, "size": len(name) * 10}
+}
+
+fn createDir(name) {
+    return {"type": "dir", "name": name, "children": []}
+}
+
+fn addChild(dir, child) {
+    dir["children"] = push(dir["children"], child)
+}
+
+fn getSize(node) {
+    if (node["type"] == "file") {
+        return node["size"]
+    }
+    let total = 0
+    let i = 0
+    while (i < len(node["children"])) {
+        total = total + getSize(node["children"][i])
+        i = i + 1
+    }
+    return total
+}
+
+let root = createDir("root")
+addChild(root, createFile("a.txt"))
+addChild(root, createFile("b.txt"))
+print("Total size: " + toString(getSize(root)))

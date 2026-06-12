@@ -1,0 +1,26 @@
+// Dependency Resolution - How JPM resolves versions
+
+fn resolveDeps(deps) {
+    let resolved = []
+    let i = 0
+    while (i < len(deps)) {
+        let dep = deps[i]
+        let entry = dep["name"] + "@" + dep["version"]
+        resolved = push(resolved, entry)
+        i = i + 1
+    }
+    return resolved
+}
+
+let deps = [
+    {"name": "http", "version": "^1.0.0"},
+    {"name": "json", "version": "^2.1.0"}
+]
+
+let resolved = resolveDeps(deps)
+print("Resolved dependencies:")
+let j = 0
+while (j < len(resolved)) {
+    print("  " + resolved[j])
+    j = j + 1
+}

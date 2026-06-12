@@ -1,0 +1,14 @@
+// client.jb - demonstrates WebSocket client
+
+import websocket
+
+fn main() {
+    let ws = websocket.connect("ws://echo.example.com")
+    println("Connected")
+
+    ws.send("Hello Jabline!")
+    let reply = ws.receive()
+    println("Echo: " + reply)
+
+    ws.close()
+}

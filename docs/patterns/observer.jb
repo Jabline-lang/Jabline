@@ -1,0 +1,28 @@
+// Observer - Notifies listeners when state changes
+
+fn createSubject() {
+    return {
+        "observers": [],
+        "state": null,
+        "attach": fn(self, obs) { self["observers"] = push(self["observers"], obs) },
+        "setState": fn(self, state) {
+            self["state"] = state
+            self.notify(state)
+        },
+        "notify": fn(self, data) {
+            let i = 0
+            while (i < len(self["observers"])) {
+                self["observers"][i](data)
+                i = i + 1
+            }
+        }
+    }
+}
+
+let logger = fn(data) { print("Logged: " + toString(data)) }
+let display = fn(data) { print("Display: " + toString(data)) }
+
+let subject = createSubject()
+subject.attach(logger)
+subject.attach(display)
+subject.setState("Hello Observers!")

@@ -1,0 +1,20 @@
+import * as dt from "datetime"
+
+let now = dt.now()
+echo("now:  " + now)
+
+let parsed = dt.parse("2024-01-15T10:30:00Z")
+echo("parsed: " + parsed)
+
+let formatted = dt.format(now, "2006-01-02 15:04:05")
+echo("formatted: " + formatted)
+
+let unix = dt.unix(now)
+echo("unix: " + toString(unix))
+
+let tomorrow = dt.add(now, 24, "hours")
+echo("tomorrow: " + tomorrow)
+
+echo("year:  " + toString(dt.year(now)))
+echo("month: " + toString(dt.month(now)))
+echo("day:   " + toString(dt.day(now)))

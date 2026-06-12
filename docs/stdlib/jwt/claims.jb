@@ -1,0 +1,25 @@
+// claims.jb - demonstrates JWT custom claims
+
+import jwt
+
+let secret = "my-secret-key"
+
+fn main() {
+    let payload = {
+        "sub": "user456",
+        "name": "Bob",
+        "role": "admin",
+        "permissions": ["read", "write", "delete"],
+        "tenant": "acme-corp"
+    }
+
+    let token = jwt.sign(payload, secret)
+    println("Token with custom claims:")
+    println(token)
+
+    let verified = jwt.verify(token, secret)
+    if verified.valid {
+        println("Role: " + verified.payload["role"])
+        println("Permissions: " + verified.payload["permissions"])
+    }
+}

@@ -1,0 +1,9 @@
+// import "module" basic - importing standard library modules
+// Run with: jabline run import_basic.jb
+
+import * as strings from "strings"
+
+let text = "  hello world  "
+echo("trimmed: '" + strings.trim(text) + "'")
+echo("upper: " + strings.upper("jabline"))
+echo("contains hello: " + toString(strings.contains(text, "hello")))

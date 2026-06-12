@@ -1,0 +1,24 @@
+// Nested hashes (hash of hashes)
+
+let company = {
+    "name": "Acme Corp",
+    "address": {
+        "street": "123 Main St",
+        "city": "Springfield",
+        "zip": "12345"
+    },
+    "departments": {
+        "engineering": {
+            "head": "Alice",
+            "size": 50
+        },
+        "sales": {
+            "head": "Bob",
+            "size": 20
+        }
+    }
+}
+
+echo("company:    " + company.name)
+echo("city:       " + company.address.city)
+echo("eng head:   " + company.departments.engineering.head)

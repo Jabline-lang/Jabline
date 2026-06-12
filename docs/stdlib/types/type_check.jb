@@ -1,0 +1,16 @@
+// type_check.jb - demonstrates type checking functions
+
+import types
+
+let a = 42
+let b = "hello"
+let c = [1, 2, 3]
+let d = {"key": "value"}
+
+fn main() {
+    println("42 is_int: " + types.is_int(a))
+    println("'hello' is_string: " + types.is_string(b))
+    println("[...] is_array: " + types.is_array(c))
+    println("{...} is_map: " + types.is_map(d))
+    println("42 is_float: " + types.is_float(a))
+}

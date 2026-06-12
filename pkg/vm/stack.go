@@ -26,10 +26,11 @@ func (vm *VM) push(o object.Object) error {
 
 func (vm *VM) pop() object.Object {
 	if vm.sp == 0 {
-		panic("stack underflow in VM.pop()")
+		return &object.Error{Message: "stack underflow in VM.pop()"}
 	}
-	o := vm.stack[vm.sp-1]
 	vm.sp--
+	o := vm.stack[vm.sp]
+	vm.stack[vm.sp] = nil
 	return o
 }
 
@@ -41,11 +42,41 @@ func (vm *VM) StackTop() object.Object {
 }
 
 func (vm *VM) LastPoppedElement() object.Object {
+	if vm.sp < 0 || vm.sp >= len(vm.stack) {
+		return nil
+	}
 	return vm.stack[vm.sp]
 }
 
 func (vm *VM) currentFrame() *Frame {
 	return vm.frames[vm.framesIndex-1]
+}
+
+// Exported accessors for DAP
+func (vm *VM) FramesIndex() int {
+	return vm.framesIndex
+}
+
+func (vm *VM) FrameAt(i int) *Frame {
+	if i < 0 || i >= vm.framesIndex {
+		return nil
+	}
+	return vm.frames[i]
+}
+
+func (vm *VM) CurrentFrame() *Frame {
+	return vm.currentFrame()
+}
+
+func (vm *VM) StackAt(i int) object.Object {
+	if i < 0 || i >= vm.sp {
+		return nil
+	}
+	return vm.stack[i]
+}
+
+func (vm *VM) SP() int {
+	return vm.sp
 }
 
 func (vm *VM) pushFrame(f *Frame) error {
@@ -79,9 +110,10 @@ func (vm *VM) popFrame() *Frame {
 	return frame // We will let the caller ReleaseFrame
 }
 
-func (vm *VM) pushHandler(catchIP int) {
+func (vm *VM) pushHandler(catchIP int, finallyIP int) {
 	handler := ExceptionHandler{
 		CatchIP:    catchIP,
+		FinallyIP:  finallyIP,
 		StackSP:    vm.sp,
 		FrameIndex: vm.framesIndex,
 	}

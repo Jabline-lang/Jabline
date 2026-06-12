@@ -1,0 +1,15 @@
+// post.jb - demonstrates HTTP POST request
+
+import http
+import json
+
+let payload = {"name": "Alice", "role": "developer"}
+
+fn main() {
+    let resp = http.post("https://api.example.com/users",
+        json.stringify(payload),
+        {"Content-Type": "application/json"})
+
+    println("Status: " + resp.status)
+    println("Response: " + resp.body)
+}

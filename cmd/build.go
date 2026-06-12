@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,12 +12,16 @@ import (
 	"jabline/pkg/compiler"
 	"jabline/pkg/lexer"
 	"jabline/pkg/parser"
+	"jabline/pkg/sandbox"
 	"jabline/pkg/typechecker"
 
 	"github.com/spf13/cobra"
 )
 
-var outputBin string
+var (
+	outputBin     string
+	buildSandbox  string
+)
 
 func determineBuildTags(source string) string {
 	tags := []string{"runner"}
@@ -40,14 +43,19 @@ func determineBuildTags(source string) string {
 
 var MagicMarker = []byte{0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77}
 
+var (
+	standaloneMode bool
+)
+
 var buildCmd = &cobra.Command{
 	Use:   "build [file]",
+	Aliases: []string{"compile"},
 	Short: "Compile a Jabline program into a standalone executable",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := args[0]
 		
-		sourceBytes, err := ioutil.ReadFile(filename)
+		sourceBytes, err := os.ReadFile(filename)
 		if err != nil {
 			fmt.Printf("Error reading file: %s\n", err)
 			os.Exit(1)
@@ -82,7 +90,19 @@ var buildCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		bytecodeData, err := compiler.Serialize(comp.Bytecode())
+		bytecode := comp.Bytecode()
+		bytecode.Instructions, bytecode.Constants = compiler.OptimizeBytecode(bytecode.Instructions, bytecode.Constants)
+
+		if buildSandbox != "" {
+			level, err := sandbox.ParseLevel(buildSandbox)
+			if err != nil {
+				fmt.Printf("Error: invalid sandbox level %q\n", buildSandbox)
+				os.Exit(1)
+			}
+			bytecode.Sandbox = level.String()
+		}
+
+		bytecodeData, err := compiler.Serialize(bytecode)
 		if err != nil {
 			fmt.Printf("Serialization error: %s\n", err)
 			os.Exit(1)
@@ -95,6 +115,27 @@ var buildCmd = &cobra.Command{
 		}
 		if runtime.GOOS == "windows" && filepath.Ext(outputName) != ".exe" {
 			outputName += ".exe"
+		}
+
+		goos := os.Getenv("GOOS")
+		goarch := os.Getenv("GOARCH")
+		wasmTarget := goos == "wasm" || goarch == "wasm" || goos == "wasip1"
+
+		if wasmTarget {
+			outputName += ".wasm"
+			f, err := os.OpenFile(outputName, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+			if err != nil {
+				fmt.Printf("Failed to create output file: %s\n", err)
+				os.Exit(1)
+			}
+			defer f.Close()
+			_, err = f.Write(bytecodeData)
+			if err != nil {
+				fmt.Printf("Failed to write bytecode: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Successfully built WASM bytecode: %s\n", outputName)
+			return
 		}
 
 		selfPath, err := os.Executable()
@@ -110,7 +151,7 @@ var buildCmd = &cobra.Command{
 			runnerPath += ".exe"
 		}
 
-		runnerBytes, err := ioutil.ReadFile(runnerPath)
+		runnerBytes, err := os.ReadFile(runnerPath)
 		if err != nil {
 			runnerSrc := filepath.Join(filepath.Dir(selfPath), "internal", "builder", "runner.go")
 			if _, errSrc := os.Stat(runnerSrc); errSrc == nil {
@@ -125,14 +166,14 @@ var buildCmd = &cobra.Command{
 					os.Exit(1)
 				}
 				
-				runnerBytes, err = ioutil.ReadFile(runnerPath)
+				runnerBytes, err = os.ReadFile(runnerPath)
 				if err != nil {
 					fmt.Printf("Failed to read compiled minimal runner: %v\n", err)
 					os.Exit(1)
 				}
 			} else {
 				fmt.Printf("Warning: runner.go not found, falling back to full compiler binary\n")
-				runnerBytes, err = ioutil.ReadFile(selfPath)
+				runnerBytes, err = os.ReadFile(selfPath)
 				if err != nil {
 					fmt.Printf("Failed to read self executable: %s\n", err)
 					os.Exit(1)
@@ -177,9 +218,21 @@ var buildCmd = &cobra.Command{
 	},
 }
 
+// standaloneCmd is an alias for "jabline build --standalone"
+var standaloneCmd = &cobra.Command{
+	Use:   "standalone [file]",
+	Short: "Compile a Jabline program into a standalone executable",
+	Long:  `Alias for "jabline build [file]". Compiles a .jb file into a native binary.`,
+	Args:  cobra.ExactArgs(1),
+	Run:   buildCmd.Run,
+}
+
 func init() {
 	buildCmd.Flags().StringVarP(&outputBin, "output", "o", "", "Output binary name")
+	buildCmd.Flags().StringVarP(&buildSandbox, "sandbox", "s", "", "Sandbox level (none, secure, restrictive, isolated)")
+	buildCmd.Flags().BoolVarP(&standaloneMode, "standalone", "", false, "Build a fully standalone binary (alias for build)")
 	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(standaloneCmd)
 }
 
 

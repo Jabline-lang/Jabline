@@ -1,0 +1,15 @@
+// Integers - Whole number literals and operations
+
+let a = 42
+let b = -7
+let c = 0
+let sum = a + b
+let diff = a - b
+let prod = a * b
+let quot = a / b
+let rem = a % 5
+
+print("a = " + toString(a))
+print("b = " + toString(b))
+print("a + b = " + toString(sum))
+print("a %% 5 = " + toString(rem))

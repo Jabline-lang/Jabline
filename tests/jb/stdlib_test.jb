@@ -1,0 +1,76 @@
+describe(
+    "Standard Library",
+    fn() {
+        it(
+            "JSON parse works",
+            fn() {
+                let obj = parse(`{"name":"Jabline"}`);
+                assertEqual(obj.name, "Jabline", "parsed JSON field");
+            }
+        )
+
+        it(
+            "JSON stringify works",
+            fn() {
+                let json = stringify({
+                    "a": 1,
+                    "b": "hello"
+                });
+                let t = type(json);
+                assertEqual(t, "STRING", "stringify returns string");
+                assertTrue(len(json) > 0, "non-empty JSON string");
+            }
+        )
+
+        it(
+            "JSON parse array works",
+            fn() {
+                let arr = parse(`[1,2,3]`);
+                assertEqual(arr[0], 1, "parsed array element");
+                assertEqual(len(arr), 3, "parsed array length");
+            }
+        )
+
+        it(
+            "len works on strings",
+            fn() {
+                assertEqual(len("hello"), 5, "len string");
+                assertEqual(len(""), 0, "len empty string");
+            }
+        )
+
+        it(
+            "len works on arrays",
+            fn() {
+                assertEqual(len([1, 2, 3]), 3, "len array");
+                assertEqual(len([]), 0, "len empty array");
+            }
+        )
+
+        it(
+            "len works on hashes",
+            fn() {
+                assertEqual(len({
+                    "a": 1,
+                    "b": 2
+                }), 2, "len hash");
+                assertEqual(len({}), 0, "len empty hash");
+            }
+        )
+
+        it(
+            "keys and values on hash",
+            fn() {
+                let h = {
+                    "x": 100,
+                    "y": 200,
+                    "z": 300
+                };
+                let ks = keys(h);
+                let vs = values(h);
+                assertEqual(len(ks), 3, "number of keys");
+                assertEqual(len(vs), 3, "number of values");
+            }
+        )
+    }
+)

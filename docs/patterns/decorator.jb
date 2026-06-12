@@ -1,0 +1,18 @@
+// Decorator - Adds behavior to existing functions
+
+fn logDecorator(fn) {
+    return fn(args) {
+        print("Calling function with: " + stringify(args))
+        let result = fn(args)
+        print("Result: " + stringify(result))
+        return result
+    }
+}
+
+fn process(data) {
+    return data * 2
+}
+
+let decorated = logDecorator(process)
+let result = decorated(21)
+print("Final: " + toString(result))

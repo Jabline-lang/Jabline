@@ -1,0 +1,15 @@
+// headers.jb - demonstrates custom HTTP headers
+
+import http
+
+fn main() {
+    let headers = {
+        "Authorization": "Bearer token123",
+        "User-Agent": "Jabline/1.0",
+        "Accept": "application/json"
+    }
+
+    let resp = http.get("https://api.example.com/secure", headers)
+    println("Status: " + resp.status)
+    println("Headers sent: " + headers)
+}

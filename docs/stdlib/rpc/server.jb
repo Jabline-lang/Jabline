@@ -1,0 +1,20 @@
+// server.jb - demonstrates RPC server
+
+import rpc
+
+fn greet(args) {
+    return "Hello, " + args["name"] + "!"
+}
+
+fn add(args) {
+    return args["a"] + args["b"]
+}
+
+fn main() {
+    let server = rpc.serve(":9090")
+    server.register("greet", greet)
+    server.register("add", add)
+
+    println("RPC server listening on :9090")
+    server.wait()
+}

@@ -1,0 +1,11 @@
+// If Expression - if/else that returns a value
+
+let age = 20
+
+let category = if age >= 18 { "adult" } else { "minor" }
+
+print("Age " + toString(age) + " is " + category)
+
+// Can be used inline:
+let fee = if age < 12 { 5 } else if age < 65 { 20 } else { 10 }
+print("Fee: $" + toString(fee))

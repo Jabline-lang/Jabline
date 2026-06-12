@@ -1,0 +1,20 @@
+// Named Functions - Assigning functions to variables
+
+let add = fn(a, b) {
+    return a + b
+}
+
+let multiply = fn(a, b) {
+    return a * b
+}
+
+let operate = fn(op, x, y) {
+    if op == "add" {
+        return add(x, y)
+    }
+    return multiply(x, y)
+}
+
+print("add(5, 3) = " + toString(add(5, 3)))
+print("multiply(4, 2) = " + toString(multiply(4, 2)))
+print("operate('add', 10, 7) = " + toString(operate("add", 10, 7)))

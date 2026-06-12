@@ -1,0 +1,11 @@
+// now.jb - demonstrates current time
+
+import time
+
+fn main() {
+    let t = time.now()
+    println("Current timestamp: " + t)
+
+    let unix = time.unix()
+    println("Unix epoch seconds: " + unix)
+}

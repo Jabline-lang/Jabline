@@ -1,0 +1,11 @@
+// Debugging - Using debug mode and breakpoints
+
+fn compute(x, y) {
+    let sum = x + y
+    debug breakpoint
+    let product = x * y
+    return product
+}
+
+let result = compute(3, 4)
+print("Result: " + toString(result))

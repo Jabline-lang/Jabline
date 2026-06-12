@@ -1,0 +1,26 @@
+// export struct - export user-defined struct types
+// Run with: jabline run export_struct.jb
+
+export struct Point {
+    x: int,
+    y: int
+}
+
+export struct Rectangle {
+    width: int,
+    height: int
+}
+
+export fn newPoint(x, y) {
+    return Point { x: x, y: y }
+}
+
+export fn area(rect) {
+    return rect.width * rect.height
+}
+
+let p = newPoint(3, 4)
+echo("point: (" + toString(p.x) + ", " + toString(p.y) + ")")
+
+let r = Rectangle { width: 10, height: 5 }
+echo("area: " + toString(area(r)))

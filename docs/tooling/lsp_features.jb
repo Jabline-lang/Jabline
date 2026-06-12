@@ -1,0 +1,16 @@
+// LSP Features - Editor integration capabilities
+// Hover shows type signatures and doc comments
+// Ctrl+Click navigates to definition
+// Rename symbol refactors across files
+
+struct User {
+    name: string,
+    age: int
+}
+
+fn createUser(name, age): User {
+    return User{name: name, age: age}
+}
+
+let u = createUser("Alice", 30)
+print("User: " + u.name)

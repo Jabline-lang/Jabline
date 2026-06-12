@@ -1,0 +1,27 @@
+// Converting integer to enum value
+
+enum HttpCode {
+    Continue = 100,
+    OK = 200,
+    NotFound = 404,
+    ServerError = 500
+}
+
+fn httpCodeToString(code) {
+    match (code) {
+        case HttpCode.Continue:
+            return "Continue"
+        case HttpCode.OK:
+            return "OK"
+        case HttpCode.NotFound:
+            return "Not Found"
+        case HttpCode.ServerError:
+            return "Server Error"
+        default:
+            return "Unknown (" + toString(code) + ")"
+    }
+}
+
+echo(httpCodeToString(200))
+echo(httpCodeToString(404))
+echo(httpCodeToString(999))

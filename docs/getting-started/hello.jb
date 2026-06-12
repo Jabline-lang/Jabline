@@ -1,0 +1,4 @@
+// Hello World - The simplest Jabline program
+// Run with: jabline run hello.jb
+
+print("Hello, World!")

@@ -1,0 +1,26 @@
+// Using switch with enums
+
+enum Day {
+    Monday,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday
+}
+
+fn isWeekend(day) {
+    switch (day) {
+        case Day.Saturday:
+            return true
+        case Day.Sunday:
+            return true
+        default:
+            return false
+    }
+}
+
+let today = Day.Friday
+echo("Friday is weekend? " + toString(isWeekend(today)))
+echo("Sunday is weekend? " + toString(isWeekend(Day.Sunday)))

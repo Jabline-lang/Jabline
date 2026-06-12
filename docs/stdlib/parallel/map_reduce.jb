@@ -1,0 +1,24 @@
+// map_reduce.jb - demonstrates map/reduce pattern
+
+import parallel
+
+let words = ["jabline", "go", "rust", "python", "java", "zig"]
+
+fn map_fn(w) {
+    return {"word": w, "len": len(w)}
+}
+
+fn reduce_fn(a, b) {
+    if b.len > a.len {
+        return b
+    }
+    return a
+}
+
+fn main() {
+    let mapped = parallel.map(words, map_fn)
+    println("Word lengths: " + mapped)
+
+    let longest = parallel.reduce(mapped, reduce_fn, {"len": 0})
+    println("Longest: " + longest.word + " (" + longest.len + ")")
+}

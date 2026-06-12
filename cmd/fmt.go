@@ -2,39 +2,81 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"runtime"
+	"strings"
+
 	jfmt "jabline/pkg/fmt"
 	"jabline/pkg/lexer"
 	"jabline/pkg/parser"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 )
 
+var newline = "\n"
+
+func init() {
+	if runtime.GOOS == "windows" {
+		newline = "\r\n"
+	}
+}
+
 var (
 	watchMode bool
 	checkMode bool
+	lintMode  bool
 )
 
 var fmtCmd = &cobra.Command{
 	Use:   "fmt [file or directory]",
-	Short: "Format Jabline source files",
-	Long: `Formats Jabline source files (.jb) in-place.
+	Short: "Format and lint Jabline source files",
+	Long: `Formats and optionally lints Jabline source files (.jb) in-place.
 
 If no path is provided, the current directory is formatted recursively.
 Skips lib/ and .jb_cache/ directories automatically.
 
 Flags:
   -w, --watch   Watch for file changes and reformat automatically.
-  -c, --check   Check if files are already formatted (exit 1 if not). Useful for CI.`,
+  -c, --check   Check if files are already formatted (exit 1 if not). Useful for CI.
+  -l, --lint    Run linter for style issues (indentation, naming, line length, etc.).`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		path := "."
 		if len(args) > 0 {
 			path = args[0]
+		}
+
+		if lintMode {
+			lintIssuesTotal := 0
+			filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+				if err != nil { return nil }
+				if info.IsDir() {
+					base := info.Name()
+					if base == "lib" || base == ".jb_cache" || base == ".git" || base == "node_modules" {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+				if filepath.Ext(p) != ".jb" { return nil }
+
+				src, err := os.ReadFile(p)
+				if err != nil { return nil }
+				issues := jfmt.Lint(p, string(src))
+				if len(issues) > 0 {
+					result := jfmt.LintResult{Filename: p, Issues: issues}
+					fmt.Print(jfmt.FormatLintResult(result))
+					lintIssuesTotal += len(issues)
+				}
+				return nil
+			})
+			if lintIssuesTotal > 0 {
+				fmt.Fprintf(os.Stderr, "\n%d lint issue(s) found.\n", lintIssuesTotal)
+				os.Exit(1)
+			}
+			fmt.Println("No lint issues found.")
+			return
 		}
 
 		if watchMode {
@@ -138,13 +180,16 @@ func formatPath(path string, checkOnly bool) (fmtStats, error) {
 // formatFile parses and formats a single .jb file.
 // Returns (changed, error). If checkOnly=true, does not write back.
 func formatFile(filename string, checkOnly bool) (bool, error) {
-	src, err := ioutil.ReadFile(filename)
+	src, err := os.ReadFile(filename)
 	if err != nil {
 		return false, fmt.Errorf("cannot read %s: %w", filename, err)
 	}
 
 	original := string(src)
-	l := lexer.New(original)
+	// Normalize CRLF to LF for comparison
+	normalized := strings.ReplaceAll(original, "\r\n", "\n")
+
+	l := lexer.New(normalized)
 	p := parser.New(l)
 	program := p.ParseProgram()
 
@@ -154,12 +199,16 @@ func formatFile(filename string, checkOnly bool) (bool, error) {
 
 	formatted := jfmt.Format(program) + "\n"
 
-	if formatted == original {
+	if formatted == normalized {
 		return false, nil
 	}
 
 	if !checkOnly {
-		if err := ioutil.WriteFile(filename, []byte(formatted), 0644); err != nil {
+		output := formatted
+		if newline == "\r\n" {
+			output = strings.ReplaceAll(output, "\n", "\r\n")
+		}
+		if err := os.WriteFile(filename, []byte(output), 0644); err != nil {
 			return true, fmt.Errorf("cannot write %s: %w", filename, err)
 		}
 	}
@@ -229,5 +278,6 @@ func addRecursive(watcher *fsnotify.Watcher, path string) error {
 func init() {
 	fmtCmd.Flags().BoolVarP(&watchMode, "watch", "w", false, "Watch and re-format files on save")
 	fmtCmd.Flags().BoolVarP(&checkMode, "check", "c", false, "Check formatting without writing; exits 1 if any file is unformatted")
+	fmtCmd.Flags().BoolVarP(&lintMode, "lint", "l", false, "Run linter for style issues")
 	rootCmd.AddCommand(fmtCmd)
 }

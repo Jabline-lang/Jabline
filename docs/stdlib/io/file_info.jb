@@ -1,0 +1,13 @@
+// file_info.jb - demonstrates file metadata
+
+import io
+
+fn main() {
+    let info = io.file_info("data.txt")
+
+    println("Name: " + info.name)
+    println("Size: " + info.size + " bytes")
+    println("Modified: " + info.modified)
+    println("Is dir: " + info.is_dir)
+    println("Is file: " + info.is_file)
+}

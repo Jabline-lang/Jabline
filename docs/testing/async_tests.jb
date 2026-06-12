@@ -1,0 +1,18 @@
+// Async Tests - Testing asynchronous code with async/await
+
+async fn fetchData(id) {
+    return "data_" + toString(id)
+}
+
+describe("Async Tests", fn() {
+    it("awaits async function", fn() {
+        let result = await fetchData(42)
+        assertEqual(result, "data_42", "async result matches")
+    })
+
+    it("handles multiple async calls", fn() {
+        let a = await fetchData(1)
+        let b = await fetchData(2)
+        assertEqual(a + b, "data_1data_2", "multiple async calls")
+    })
+})

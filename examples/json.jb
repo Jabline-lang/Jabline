@@ -1,0 +1,15 @@
+import * as json from "json"
+
+let raw  = '{"name":"Jabline","version":"0.1","features":["types","generics","spawn"]}'
+let data = json.parse(raw)
+
+echo("name     = " + data["name"])
+echo("version  = " + data["version"])
+echo("features = " + json.stringify(data["features"]))
+
+let person = {
+    "name": "Alice",
+    "age": 30,
+    "skills": ["Go", "Rust", "Jabline"]
+}
+echo(json.stringify(person))

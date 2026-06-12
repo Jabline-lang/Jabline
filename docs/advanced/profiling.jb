@@ -1,0 +1,16 @@
+// Profiling - Measure performance of code sections
+
+fn heavyComputation() {
+    let sum = 0
+    let i = 0
+    while (i < 10000) {
+        sum = sum + i
+        i = i + 1
+    }
+    return sum
+}
+
+trace "heavy_computation" {
+    let result = heavyComputation()
+    print("Sum: " + toString(result))
+}

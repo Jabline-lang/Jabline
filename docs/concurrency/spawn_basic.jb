@@ -1,0 +1,19 @@
+// spawn {} - run a function concurrently in a new goroutine
+// Run with: jabline run spawn_basic.jb
+
+let ch = channel()
+
+spawn fn() {
+    let i = 0
+    while (i < 5) {
+        ch <- i
+        i = i + 1
+    }
+    close(ch)
+}()
+
+let sum = 0
+for (val in ch) {
+    sum = sum + val
+}
+echo("sum of spawned values: " + toString(sum))

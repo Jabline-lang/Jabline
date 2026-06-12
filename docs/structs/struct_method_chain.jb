@@ -1,0 +1,23 @@
+// Method chaining (methods return self)
+
+struct StringBuilder {
+    buffer: string
+}
+
+fn (sb StringBuilder) append(text: string) {
+    sb.buffer = sb.buffer + text
+    return sb
+}
+
+fn (sb StringBuilder) appendLine(text: string) {
+    sb.buffer = sb.buffer + text + "\n"
+    return sb
+}
+
+fn (sb StringBuilder) result() {
+    return sb.buffer
+}
+
+let sb = StringBuilder { buffer: "" }
+let output = sb.append("Hello").appendLine(", World!").result()
+echo(output)

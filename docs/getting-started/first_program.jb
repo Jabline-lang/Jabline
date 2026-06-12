@@ -1,0 +1,12 @@
+// Simple Input/Output Program
+// Demonstrates basic user interaction
+
+print("What is your name?")
+let name = input()
+
+print("Hello, " + name + "!")
+print("Welcome to Jabline.")
+
+let age = parseInt(input("How old are you? "))
+let next = age + 1
+print("Next year you will be " + toString(next) + ".")

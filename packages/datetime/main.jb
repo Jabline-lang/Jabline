@@ -1,0 +1,44 @@
+// datetime — Date and time utilities for Jabline
+// Current time, formatting, parsing, and date arithmetic
+
+export fn now(self) {
+    return nativeNow();
+}
+
+export fn format(self, dt, fmt) {
+    if (fmt == null) { fmt = "2006-01-02 15:04:05"; }
+    return nativeFormat(dt, fmt);
+}
+
+export fn parse(self, s, fmt) {
+    if (fmt == null) { fmt = "2006-01-02 15:04:05"; }
+    return nativeParse(s, fmt);
+}
+
+export fn addDays(self, dt, n) {
+    return nativeAdd(dt, n, "days");
+}
+
+export fn addHours(self, dt, n) {
+    return nativeAdd(dt, n, "hours");
+}
+
+export fn addMinutes(self, dt, n) {
+    return nativeAdd(dt, n, "minutes");
+}
+
+export fn diffSeconds(self, a, b) {
+    return nativeDiff(a, b, "seconds");
+}
+
+export fn isBefore(self, a, b) {
+    return nativeCompare(a, b) < 0;
+}
+
+export fn isAfter(self, a, b) {
+    return nativeCompare(a, b) > 0;
+}
+
+export fn isEqual(self, a, b) {
+    return nativeCompare(a, b) == 0;
+}

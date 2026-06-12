@@ -1,0 +1,17 @@
+// verify.jb - demonstrates JWT verification
+
+import jwt
+
+let secret = "my-secret-key"
+
+fn main() {
+    let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFsaWNlIn0.abc123"
+
+    let result = jwt.verify(token, secret)
+    if result.valid {
+        println("Token is valid")
+        println("Subject: " + result.payload["sub"])
+    } else {
+        println("Invalid token: " + result.error)
+    }
+}

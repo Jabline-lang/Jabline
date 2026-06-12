@@ -1,0 +1,32 @@
+// Optional methods: checking if a type implements an interface
+
+interface Loggable {
+    Log(): string
+}
+
+struct Logger {
+    prefix: string
+}
+
+fn (l Logger) Log(): string {
+    return "[" + l.prefix + "] log entry"
+}
+
+struct Simple {
+    name: string
+}
+
+let items = [
+    Logger { prefix: "app" },
+    Simple { name: "test" },
+    Logger { prefix: "db" }
+]
+
+for (item in items) {
+    match (item) {
+        case Loggable:
+            echo("logged: " + item.Log())
+        default:
+            echo("not loggable: " + toString(item))
+    }
+}

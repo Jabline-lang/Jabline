@@ -1,0 +1,16 @@
+// duration.jb - demonstrates duration calculations
+
+import time
+
+fn main() {
+    let start = time.now()
+
+    let sum = 0
+    for i in 0..1000000 {
+        sum = sum + i
+    }
+
+    let elapsed = time.since(start)
+    println("Sum of 1M numbers: " + sum)
+    println("Elapsed: " + elapsed + " ms")
+}

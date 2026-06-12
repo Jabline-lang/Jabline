@@ -1,0 +1,28 @@
+// Struct composition (embedding structs in structs)
+
+struct Address {
+    street: string,
+    city: string,
+    zip: string
+}
+
+struct Employee {
+    name: string,
+    address: Address,
+    department: string
+}
+
+let addr = Address {
+    street: "456 Oak Ave",
+    city: "Portland",
+    zip: "97201"
+}
+
+let emp = Employee {
+    name: "Carol",
+    address: addr,
+    department: "Engineering"
+}
+
+echo("employee: " + emp.name)
+echo("city:     " + emp.address.city)

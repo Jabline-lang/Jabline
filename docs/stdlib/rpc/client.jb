@@ -1,0 +1,13 @@
+// client.jb - demonstrates RPC client
+
+import rpc
+
+fn main() {
+    let client = rpc.connect("localhost:9090")
+    println("Connected to RPC server")
+
+    let resp = client.call("greet", {"name": "Alice"})
+    println("Response: " + resp)
+
+    client.close()
+}

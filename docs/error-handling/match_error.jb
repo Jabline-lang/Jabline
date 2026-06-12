@@ -1,0 +1,32 @@
+// Matching on error types - use match to handle different errors
+// Run with: jabline run match_error.jb
+
+fn processRequest(code) {
+    if (code == 404) { return Error("not_found") }
+    if (code == 403) { return Error("forbidden") }
+    if (code == 500) { return Error("server_error") }
+    if (code < 0) { return Error("invalid_code") }
+    return "ok"
+}
+
+fn handle(result) {
+    if (!is_error(result)) {
+        echo("success: " + toString(result))
+        return
+    }
+    match (toString(result)) {
+        case "not_found":
+            echo("handle: resource not found, returning 404")
+        case "forbidden":
+            echo("handle: access denied, returning 403")
+        case "server_error":
+            echo("handle: internal error, retrying...")
+        default:
+            echo("handle: unknown error: " + toString(result))
+    }
+}
+
+handle(processRequest(200))
+handle(processRequest(404))
+handle(processRequest(403))
+handle(processRequest(-1))

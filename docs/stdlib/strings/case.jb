@@ -1,0 +1,12 @@
+// case.jb - demonstrates upper, lower, capitalize
+
+import strings
+
+let text = "hello WoRLD!"
+
+fn main() {
+    println("original: " + text)
+    println("upper: " + strings.upper(text))
+    println("lower: " + strings.lower(text))
+    println("capitalize: " + strings.capitalize(text))
+}

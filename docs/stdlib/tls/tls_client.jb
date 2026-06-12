@@ -1,0 +1,15 @@
+// tls_client.jb - demonstrates TLS client connection
+
+import tls
+
+fn main() {
+    let conn = tls.connect("example.com", 443)
+    println("Connected to " + conn.host + ":" + conn.port)
+    println("TLS version: " + conn.tls_version)
+    println("Cipher: " + conn.cipher_suite)
+
+    conn.send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+    let resp = conn.receive()
+    println("Response: " + resp)
+    conn.close()
+}

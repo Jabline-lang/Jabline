@@ -1,0 +1,12 @@
+import * as base64 from "encoding/base64"
+import * as hex from "encoding/hex"
+
+let data = "hello jabline"
+
+let b64 = base64.encode(data)
+echo("base64: " + b64)
+echo("decoded: " + base64.decode(b64))
+
+let h = hex.encode(data)
+echo("hex:    " + h)
+echo("hex decoded: " + hex.decode(h))

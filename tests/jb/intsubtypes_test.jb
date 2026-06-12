@@ -1,0 +1,71 @@
+describe(
+    "Integer Subtypes",
+    fn() {
+        it(
+            "supports int8",
+            fn() {
+                assertEqual(int8(42), 42, "int8 value");
+                assertEqual(type(int8(7)), "INT8", "int8 type is INT8");
+            }
+        )
+
+        it(
+            "supports int16",
+            fn() {
+                assertEqual(int16(100), 100, "int16 value");
+            }
+        )
+
+        it(
+            "supports int32",
+            fn() {
+                assertEqual(int32(-7), -7, "int32 negative");
+            }
+        )
+
+        it(
+            "supports int64",
+            fn() {
+                assertEqual(int64(1234567890), 1234567890, "int64 value");
+            }
+        )
+
+        it(
+            "supports uint8",
+            fn() {
+                assertEqual(uint8(255), 255, "uint8 value");
+            }
+        )
+
+        it(
+            "supports uint16",
+            fn() {
+                assertEqual(uint16(65535), 65535, "uint16 value");
+            }
+        )
+
+        it(
+            "supports uint32",
+            fn() {
+                assertEqual(uint32(300), 300, "uint32 value");
+            }
+        )
+
+        it(
+            "supports uint64",
+            fn() {
+                assertEqual(uint64(9999999999), 9999999999, "uint64 value");
+            }
+        )
+
+        it(
+            "supports arithmetic with subtypes",
+            fn() {
+                let a = int32(10);
+                let b = int32(20);
+                assertEqual(a + b, 30, "subtype add");
+                assertEqual(a * b, 200, "subtype multiply");
+            }
+        )
+    }
+)

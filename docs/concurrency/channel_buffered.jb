@@ -1,0 +1,19 @@
+// Buffered channels - channel with capacity, non-blocking sends
+// Run with: jabline run channel_buffered.jb
+
+let ch = channel(3)
+
+// Send without a receiver - buffered channel holds the values
+ch <- 10
+ch <- 20
+ch <- 30
+
+// Receive them back
+echo("got: " + toString(<-ch))
+echo("got: " + toString(<-ch))
+echo("got: " + toString(<-ch))
+
+// Buffer size 1 - smallest useful buffer
+let ch2 = channel(1)
+ch2 <- "queued"
+echo("buffered: " + toString(<-ch2))

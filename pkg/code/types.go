@@ -48,6 +48,7 @@ const (
 	OpSetProperty
 
 	OpCall
+	OpTailCall
 	OpReturnValue
 	OpReturn
 	OpClosure
@@ -61,6 +62,8 @@ const (
 	OpThrow
 	OpTry
 	OpEndTry
+	OpFinally
+	OpEndFinally
 
 	OpBitAnd
 	OpBitOr
@@ -94,4 +97,20 @@ const (
 	OpMetricInc
 	OpTraceStart
 	OpTraceEnd
+
+	// Slice operator support
+	OpSlice
+
+	// Spread operator support
+	OpBuildArrayWithSpread
+	OpCallSpread
+
+	// Defer support
+	OpDefer
+
+	// Select support
+	OpSelect
+
+	// For-each next item (handles arrays, strings, channels)
+	OpNextItem
 )

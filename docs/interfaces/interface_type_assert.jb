@@ -1,0 +1,30 @@
+// Type assertions with interfaces using match
+
+interface Stringer {
+    String(): string
+}
+
+struct User {
+    name: string
+}
+
+fn (u User) String(): string {
+    return "User: " + u.name
+}
+
+struct NotStringer {
+    id: int
+}
+
+fn describe(val) {
+    match (val) {
+        case Stringer:
+            echo("Stringer: " + val.String())
+        default:
+            echo("Not a Stringer: " + toString(val))
+    }
+}
+
+describe(User { name: "Bob" })
+describe(NotStringer { id: 99 })
+describe(42)

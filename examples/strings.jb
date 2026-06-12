@@ -1,0 +1,15 @@
+import * as s from "strings"
+
+let text = "  hello jabline world  "
+echo("original:  '" + text + "'")
+echo("trim:      '" + s.trim(text) + "'")
+echo("upper:     " + s.upper(text))
+echo("contains:  " + toString(s.contains(text, "jabline")))
+echo("starts w:  " + toString(s.startsWith(text, "  hello")))
+echo("split:     " + toString(s.split("a,b,c", ",")))
+echo("join:      " + s.join(["x", "y", "z"], "|"))
+echo("replace:   " + s.replace(text, "jabline", "JABLINE"))
+echo("slice:     " + s.slice("abcdef", 1, 4))
+echo("camelCase: " + s.camelCase("hello_world"))
+echo("snake_case: " + s.snake_case("helloWorld"))
+echo("title:     " + s.title("hello jabline world"))

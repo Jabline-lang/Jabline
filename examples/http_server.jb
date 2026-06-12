@@ -1,0 +1,10 @@
+// Simple HTTP server
+import { NewRouter, ListenAndServe } from "net/http";
+
+fn handlePing(ctx) {
+    return ctx.text("Pong", 200);
+}
+
+let srv = NewRouter();
+srv.get("/ping", handlePing);
+ListenAndServe(8080, srv);

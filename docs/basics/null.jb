@@ -1,0 +1,15 @@
+// Null - The absence of a value
+
+let result = null
+
+if result == null {
+    print("No result yet")
+}
+
+let maybe = null
+
+// Null-safe access if supported:
+// let val = maybe?.field
+
+print("result is: " + toString(result))
+print("maybe is: " + toString(maybe))

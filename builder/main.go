@@ -539,7 +539,11 @@ func isRoot() bool {
 }
 
 func isAdmin() bool {
-	return false
+	if runtime.GOOS == "windows" {
+		err := exec.Command("net", "session").Run()
+		return err == nil
+	}
+	return os.Getuid() == 0
 }
 
 func checkInternetConnection() error {

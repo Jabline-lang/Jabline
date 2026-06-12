@@ -1,0 +1,13 @@
+// base64.jb - demonstrates Base64 encode/decode
+
+import encoding
+
+let text = "Hello, Jabline!"
+
+fn main() {
+    let encoded = encoding.base64_encode(text)
+    println("Encoded: " + encoded)
+
+    let decoded = encoding.base64_decode(encoded)
+    println("Decoded: " + decoded)
+}

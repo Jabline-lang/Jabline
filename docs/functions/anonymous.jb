@@ -1,0 +1,12 @@
+// Anonymous Functions - Inline function literals
+
+let squared = map([1, 2, 3, 4], fn(x) { return x * x })
+for i in squared {
+    print(i)
+}
+
+// Passing anonymous function directly
+let filtered = filter([1, 2, 3, 4, 5, 6], fn(x) { return x % 2 == 0 })
+for i in filtered {
+    print("even: " + toString(i))
+}

@@ -1,0 +1,14 @@
+// sleep.jb - demonstrates sleep/timer
+
+import time
+
+fn main() {
+    println("Starting 3-second countdown...")
+
+    for i in 3..1 {
+        println(i)
+        time.sleep(1.0)
+    }
+
+    println("Go!")
+}

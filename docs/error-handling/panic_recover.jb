@@ -1,0 +1,30 @@
+// panic/recover pattern - graceful panic handling
+// Run with: jabline run panic_recover.jb
+
+fn riskyBusiness(shouldPanic) {
+    if (shouldPanic) {
+        panic("critical failure in riskyBusiness")
+    }
+    return 42
+}
+
+fn safeWrapper(shouldPanic) {
+    let result = recover(
+        fn() {
+            return riskyBusiness(shouldPanic)
+        }
+    )
+    if (is_error(result)) {
+        echo("wrapper caught panic: " + toString(result))
+        return -1
+    }
+    return result
+}
+
+let a = safeWrapper(false)
+echo("first call returned: " + toString(a))
+
+let b = safeWrapper(true)
+echo("second call returned: " + toString(b))
+
+echo("program completed normally")

@@ -1,0 +1,12 @@
+// parse.jb - demonstrates JSON.parse()
+
+import json
+
+let raw = '{"name": "Jabline", "version": 1.0, "stable": true}'
+
+fn main() {
+    let data = json.parse(raw)
+    println("Name: " + data["name"])
+    println("Version: " + data["version"])
+    println("Stable: " + data["stable"])
+}

@@ -11,4 +11,5 @@ const (
 	SEMICOLON = ";"
 	DOT       = "."
 	COLON     = ":"
+	ELLIPSIS  = "..."
 )

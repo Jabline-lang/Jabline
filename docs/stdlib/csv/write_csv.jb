@@ -1,0 +1,15 @@
+// write_csv.jb - demonstrates writing CSV files
+
+import csv
+
+let headers = ["Name", "Age", "City"]
+let rows = [
+    ["Alice", "30", "New York"],
+    ["Bob", "25", "London"],
+    ["Carol", "35", "Tokyo"]
+]
+
+fn main() {
+    csv.write_file("people.csv", headers, rows)
+    println("Written 3 rows to people.csv")
+}

@@ -1,0 +1,17 @@
+import * as regex from "regex"
+
+let email = "user@example.com"
+echo("match email: " + toString(regex.test(email, "^[\\w.]+@\\w+\\.\\w+$")))
+
+let text = "hello 123 world 456 foo 789"
+let nums = regex.findAll(text, "\\d+")
+echo("numbers: " + toString(nums))
+
+let replaced = regex.replace(text, "\\d+", "NUM")
+echo("replaced: " + replaced)
+
+let parts = regex.split("a|b|c|d", "\\|")
+echo("split: " + toString(parts))
+
+let escaped = regex.escape("special.*+?^${}()|[]")
+echo("escaped: " + escaped)

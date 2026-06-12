@@ -1,0 +1,6 @@
+[project]
+name = "crypto"
+version = "0.1.0"
+description = "Cryptographic utilities: hash, base64, hex, HMAC"
+
+[dependencies]

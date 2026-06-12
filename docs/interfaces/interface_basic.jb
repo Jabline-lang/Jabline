@@ -1,0 +1,13 @@
+// Defining an interface with method signatures
+
+interface Stringer {
+    String(): string
+}
+
+interface Speaker {
+    Speak(): string
+}
+
+// Interfaces just define the contract
+echo("Stringer interface defined with String() method")
+echo("Speaker interface defined with Speak() method")

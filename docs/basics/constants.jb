@@ -1,0 +1,11 @@
+// Constants - Immutable bindings with const
+
+const MAX_SIZE = 100
+const APP_NAME = "MyApp"
+const GRAVITY = 9.81
+
+// MAX_SIZE = 200       // error: cannot reassign const
+
+print("App: " + APP_NAME)
+print("Max size: " + toString(MAX_SIZE))
+print("Gravity: " + toString(GRAVITY))

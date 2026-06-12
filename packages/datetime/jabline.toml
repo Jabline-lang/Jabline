@@ -1,0 +1,6 @@
+[project]
+name = "datetime"
+version = "0.1.0"
+description = "Date and time formatting, parsing, and arithmetic"
+
+[dependencies]

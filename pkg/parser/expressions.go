@@ -172,6 +172,13 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseSpreadExpression() ast.Expression {
+	exp := &ast.SpreadExpr{Token: p.curTok}
+	p.nextToken()
+	exp.Right = p.parseExpression(LOWEST)
+	return exp
+}
+
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	expression := &ast.InfixExpression{
 		Token:    p.curTok,
@@ -409,8 +416,30 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 }
 
 func (p *Parser) parseArrayIndexExpression(left ast.Expression) ast.Expression {
-	exp := &ast.ArrayIndexExpression{Token: p.curTok, Left: left}
 	p.nextToken()
+
+	// Check for slice syntax: `expr[low:high]` or `expr[:high]` or `expr[low:]` or `expr[:]`
+	if p.peekTokenIs(token.COLON) {
+		// expr[low:] or expr[:high] — low is optional
+		slice := &ast.SliceExpression{Token: p.curTok, Left: left}
+		if p.curTok.Type != token.COLON {
+			slice.Low = p.parseExpression(LOWEST)
+		}
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+		p.nextToken()
+		if p.curTok.Type != token.RBRACKET {
+			slice.High = p.parseExpression(LOWEST)
+		}
+		if !p.expectPeek(token.RBRACKET) {
+			return nil
+		}
+		return slice
+	}
+
+	// Normal array index: `expr[idx]`
+	exp := &ast.ArrayIndexExpression{Token: p.curTok, Left: left}
 	exp.Index = p.parseExpression(LOWEST)
 
 	if !p.expectPeek(token.RBRACKET) {
@@ -501,6 +530,49 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 
 	p.nextToken()
 
+	if !p.parseHashField(hash) {
+		return nil
+	}
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		if !p.parseHashField(hash) {
+			return nil
+		}
+	}
+
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return hash
+}
+
+func (p *Parser) parseHashField(hash *ast.HashLiteral) bool {
+	if p.curTok.Type == token.IDENT && (p.peekTokenIs(token.COMMA) || p.peekTokenIs(token.RBRACE)) {
+		name := p.curTok.Literal
+		key := &ast.StringLiteral{Token: p.curTok, Value: name}
+		value := &ast.Identifier{Token: p.curTok, Value: name}
+		hash.Pairs[key] = value
+		return true
+	}
+
+	if p.curTok.Type == token.LBRACKET {
+		p.nextToken()
+		key := p.parseExpression(LOWEST)
+		if !p.expectPeek(token.RBRACKET) {
+			return false
+		}
+		if !p.expectPeek(token.COLON) {
+			return false
+		}
+		p.nextToken()
+		value := p.parseExpression(LOWEST)
+		hash.Pairs[key] = value
+		return true
+	}
+
 	var key ast.Expression
 	if p.curTok.Type == token.IDENT && p.peekTokenIs(token.COLON) {
 		key = &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
@@ -509,37 +581,13 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 	}
 
 	if !p.expectPeek(token.COLON) {
-		return nil
+		return false
 	}
 
 	p.nextToken()
 	value := p.parseExpression(LOWEST)
 	hash.Pairs[key] = value
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-
-		if p.curTok.Type == token.IDENT && p.peekTokenIs(token.COLON) {
-			key = &ast.StringLiteral{Token: p.curTok, Value: p.curTok.Literal}
-		} else {
-			key = p.parseExpression(LOWEST)
-		}
-
-		if !p.expectPeek(token.COLON) {
-			return nil
-		}
-
-		p.nextToken()
-		value := p.parseExpression(LOWEST)
-		hash.Pairs[key] = value
-	}
-
-	if !p.expectPeek(token.RBRACE) {
-		return nil
-	}
-
-	return hash
+	return true
 }
 
 func (p *Parser) parseTernaryExpression(left ast.Expression) ast.Expression {
@@ -580,11 +628,24 @@ func (p *Parser) parseOptionalChainingExpression(left ast.Expression) ast.Expres
 		Left:  left,
 	}
 
-	if !p.expectPeek(token.IDENT) {
+	switch p.peekTok.Type {
+	case token.IDENT:
+		p.nextToken()
+		expression.Right = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
+	case token.LPAREN:
+		// a?.() — optional function call
+		p.nextToken()
+		expression.Right = p.parseCallExpression(left)
+	case token.LBRACKET:
+		// a?.[0] — optional indexing
+		p.nextToken()
+		expression.Right = p.parseArrayIndexExpression(left)
+	default:
+		msg := fmt.Sprintf("line %d, column %d: optional chaining: expected identifier, '(' or '[', got %s",
+			p.curTok.Line, p.curTok.Column, p.peekTok.Type)
+		p.errors = append(p.errors, msg)
 		return nil
 	}
-
-	expression.Right = &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
 	return expression
 }

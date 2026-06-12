@@ -1,0 +1,24 @@
+// Validation in constructor pattern
+
+struct User {
+    name: string,
+    age: int
+}
+
+fn newUser(name, age) {
+    if (len(name) == 0) {
+        throw "name must not be empty"
+    }
+    if (age < 0 || age > 150) {
+        throw "age must be between 0 and 150"
+    }
+    return User { name: name, age: age }
+}
+
+try {
+    let u = newUser("Alice", 30)
+    echo("created: " + toString(u))
+    let bad = newUser("", -5)
+} catch (e) {
+    echo("error: " + toString(e))
+}

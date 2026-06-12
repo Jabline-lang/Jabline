@@ -1,0 +1,20 @@
+// mutex.jb - demonstrates mutex usage
+
+import sync
+
+let counter = 0
+let m = sync.mutex()
+
+fn increment() {
+    m.lock()
+    counter = counter + 1
+    m.unlock()
+}
+
+fn main() {
+    increment()
+    increment()
+    increment()
+
+    println("Counter: " + counter)
+}

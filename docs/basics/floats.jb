@@ -1,0 +1,15 @@
+// Floats - Decimal number literals and operations
+
+let pi = 3.14159
+let e = 2.71828
+let neg = -0.5
+
+let sum = pi + e
+let prod = pi * 2.0
+let div = pi / 2.0
+
+print("pi = " + toString(pi))
+print("e = " + toString(e))
+print("pi + e = " + toString(sum))
+print("pi * 2 = " + toString(prod))
+print("pi / 2 = " + toString(div))

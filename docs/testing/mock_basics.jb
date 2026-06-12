@@ -1,0 +1,20 @@
+// Mock Basics - Creating test doubles
+
+fn createMock(returnValue) {
+    let calls = []
+    return {
+        "fn": fn(args) {
+            calls = push(calls, args)
+            return returnValue
+        },
+        "calls": calls,
+        "getCalls": fn() { return calls }
+    }
+}
+
+describe("Mocking", fn() {
+    it("creates a mock function", fn() {
+        let mock = createMock(42)
+        assertEqual(mock.fn("arg"), 42, "mock returns value")
+    })
+})

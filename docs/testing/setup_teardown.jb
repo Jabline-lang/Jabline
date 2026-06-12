@@ -1,0 +1,23 @@
+// Setup/Teardown - Preparing and cleaning up test state
+
+let testData = null
+
+fn setup() {
+    testData = {"counter": 0, "items": []}
+    print("Setup complete")
+}
+
+fn teardown() {
+    testData = null
+    print("Teardown complete")
+}
+
+describe("With Setup", fn() {
+    setup()
+    it("accesses prepared data", fn() {
+        assertNotNull(testData, "testData exists")
+        testData["counter"] = testData["counter"] + 1
+        assertEqual(testData["counter"], 1, "counter incremented")
+    })
+    teardown()
+})

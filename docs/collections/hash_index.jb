@@ -1,0 +1,18 @@
+// Accessing hash values with bracket notation
+
+let config = {
+    "host": "localhost",
+    "port": 8080,
+    "debug": true
+}
+
+// Bracket access with string keys
+echo("host: " + config["host"])
+echo("port: " + toString(config["port"]))
+
+// Missing keys return null
+echo("missing: " + toString(config["missing"]))
+
+// Dynamic key access
+let key = "debug"
+echo("dynamic: " + toString(config[key]))

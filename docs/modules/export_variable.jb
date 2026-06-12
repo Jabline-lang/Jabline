@@ -1,0 +1,24 @@
+// export let/const - export variables and constants
+// Run with: jabline run export_variable.jb
+
+export const VERSION = "1.0.0"
+export const API_BASE = "https://api.example.com"
+
+export let activeConnections = 0
+
+export fn connect() {
+    activeConnections = activeConnections + 1
+    return "connected (" + toString(activeConnections) + " active)"
+}
+
+export fn disconnect() {
+    if (activeConnections > 0) {
+        activeConnections = activeConnections - 1
+    }
+    return "disconnected (" + toString(activeConnections) + " active)"
+}
+
+echo("version: " + VERSION)
+echo(connect())
+echo(connect())
+echo(disconnect())

@@ -1,0 +1,20 @@
+// Enum values are integers starting from 0
+
+enum Priority {
+    Low,       // 0
+    Medium,    // 1
+    High,      // 2
+    Critical   // 3
+}
+
+echo("Low:      " + toString(Priority.Low))
+echo("Medium:   " + toString(Priority.Medium))
+echo("High:     " + toString(Priority.High))
+echo("Critical: " + toString(Priority.Critical))
+
+// Can be used in arithmetic
+let nextPriority = Priority.Medium + 1
+echo("next after Medium: " + toString(nextPriority))
+
+// Can check type
+echo("type: " + type(Priority.High))

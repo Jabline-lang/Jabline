@@ -1,0 +1,18 @@
+// parallel_for.jb - demonstrates parallel iteration
+
+import parallel
+
+let data = [1, 2, 3, 4, 5, 6, 7, 8]
+
+fn square(n) {
+    return n * n
+}
+
+fn main() {
+    let results = parallel.for_each(data, square)
+    println("Original: " + data)
+    println("Squared:  " + results)
+
+    let sum = parallel.reduce(data, fn(a, b) { return a + b }, 0)
+    println("Sum: " + sum)
+}

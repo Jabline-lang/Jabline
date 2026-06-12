@@ -1,0 +1,10 @@
+// CLI Run - Execute Jabline scripts directly
+// Usage: jabline run cli_run.jb [--watch] [--debug]
+
+fn main() {
+    print("Running Jabline script")
+    let result = 2 + 2
+    print("2 + 2 = " + toString(result))
+}
+
+main()

@@ -6,8 +6,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"jabline/pkg/log"
 	"jabline/pkg/object"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -15,7 +17,16 @@ import (
 	"time"
 )
 
-
+// httpClient is a shared HTTP client with a 30-second timeout to prevent
+// dangling connections from hanging the Jabline process indefinitely.
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+	Transport: &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     90 * time.Second,
+	},
+}
 
 var HTTPBuiltins = []struct {
 	Name   string
@@ -36,6 +47,8 @@ func init() {
 		{"http_serve", &object.Builtin{Fn: httpServe}},
 		{"path_segments", &object.Builtin{Fn: pathSegmentsFunc}},
 		{"path_param", &object.Builtin{Fn: pathParamFunc}},
+		{"query_params", &object.Builtin{Fn: queryParamsFunc}},
+		{"query_param", &object.Builtin{Fn: queryParamFunc}},
 		{"render_template", &object.Builtin{Fn: renderTemplateFunc}},
 	}...)
 }
@@ -49,7 +62,7 @@ func httpGet(args ...object.Object) object.Object {
 		return newError("arg must be string")
 	}
 
-	resp, err := http.Get(url.Value)
+	resp, err := httpClient.Get(url.Value)
 	if err != nil {
 		return newError("http error: %s", err)
 	}
@@ -81,7 +94,7 @@ func httpPost(args ...object.Object) object.Object {
 		}
 	}
 
-	resp, err := http.Post(url.Value, contentType, strings.NewReader(bodyInput.Value))
+	resp, err := httpClient.Post(url.Value, contentType, strings.NewReader(bodyInput.Value))
 	if err != nil {
 		return newError("http post error: %s", err)
 	}
@@ -129,11 +142,54 @@ func httpServe(args ...object.Object) object.Object {
 		methodKey := &object.String{Value: "method"}
 		reqHash.Pairs[methodKey.HashKey()] = object.HashPair{Key: methodKey, Value: &object.String{Value: r.Method}}
 
-		// URL
+		// URL (full)
 		urlKey := &object.String{Value: "url"}
 		reqHash.Pairs[urlKey.HashKey()] = object.HashPair{Key: urlKey, Value: &object.String{Value: r.URL.String()}}
 
-		// Body
+		// Path (without query)
+		pathKey := &object.String{Value: "path"}
+		reqHash.Pairs[pathKey.HashKey()] = object.HashPair{Key: pathKey, Value: &object.String{Value: r.URL.Path}}
+
+		// Query parameters as Hash
+		queryPairs := make(map[object.HashKey]object.HashPair)
+		for qk, qvs := range r.URL.Query() {
+			qkObj := &object.String{Value: qk}
+			if len(qvs) == 1 {
+				queryPairs[qkObj.HashKey()] = object.HashPair{Key: qkObj, Value: &object.String{Value: qvs[0]}}
+			} else {
+				var elems []object.Object
+				for _, v := range qvs {
+					elems = append(elems, &object.String{Value: v})
+				}
+				queryPairs[qkObj.HashKey()] = object.HashPair{Key: qkObj, Value: &object.Array{Elements: elems}}
+			}
+		}
+		queryKey := &object.String{Value: "query"}
+		reqHash.Pairs[queryKey.HashKey()] = object.HashPair{Key: queryKey, Value: &object.Hash{Pairs: queryPairs}}
+
+		// Host
+		hostKey := &object.String{Value: "host"}
+		reqHash.Pairs[hostKey.HashKey()] = object.HashPair{Key: hostKey, Value: &object.String{Value: r.Host}}
+
+		// Headers as Hash
+		headerPairs := make(map[object.HashKey]object.HashPair)
+		for hk, hv := range r.Header {
+			hKey := &object.String{Value: strings.ToLower(hk)}
+			if len(hv) == 1 {
+				headerPairs[hKey.HashKey()] = object.HashPair{Key: hKey, Value: &object.String{Value: hv[0]}}
+			} else {
+				var elems []object.Object
+				for _, v := range hv {
+					elems = append(elems, &object.String{Value: v})
+				}
+				headerPairs[hKey.HashKey()] = object.HashPair{Key: hKey, Value: &object.Array{Elements: elems}}
+			}
+		}
+		reqHeadersKey := &object.String{Value: "headers"}
+		reqHash.Pairs[reqHeadersKey.HashKey()] = object.HashPair{Key: reqHeadersKey, Value: &object.Hash{Pairs: headerPairs}}
+
+		// Body (limited to 10MB to prevent OOM)
+		r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 		bodyBytes, _ := io.ReadAll(r.Body)
 		bodyKey := &object.String{Value: "body"}
 		reqHash.Pairs[bodyKey.HashKey()] = object.HashPair{Key: bodyKey, Value: &object.String{Value: string(bodyBytes)}}
@@ -141,11 +197,11 @@ func httpServe(args ...object.Object) object.Object {
 		// 2. Execute Jabline Handler
 		// We expect the handler to return a Hash: { status: 200, body: "...", headers: {...} }
 		if os.Getenv("JABLINE_DEBUG_HTTP") == "1" {
-			fmt.Printf("[DEBUG] Dispatching %s %s to Jabline handler\n", r.Method, r.URL.String())
+			log.Debug("HTTP dispatch", "method", r.Method, "url", r.URL.String())
 		}
 		result := Executor(handlerClosure, []object.Object{reqHash})
 		if os.Getenv("JABLINE_DEBUG_HTTP") == "1" {
-			fmt.Printf("[DEBUG] Handler returned: %s\n", result.Inspect())
+			log.Debug("HTTP handler returned", "result", result.Inspect())
 		}
 
 		// 3. Process Response — resolve any nested async channels
@@ -210,7 +266,7 @@ func httpServe(args ...object.Object) object.Object {
 		w.Write([]byte(body))
 	})
 
-	fmt.Printf("Jabline HTTP Server listening on %s\n", port)
+	log.Info("HTTP Server listening", "port", port)
 	server := &http.Server{
 		Addr:           port,
 		Handler:        mux,
@@ -226,12 +282,12 @@ func httpServe(args ...object.Object) object.Object {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "[HTTP] Server error: %s\n", err)
+			log.Error("HTTP Server error", "error", err)
 		}
 	}()
 
 	<-quit
-	fmt.Println("\n[HTTP] Shutting down gracefully...")
+	log.Info("HTTP shutting down gracefully")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -240,7 +296,8 @@ func httpServe(args ...object.Object) object.Object {
 		return newError("graceful shutdown failed: %s", err)
 	}
 
-	fmt.Println("[HTTP] Server stopped.")
+	signal.Stop(quit)
+	log.Info("HTTP server stopped")
 	return &object.Null{}
 }
 
@@ -278,6 +335,60 @@ func pathSegmentsFunc(args ...object.Object) object.Object {
 // pathParamFunc extracts a named param from a pattern segment.
 // path_param(":id") → "id"   (strips leading ":")
 // path_param("users") → ""   (not a param → empty string)
+// queryParamsFunc parses query parameters from a URL string and returns a Hash.
+func queryParamsFunc(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("query_params expects 1 argument (url string)")
+	}
+	urlStr, ok := args[0].(*object.String)
+	if !ok {
+		return newError("query_params: argument must be a string")
+	}
+
+	u, err := url.Parse(urlStr.Value)
+	if err != nil {
+		return newError("query_params: invalid URL: %s", err)
+	}
+
+	pairs := make(map[object.HashKey]object.HashPair)
+	for key, values := range u.Query() {
+		k := &object.String{Value: key}
+		if len(values) == 1 {
+			pairs[k.HashKey()] = object.HashPair{Key: k, Value: &object.String{Value: values[0]}}
+		} else {
+			var elems []object.Object
+			for _, v := range values {
+				elems = append(elems, &object.String{Value: v})
+			}
+			pairs[k.HashKey()] = object.HashPair{Key: k, Value: &object.Array{Elements: elems}}
+		}
+	}
+	return &object.Hash{Pairs: pairs}
+}
+
+// queryParamFunc extracts a single query parameter by name from a URL string.
+func queryParamFunc(args ...object.Object) object.Object {
+	if len(args) != 2 {
+		return newError("query_param expects 2 arguments (name, url)")
+	}
+	name, ok1 := args[0].(*object.String)
+	urlStr, ok2 := args[1].(*object.String)
+	if !ok1 || !ok2 {
+		return newError("query_param: arguments must be strings")
+	}
+
+	u, err := url.Parse(urlStr.Value)
+	if err != nil {
+		return newError("query_param: invalid URL: %s", err)
+	}
+
+	val := u.Query().Get(name.Value)
+	if val == "" {
+		return &object.Null{}
+	}
+	return &object.String{Value: val}
+}
+
 func pathParamFunc(args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("path_param expects 1 argument")

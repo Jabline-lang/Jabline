@@ -1,0 +1,10 @@
+// read_config.jb - demonstrates reading configuration
+
+import config
+
+fn main() {
+    let cfg = config.read("app.config")
+    println("Server port: " + cfg["server"]["port"])
+    println("Debug mode: " + cfg["debug"])
+    println("Database host: " + cfg["database"]["host"])
+}

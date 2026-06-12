@@ -1,0 +1,19 @@
+// Set intersection using hash-based sets
+
+fn intersection(setA, setB) {
+    let result = {}
+    for (k in keys(setA)) {
+        if (setB[k] != null) {
+            result[k] = true
+        }
+    }
+    return result
+}
+
+let a = { "a": true, "b": true, "c": true, "d": true }
+let b = { "c": true, "d": true, "e": true }
+
+let inter = intersection(a, b)
+echo("A:           " + toString(keys(a)))
+echo("B:           " + toString(keys(b)))
+echo("intersection: " + toString(keys(inter)))

@@ -57,3 +57,16 @@ func (g *GlobalStore) Snapshot() []object.Object {
 func (g *GlobalStore) Len() int {
 	return len(g.values)
 }
+
+// GlobalsLen returns the number of global slots in the VM.
+func (vm *VM) GlobalsLen() int {
+	return vm.globals.Len()
+}
+
+// GlobalAt returns the value at the given global index, or nil if out of range.
+func (vm *VM) GlobalAt(idx int) object.Object {
+	if idx < 0 || idx >= vm.globals.Len() {
+		return nil
+	}
+	return vm.globals.Get(idx)
+}

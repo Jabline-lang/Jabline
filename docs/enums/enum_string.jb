@@ -1,0 +1,31 @@
+// Converting enum to string representation
+
+enum LogLevel {
+    Debug,
+    Info,
+    Warn,
+    Error
+}
+
+fn logLevelToString(level) {
+    match (level) {
+        case LogLevel.Debug:
+            return "DEBUG"
+        case LogLevel.Info:
+            return "INFO"
+        case LogLevel.Warn:
+            return "WARN"
+        case LogLevel.Error:
+            return "ERROR"
+        default:
+            return "UNKNOWN"
+    }
+}
+
+fn log(level, msg) {
+    echo("[" + logLevelToString(level) + "] " + msg)
+}
+
+log(LogLevel.Info, "Application started")
+log(LogLevel.Warn, "Low disk space")
+log(LogLevel.Error, "Connection failed")

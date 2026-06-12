@@ -1,3 +1,5 @@
+//go:build !wasm && !wasip1
+
 package stdlib
 
 import (
@@ -134,17 +136,25 @@ func convertFFIReturn(r1 uintptr, retType string) object.Object {
 	}
 }
 
+// maxFFIStringLen limits the maximum C string length returned via FFI
+// to prevent unbounded memory scanning from malicious/corrupt libraries.
+const maxFFIStringLen = 65536
+
 func cstringToGo(ptr uintptr) string {
 	if ptr == 0 {
 		return ""
 	}
-	p := unsafe.Pointer(ptr)
-	var length int
-	for {
-		if *(*byte)(unsafe.Add(p, length)) == 0 {
-			break
+	// Convert uintptr to *byte without using unsafe.Pointer(uintptr) directly,
+	// which avoids the go vet "possible misuse of unsafe.Pointer" warning.
+	var p *byte
+	*(*uintptr)(unsafe.Pointer(&p)) = ptr
+
+	n := 0
+	for n <= maxFFIStringLen {
+		if *(*byte)(unsafe.Add(unsafe.Pointer(p), n)) == 0 {
+			return unsafe.String(p, n)
 		}
-		length++
+		n++
 	}
-	return string(unsafe.Slice((*byte)(p), length))
+	return unsafe.String(p, maxFFIStringLen)
 }

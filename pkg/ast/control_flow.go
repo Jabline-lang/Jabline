@@ -57,6 +57,29 @@ func (ie *IfExpression) String() string {
 	return out
 }
 
+type DoWhileStatement struct {
+	Token     token.Token
+	Body      *BlockStatement
+	Condition Expression
+}
+
+func (ds *DoWhileStatement) statementNode()       {}
+func (ds *DoWhileStatement) TokenLiteral() string { return ds.Token.Literal }
+func (ds *DoWhileStatement) String() string {
+	return "do " + ds.Body.String() + " while (" + ds.Condition.String() + ")"
+}
+
+type DeferStatement struct {
+	Token     token.Token
+	Call      Expression
+}
+
+func (ds *DeferStatement) statementNode()       {}
+func (ds *DeferStatement) TokenLiteral() string { return ds.Token.Literal }
+func (ds *DeferStatement) String() string {
+	return "defer " + ds.Call.String()
+}
+
 type WhileStatement struct {
 	Token     token.Token
 	Condition Expression
@@ -116,6 +139,8 @@ type TryStatement struct {
 	TryBlock   *BlockStatement
 	CatchBlock *BlockStatement
 	CatchParam *Identifier
+	CatchType  *TypeExpression
+	Finally    *BlockStatement
 }
 
 func (ts *TryStatement) statementNode()       {}
@@ -125,9 +150,16 @@ func (ts *TryStatement) String() string {
 	if ts.CatchBlock != nil {
 		out += " catch"
 		if ts.CatchParam != nil {
-			out += "(" + ts.CatchParam.String() + ")"
+			out += "(" + ts.CatchParam.String()
+			if ts.CatchType != nil {
+				out += ": " + ts.CatchType.String()
+			}
+			out += ")"
 		}
 		out += " " + ts.CatchBlock.String()
+	}
+	if ts.Finally != nil {
+		out += " finally " + ts.Finally.String()
 	}
 	return out
 }
@@ -235,8 +267,66 @@ func (mc *MatchCase) String() string {
 	return out
 }
 
+type SelectStatement struct {
+	Token       token.Token
+	Cases       []*SelectCase
+	DefaultCase *DefaultClause
+}
+
+func (ss *SelectStatement) statementNode()       {}
+func (ss *SelectStatement) TokenLiteral() string { return ss.Token.Literal }
+func (ss *SelectStatement) String() string {
+	out := "select {"
+	for _, c := range ss.Cases {
+		out += c.String()
+	}
+	if ss.DefaultCase != nil {
+		out += ss.DefaultCase.String()
+	}
+	out += "}"
+	return out
+}
+
+type SelectCase struct {
+	Token  token.Token
+	IsSend bool // true for send (ch <- val), false for receive (<-ch)
+	// For send: Channel is the expression before <-, Value is the expression after <-
+	// For recv: Channel is the expression after <-
+	// BindingName is set for case x := <-ch
+	Channel      Expression
+	Value        Expression // only for send
+	BindingName  string     // only for recv bindings
+	BindingIsNew bool       // true for := (new binding), false for = (assignment)
+	Statements   []Statement
+}
+
+func (sc *SelectCase) statementNode()       {}
+func (sc *SelectCase) TokenLiteral() string { return sc.Token.Literal }
+func (sc *SelectCase) String() string {
+	out := "case "
+	if sc.IsSend {
+		out += sc.Channel.String() + " <- " + sc.Value.String()
+	} else {
+		if sc.BindingName != "" {
+			if sc.BindingIsNew {
+				out += sc.BindingName + " := "
+			} else {
+				out += sc.BindingName + " = "
+			}
+		}
+		out += "<- " + sc.Channel.String()
+	}
+	out += ":"
+	for _, stmt := range sc.Statements {
+		out += stmt.String()
+	}
+	return out
+}
+
 func (node *RetryStatement) GetToken() token.Token { return node.Token }
 func (node *IfExpression) GetToken() token.Token { return node.Token }
+func (node *DoWhileStatement) GetToken() token.Token { return node.Token }
+func (node *DeferStatement) GetToken() token.Token { return node.Token }
 func (node *WhileStatement) GetToken() token.Token { return node.Token }
 func (node *ForStatement) GetToken() token.Token { return node.Token }
 func (node *ForEachStatement) GetToken() token.Token { return node.Token }
@@ -247,3 +337,5 @@ func (node *CaseClause) GetToken() token.Token { return node.Token }
 func (node *DefaultClause) GetToken() token.Token { return node.Token }
 func (node *MatchStatement) GetToken() token.Token { return node.Token }
 func (node *MatchCase) GetToken() token.Token { return node.Token }
+func (node *SelectStatement) GetToken() token.Token { return node.Token }
+func (node *SelectCase) GetToken() token.Token { return node.Token }

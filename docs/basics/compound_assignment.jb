@@ -1,0 +1,16 @@
+// Compound Assignment - +=, -=, *=, /= operators
+
+let x = 10
+print("Initial: " + toString(x))
+
+x += 5
+print("x += 5  => " + toString(x))
+
+x -= 3
+print("x -= 3  => " + toString(x))
+
+x *= 2
+print("x *= 2  => " + toString(x))
+
+x /= 4
+print("x /= 4  => " + toString(x))

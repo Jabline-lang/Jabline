@@ -1,0 +1,31 @@
+// chat.jb - demonstrates a simple WebSocket chat
+
+import websocket
+
+let clients = []
+
+fn on_join(conn) {
+    clients.push(conn)
+    broadcast("User joined (" + len(clients) + " online)")
+}
+
+fn on_message(conn, msg) {
+    broadcast("User says: " + msg)
+}
+
+fn on_leave(conn) {
+    clients.remove(conn)
+    broadcast("User left (" + len(clients) + " online)")
+}
+
+fn broadcast(msg) {
+    for c in clients {
+        c.send(msg)
+    }
+}
+
+fn main() {
+    let server = websocket.serve(":8080", on_message, on_join, on_leave)
+    println("Chat server running on ws://localhost:8080")
+    server.wait()
+}

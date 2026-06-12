@@ -1,0 +1,15 @@
+// Importing std modules - use built-in standard library modules
+// Run with: jabline run module_std.jb
+
+import * as json from "json"
+import * as math from "math"
+import * as time from "time"
+
+let data = json.parse('{"name": "Jabline", "version": 1}')
+echo("parsed name: " + data["name"])
+
+echo("sqrt(16) = " + toString(math.sqrt(16)))
+echo("max(10, 20) = " + toString(math.max(10, 20)))
+
+let now = time.now()
+echo("current time: " + toString(now))

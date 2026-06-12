@@ -1,0 +1,131 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Jabline",
+  "scopeName": "source.jabline",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#template_literals" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#builtins" },
+    { "include": "#operators" },
+    { "include": "#delimiters" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "begin": "//",
+          "end": "$",
+          "name": "comment.line.double-slash.jabline"
+        },
+        {
+          "begin": "/\\*",
+          "end": "\\*/",
+          "name": "comment.block.jabline"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.jabline",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "match": "\\\\[\\\\\"nrt0]",
+          "name": "constant.character.escape.jabline"
+        },
+        {
+          "match": "\\\\u[0-9a-fA-F]{4}",
+          "name": "constant.character.escape.jabline"
+        }
+      ]
+    },
+    "template_literals": {
+      "name": "string.template.jabline",
+      "begin": "`",
+      "end": "`",
+      "patterns": [
+        {
+          "begin": "\\$\\{",
+          "end": "\\}",
+          "patterns": [
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#keywords" },
+            { "include": "#operators" },
+            { "include": "#identifiers" }
+          ],
+          "name": "meta.embedded.block.jabline"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "match": "\\b[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?\\b",
+          "name": "constant.numeric.float.jabline"
+        },
+        {
+          "match": "\\b[0-9]+\\b",
+          "name": "constant.numeric.integer.jabline"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(?:echo|let|const|if|else|for|while|fn|return|struct|break|continue|in|switch|case|default|try|catch|throw|finally|async|await|import|export|from|as|enum|retry|service|spawn|interface|match|meter|trace|null|true|false)\\b",
+          "name": "keyword.control.jabline"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "match": "\\b(?:string|int|int8|int16|int32|int64|uint8|uint16|uint32|uint64|float|float32|float64|bool|void|never|any|error)\\b",
+          "name": "storage.type.jabline"
+        }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "match": "\\b(?:len|type|toString|parseInt|parseFloat|input|is_error|Error|panic|push|pop|first|last|rest|keys|values|set|parse|stringify|int8|int16|int32|int64|uint8|uint16|uint32|uint64|float32|float64|cancel)\\b",
+          "name": "support.function.builtin.jabline"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(?:=|\\+=|-=|\\*=|/=|\\+\\+|--|=>|<-|->|\\|>|\\?\\?|\\?\\.|\\?|:|\\.\\.\\.)",
+          "name": "keyword.operator.assignment.jabline"
+        },
+        {
+          "match": "(?:\\+|\\-|\\*|/|%|==|!=|<|>|<=|>=|&&|\\|\\||!|~|&|\\||\\^|<<|>>)",
+          "name": "keyword.operator.arithmetic.jabline"
+        }
+      ]
+    },
+    "delimiters": {
+      "patterns": [
+        {
+          "match": "[{}()\\[\\];,]",
+          "name": "punctuation.section.jabline"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b",
+          "name": "variable.other.jabline"
+        }
+      ]
+    }
+  }
+}

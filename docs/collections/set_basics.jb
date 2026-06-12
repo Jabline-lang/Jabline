@@ -1,0 +1,21 @@
+// Using hashes as sets (keys as elements, true as value)
+
+let colors = {
+    "red": true,
+    "green": true,
+    "blue": true
+}
+
+// Check membership
+let hasRed = colors["red"] != null
+let hasYellow = colors["yellow"] != null
+
+echo("has red:    " + toString(hasRed))
+echo("has yellow: " + toString(hasYellow))
+
+// Add to set
+colors["yellow"] = true
+echo("added yellow, count: " + toString(len(colors)))
+
+// List elements
+echo("colors: " + toString(keys(colors)))

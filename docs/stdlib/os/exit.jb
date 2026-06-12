@@ -1,0 +1,16 @@
+// exit.jb - demonstrates process exit
+
+import os
+
+fn main() {
+    println("Checking arguments...")
+
+    let args = os.args()
+    if len(args) < 2 {
+        println("Usage: exit.jb <name>")
+        os.exit(1)
+    }
+
+    println("Hello, " + args[1])
+    os.exit(0)
+}

@@ -1,0 +1,58 @@
+describe(
+    "Match",
+    fn() {
+        it(
+            "can match literal values",
+            fn() {
+                let result = "";
+
+                match (1) {
+                    case 1:
+                        result = "one";
+                    case 2:
+                        result = "two";
+                    default:
+                        result = "other";
+                }
+
+                assertEqual(result, "one", "matched 1");
+            }
+        )
+
+        it(
+            "falls through to default",
+            fn() {
+                let result = "";
+
+                match (99) {
+                    case 1:
+                        result = "one";
+                    case 2:
+                        result = "two";
+                    default:
+                        result = "other";
+                }
+
+                assertEqual(result, "other", "default case");
+            }
+        )
+
+        it(
+            "can match strings",
+            fn() {
+                let result = "";
+
+                match ("hello") {
+                    case "hi":
+                        result = "greeting";
+                    case "hello":
+                        result = "world";
+                    default:
+                        result = "unknown";
+                }
+
+                assertEqual(result, "world", "matched string");
+            }
+        )
+    }
+)

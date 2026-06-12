@@ -1,0 +1,14 @@
+// Strings - Text literals and basic operations
+
+let greeting = "Hello"
+let name = "Jabline"
+
+let combined = greeting + ", " + name + "!"
+let len = length(combined)
+
+print(combined)
+print("Length: " + toString(len))
+
+// String indexing
+let first = combined[0]
+print("First char: " + first)

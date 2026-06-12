@@ -1,0 +1,22 @@
+// Static/class-level methods via standalone functions
+
+struct MathUtils {
+    // No fields - used as a namespace
+}
+
+fn MathUtils.square(x) {
+    return x * x
+}
+
+fn MathUtils.cube(x) {
+    return x * x * x
+}
+
+fn MathUtils.isEven(x) {
+    return x % 2 == 0
+}
+
+echo("square(5):  " + toString(MathUtils.square(5)))
+echo("cube(3):    " + toString(MathUtils.cube(3)))
+echo("isEven(4):  " + toString(MathUtils.isEven(4)))
+echo("isEven(7):  " + toString(MathUtils.isEven(7)))

@@ -146,11 +146,28 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 	ident := &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
+	// Check for variadic: ...param
+		if p.curTokenIs(token.ELLIPSIS) {
+		ident.Variadic = true
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		ident.Token = p.curTok
+		ident.Value = p.curTok.Literal
+	}
+
 	// Optional type annotation: `param: int`
 	if p.peekTokenIs(token.COLON) {
 		p.nextToken() // consume COLON
 		p.nextToken() // move to type token
 		ident.Type = p.parseTypeExpression()
+	}
+
+	// Optional default value: `param = expr` or `param: type = expr`
+	if p.peekTokenIs(token.ASSIGN) {
+		p.nextToken() // consume =
+		p.nextToken() // move to default value expression
+		ident.DefaultValue = p.parseExpression(LOWEST)
 	}
 
 	identifiers = append(identifiers, ident)
@@ -161,11 +178,28 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 		ident := &ast.Identifier{Token: p.curTok, Value: p.curTok.Literal}
 
+		// Check for variadic: ...param
+	if p.curTokenIs(token.ELLIPSIS) {
+			ident.Variadic = true
+			if !p.expectPeek(token.IDENT) {
+				return nil
+			}
+			ident.Token = p.curTok
+			ident.Value = p.curTok.Literal
+		}
+
 		// Optional type annotation: `, param: int`
 		if p.peekTokenIs(token.COLON) {
 			p.nextToken() // consume COLON
 			p.nextToken() // move to type token
 			ident.Type = p.parseTypeExpression()
+		}
+
+		// Optional default value: `param = expr` or `param: type = expr`
+		if p.peekTokenIs(token.ASSIGN) {
+			p.nextToken() // consume =
+			p.nextToken() // move to default value expression
+			ident.DefaultValue = p.parseExpression(LOWEST)
 		}
 
 		identifiers = append(identifiers, ident)
@@ -266,6 +300,11 @@ func (p *Parser) parseInterfaceMethods() map[string]*ast.FunctionSignature {
 		}
 
 		p.nextToken()
+
+		// Skip optional semicolons between methods
+		for p.curTokenIs(token.SEMICOLON) && !p.curTokenIs(token.EOF) {
+			p.nextToken()
+		}
 	}
 
 	return methods
@@ -349,37 +388,16 @@ func (p *Parser) parseStructLiteralFields() map[string]ast.Expression {
 
 	p.nextToken()
 
-	if p.curTok.Type != token.IDENT {
+	if !p.parseStructField(fields) {
 		return nil
 	}
-
-	name := p.curTok.Literal
-
-	if !p.expectPeek(token.COLON) {
-		return nil
-	}
-
-	p.nextToken()
-	value := p.parseExpression(LOWEST)
-	fields[name] = value
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
-
-		if p.curTok.Type != token.IDENT {
-			break
-		}
-
-		fieldName := p.curTok.Literal
-
-		if !p.expectPeek(token.COLON) {
+		if !p.parseStructField(fields) {
 			return nil
 		}
-
-		p.nextToken()
-		fieldValue := p.parseExpression(LOWEST)
-		fields[fieldName] = fieldValue
 	}
 
 	if !p.expectPeek(token.RBRACE) {
@@ -387,6 +405,29 @@ func (p *Parser) parseStructLiteralFields() map[string]ast.Expression {
 	}
 
 	return fields
+}
+
+func (p *Parser) parseStructField(fields map[string]ast.Expression) bool {
+	if p.curTok.Type == token.IDENT && (p.peekTokenIs(token.COMMA) || p.peekTokenIs(token.RBRACE)) {
+		name := p.curTok.Literal
+		fields[name] = &ast.Identifier{Token: p.curTok, Value: name}
+		return true
+	}
+
+	if p.curTok.Type != token.IDENT {
+		return false
+	}
+
+	name := p.curTok.Literal
+
+	if !p.expectPeek(token.COLON) {
+		return false
+	}
+
+	p.nextToken()
+	value := p.parseExpression(LOWEST)
+	fields[name] = value
+	return true
 }
 
 func (p *Parser) parseTypeExpression() *ast.TypeExpression {

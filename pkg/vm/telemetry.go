@@ -1,13 +1,16 @@
 package vm
 
 import (
+	"context"
 	"fmt"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
+	"sync"
 	"time"
 )
 
 type Telemetry struct {
+	mu      sync.Mutex
 	Metrics map[string]int64
 	Spans   []Span
 }
@@ -38,7 +41,14 @@ func (vm *VM) opMetricInc(ins code.Instructions, ip *int) error {
 		vm.Telemetry = NewTelemetry()
 	}
 
+	vm.Telemetry.mu.Lock()
 	vm.Telemetry.Metrics[name.Value]++
+	vm.Telemetry.mu.Unlock()
+
+	if OTelEnabled() {
+		OTelRecordMetric("jabline", name.Value, 1)
+	}
+
 	return nil
 }
 
@@ -61,6 +71,17 @@ func (vm *VM) opTraceStart(ins code.Instructions, ip *int) error {
 		StartTime: time.Now(),
 	}
 	vm.Telemetry.Spans = append(vm.Telemetry.Spans, span)
+
+	if OTelEnabled() {
+		ctx := context.Background()
+		if vm.otelCtx != nil {
+			ctx = vm.otelCtx
+		}
+		newCtx, endFn := StartOTelTrace(ctx, name.Value)
+		vm.otelCtx = newCtx
+		vm.otelSpanEnd = append(vm.otelSpanEnd, endFn)
+	}
+
 	return nil
 }
 
@@ -75,10 +96,34 @@ func (vm *VM) opTraceEnd() error {
 	vm.Telemetry.Spans = vm.Telemetry.Spans[:index]
 
 	duration := time.Since(span.StartTime)
-	// For now, we print the trace. Later we could send it to a collector.
 	fmt.Printf("[TRACE] %s: %v\n", span.Name, duration)
 
+	if OTelEnabled() && len(vm.otelSpanEnd) > 0 {
+		endFn := vm.otelSpanEnd[len(vm.otelSpanEnd)-1]
+		vm.otelSpanEnd = vm.otelSpanEnd[:len(vm.otelSpanEnd)-1]
+		endFn()
+	}
+
 	return nil
+}
+
+// InitGlobalOTel initializes OpenTelemetry from environment variables.
+// Should be called once at startup. Returns a cleanup function.
+func InitGlobalOTel() (func(), error) {
+	cleanup, err := InitTelemetryFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	globalOTelCleanup = cleanup
+	return cleanup, nil
+}
+
+// ShutdownOTel flushes and shuts down the global OTel provider.
+func ShutdownOTel() {
+	if globalOTelCleanup != nil {
+		globalOTelCleanup()
+		globalOTelCleanup = nil
+	}
 }
 
 func (vm *VM) PrintTelemetry() {
@@ -87,11 +132,13 @@ func (vm *VM) PrintTelemetry() {
 	}
 
 	fmt.Println("\n--- Jabline Telemetry ---")
+	vm.Telemetry.mu.Lock()
 	if len(vm.Telemetry.Metrics) > 0 {
 		fmt.Println("Metrics:")
 		for name, val := range vm.Telemetry.Metrics {
 			fmt.Printf("  %s: %d\n", name, val)
 		}
 	}
+	vm.Telemetry.mu.Unlock()
 	fmt.Println("-------------------------")
 }

@@ -1,0 +1,51 @@
+// Fan-in/fan-out - distribute work and merge results
+// Run with: jabline run fan_in_fan_out.jb
+
+fn fanOut(input, workers) {
+    let results = []
+    let i = 0
+    while (i < workers) {
+        results = push(results, channel(5))
+        i = i + 1
+    }
+    let idx = 0
+    for (val in input) {
+        results[idx % workers] <- val
+        idx = idx + 1
+    }
+    i = 0
+    while (i < workers) {
+        close(results[i])
+        i = i + 1
+    }
+    return results
+}
+
+fn fanIn(channels) {
+    let out = channel(10)
+    for (ch in channels) {
+        spawn fn() {
+            for (val in ch) {
+                out <- val
+            }
+        }()
+    }
+    return out
+}
+
+let input = channel(6)
+let i = 0
+while (i < 6) {
+    input <- i
+    i = i + 1
+}
+close(input)
+
+let workers = fanOut(input, 3)
+let merged = fanIn(workers)
+
+let sum = 0
+for (v in merged) {
+    sum = sum + v
+}
+echo("sum of fanned values: " + toString(sum))

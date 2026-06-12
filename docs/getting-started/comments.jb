@@ -1,0 +1,11 @@
+// Single-line comment with double slash
+
+/* Multi-line comment
+   spanning multiple lines */
+
+#! Shebang-style comment (top of file only)
+#! Used for Unix-like OS execution
+
+print("Comments are ignored by the compiler")
+// print("This line would NOT run")
+/* print("Neither would this") */

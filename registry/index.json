@@ -1,0 +1,79 @@
+{
+    "validation": {
+        "name": "validation",
+        "description": "String, number, and schema validation library for Jabline",
+        "url": "https://github.com/Jabline-lang/jabline-validation.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "utilities",
+        "tags": ["validation", "strings", "schema"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-validation"
+    },
+    "collections": {
+        "name": "collections",
+        "description": "Generic data structures: Stack, Queue, Option, Result, Pair, and higher-order functions",
+        "url": "https://github.com/Jabline-lang/jabline-collections.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "data-structures",
+        "tags": ["stack", "queue", "option", "result", "pair", "collections"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-collections"
+    },
+    "http": {
+        "name": "http",
+        "description": "HTTP client and server utilities for Jabline",
+        "url": "https://github.com/Jabline-lang/jabline-http.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "networking",
+        "tags": ["http", "client", "server", "rest", "api"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-http"
+    },
+    "crypto": {
+        "name": "crypto",
+        "description": "Cryptographic utilities: hash, base64, hex, HMAC",
+        "url": "https://github.com/Jabline-lang/jabline-crypto.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "cryptography",
+        "tags": ["hash", "base64", "hex", "hmac", "crypto"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-crypto"
+    },
+    "strings": {
+        "name": "strings",
+        "description": "Advanced string manipulation utilities",
+        "url": "https://github.com/Jabline-lang/jabline-strings.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "strings",
+        "tags": ["strings", "text", "case", "split", "join"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-strings"
+    },
+    "datetime": {
+        "name": "datetime",
+        "description": "Date and time formatting, parsing, and arithmetic",
+        "url": "https://github.com/Jabline-lang/jabline-datetime.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "time",
+        "tags": ["date", "time", "datetime", "format", "parse"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-datetime"
+    },
+    "testing": {
+        "name": "testing",
+        "description": "Testing utilities: assertions, test runner, describe/it blocks",
+        "url": "https://github.com/Jabline-lang/jabline-testing.git",
+        "version": "0.1.0",
+        "author": "Jabline Team",
+        "category": "testing",
+        "tags": ["testing", "assertions", "tdd", "unit-test"],
+        "license": "MIT",
+        "repository": "https://github.com/Jabline-lang/jabline-testing"
+    }
+}

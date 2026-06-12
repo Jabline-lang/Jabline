@@ -1,0 +1,22 @@
+// Assigning and comparing enum values
+
+enum Status {
+    Pending,
+    Active,
+    Inactive,
+    Archived
+}
+
+let currentStatus = Status.Active
+
+echo("current: " + toString(currentStatus))
+
+// Comparison
+if (currentStatus == Status.Active) {
+    echo("Status is Active")
+}
+
+// Using in conditions
+if (currentStatus != Status.Archived) {
+    echo("Not archived yet")
+}

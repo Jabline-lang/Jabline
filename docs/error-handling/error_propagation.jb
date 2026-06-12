@@ -1,0 +1,34 @@
+// Error propagation - passing errors up the call stack
+// Run with: jabline run error_propagation.jb
+
+fn readConfig(path) {
+    if (path == "") {
+        return Error("config path is empty")
+    }
+    return "{ \"host\": \"localhost\" }"
+}
+
+fn parseConfig(raw) {
+    if (is_error(raw)) {
+        return raw
+    }
+    if (raw == "") {
+        return Error("empty config data")
+    }
+    return "parsed: " + raw
+}
+
+fn loadConfig(path) {
+    let raw = readConfig(path)
+    if (is_error(raw)) {
+        return raw
+    }
+    return parseConfig(raw)
+}
+
+let cfg = loadConfig("")
+if (is_error(cfg)) {
+    echo("failed to load config: " + toString(cfg))
+} else {
+    echo("config loaded: " + toString(cfg))
+}

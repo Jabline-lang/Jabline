@@ -1,0 +1,23 @@
+// nested_yaml.jb - demonstrates nested YAML structures
+
+import yaml
+
+let raw = "
+apiVersion: v1
+kind: Config
+metadata:
+  name: app-config
+  labels:
+    env: production
+    team: backend
+spec:
+  replicas: 3
+  image: app:v2
+"
+
+fn main() {
+    let data = yaml.parse(raw)
+    println("Kind: " + data["kind"])
+    println("Environment: " + data["metadata"]["labels"]["env"])
+    println("Replicas: " + data["spec"]["replicas"])
+}

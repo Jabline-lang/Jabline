@@ -1,0 +1,21 @@
+import { map, filter, reduce, find, some, every } from "collections"
+
+let nums = [1, 2, 3, 4, 5, 6]
+
+let doubled = map(nums, fn(x) { return x * 2 })
+echo("doubled: " + toString(doubled))
+
+let evens = filter(nums, fn(x) { return x % 2 == 0 })
+echo("evens:   " + toString(evens))
+
+let sum = reduce(nums, fn(acc, x) { return acc + x }, 0)
+echo("sum:     " + toString(sum))
+
+let found = find(nums, fn(x) { return x > 4 })
+echo("found:   " + toString(found))
+
+let hasBig = some(nums, fn(x) { return x > 5 })
+echo("has >5:  " + toString(hasBig))
+
+let allSmall = every(nums, fn(x) { return x < 10 })
+echo("all<10:  " + toString(allSmall))

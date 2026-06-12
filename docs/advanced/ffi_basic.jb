@@ -1,0 +1,12 @@
+// FFI Basics - Calling C functions from dynamic libraries
+// Run with: jabline run ffi_basic.jb
+
+import { load } from "ffi"
+
+let lib = load("libc.so.6")
+let result = lib.call("atoi", "int", ["42"])
+print("Parsed: " + toString(result))
+
+let mathLib = load("libm.so.6")
+let sqrtVal = mathLib.call("sqrt", "double", [9.0])
+print("sqrt(9) = " + toString(sqrtVal))

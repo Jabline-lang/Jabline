@@ -1,0 +1,58 @@
+const WATCH_DIR = "./inbox"
+const OUT_DIR = "./outbox"
+const POLL_MS = 2000
+
+fn ensure_dir(path) {
+    let info = os.stat(path);
+    if (info == null) { os.mkdir(path); }
+}
+
+fn is_jb_file(name) {
+    return strings.endsWith(name, ".jb") && !strings.startsWith(name, "_done_");
+}
+
+fn strip_comments(content) {
+    let lines = strings.split(content, "\n");
+    let cleaned = [];
+    for (line in lines) {
+        let trimmed = strings.trim(line);
+        if (trimmed != "" && !strings.startsWith(trimmed, "//")) {
+            cleaned = push(cleaned, line);
+        }
+    }
+    return strings.join(cleaned, "\n");
+}
+
+fn process_file(filename) {
+    let src = "";
+    try {
+        src = io.readFile(WATCH_DIR + "/" + filename);
+    } catch (e) {
+        echo("Error reading " + filename);
+        return;
+    }
+    echo("Processing: " + filename);
+    let result = strip_comments(src);
+    io.writeFile(OUT_DIR + "/" + filename, result);
+    echo("  Wrote: " + OUT_DIR + "/" + filename);
+    os.rename(WATCH_DIR + "/" + filename, WATCH_DIR + "/_done_" + filename);
+}
+
+fn main() {
+    echo("File Processor - Watching: " + WATCH_DIR);
+    ensure_dir(WATCH_DIR);
+    ensure_dir(OUT_DIR);
+    let seen = {};
+    while (true) {
+        let entries = io.readDir(WATCH_DIR);
+        for (name in entries) {
+            if (seen[name] == null && is_jb_file(name)) {
+                process_file(name);
+                seen[name] = true;
+            }
+        }
+        time.sleep(POLL_MS);
+    }
+}
+
+main();

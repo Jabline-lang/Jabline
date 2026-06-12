@@ -1,0 +1,21 @@
+// Passing structs to functions
+
+struct Rectangle {
+    width: int,
+    height: int
+}
+
+fn area(r: Rectangle) {
+    return r.width * r.height
+}
+
+fn scale(r: Rectangle, factor: int) {
+    return Rectangle {
+        width: r.width * factor,
+        height: r.height * factor
+    }
+}
+
+let rect = Rectangle { width: 5, height: 3 }
+echo("area:      " + toString(area(rect)))
+echo("transformed: " + toString(scale(rect, 2)))

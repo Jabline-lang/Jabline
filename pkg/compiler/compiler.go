@@ -21,6 +21,8 @@ type Compiler struct {
 	currentNode        ast.Node
 	exports            map[string]int
 	expectedReturnType string
+	tailCallReturn     bool // set when compiling a return value eligible for TCO
+	typeAliases        map[string]string // alias name -> target type name
 }
 
 type LoopScope struct {
@@ -64,6 +66,7 @@ func New() *Compiler {
 		loops:       []LoopScope{},
 		loopIndex:   -1,
 		exports:     make(map[string]int),
+		typeAliases: make(map[string]string),
 	}
 
 	return c
@@ -79,9 +82,10 @@ func NewWithState(s *symbol.SymbolTable, constants []object.Object) *Compiler { 
 type Bytecode struct {
 	Instructions code.Instructions
 	Constants    []object.Object
-	SymbolTable  *symbol.SymbolTable // Corrected
+	SymbolTable  *symbol.SymbolTable
 	SourceMap    code.SourceMap
 	Exports      map[string]int
+	Sandbox      string
 }
 
 func (c *Compiler) currentInstructions() code.Instructions {
@@ -167,9 +171,9 @@ func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
 	}
 }
 
-func (c *Compiler) changeOperand(opPos int, operand int) {
+func (c *Compiler) changeOperand(opPos int, operands ...int) {
 	op := c.currentInstructions()[opPos]
-	newInstruction := code.Make(code.Opcode(op), operand)
+	newInstruction := code.Make(code.Opcode(op), operands...)
 	c.replaceInstruction(opPos, newInstruction)
 }
 
@@ -281,6 +285,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileBlockStatement(node)
 	case *ast.ReturnStatement:
 		return c.compileReturnStatement(node)
+	case *ast.DeferStatement:
+		return c.compileDeferStatement(node)
+	case *ast.DoWhileStatement:
+		return c.compileDoWhileStatement(node)
 	case *ast.WhileStatement:
 		return c.compileWhileStatement(node)
 	case *ast.ForStatement:
@@ -305,6 +313,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileSwitchStatement(node)
 	case *ast.MatchStatement:
 		return c.compileMatchStatement(node)
+	case *ast.SelectStatement:
+		return c.compileSelectStatement(node)
 	case *ast.EnumStatement:
 		return c.compileEnumStatement(node)
 	case *ast.ConstStatement:
@@ -315,6 +325,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileImportStatement(node)
 	case *ast.ExportStatement:
 		return c.compileExportStatement(node)
+	case *ast.TypeAliasStatement:
+		c.symbolTable.DefineType(node.Name.Value)
+		c.typeAliases[node.Name.Value] = fmt.Sprintf("%s", node.Type)
+		return nil
 
 	case *ast.CallExpression:
 		return c.compileCallExpression(node)
@@ -348,6 +362,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileIndexExpression(node)
 	case *ast.ArrayIndexExpression:
 		return c.compileArrayIndexExpression(node)
+	case *ast.SliceExpression:
+		return c.compileSliceExpression(node)
 	case *ast.PrefixExpression:
 		return c.compilePrefixExpression(node)
 	case *ast.InfixExpression:
@@ -374,6 +390,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return c.compileMeterStatement(node)
 	case *ast.TraceStatement:
 		return c.compileTraceStatement(node)
+	case *ast.SpreadExpr:
+		return c.Compile(node.Right)
 
 	default:
 		return c.errorPos("unknown node type: %T", node)

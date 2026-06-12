@@ -1,0 +1,16 @@
+// tls_server.jb - demonstrates TLS server
+
+import tls
+
+fn handler(conn) {
+    let req = conn.receive()
+    println("Received: " + req)
+    conn.send("Hello from secure Jabline server!")
+    conn.close()
+}
+
+fn main() {
+    let server = tls.serve(":443", "cert.pem", "key.pem", handler)
+    println("TLS server listening on :443")
+    server.wait()
+}

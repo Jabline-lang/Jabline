@@ -1,0 +1,34 @@
+// export enum - export enumeration types
+// Run with: jabline run export_enum.jb
+
+export enum Color {
+    Red,
+    Green,
+    Blue,
+    Yellow
+}
+
+export enum Status {
+    Pending,
+    Active,
+    Inactive,
+    Archived
+}
+
+export fn colorName(c) {
+    match (c) {
+        case "Red":
+            return "#FF0000"
+        case "Green":
+            return "#00FF00"
+        case "Blue":
+            return "#0000FF"
+        case "Yellow":
+            return "#FFFF00"
+        default:
+            return "#000000"
+    }
+}
+
+echo("Red hex: " + colorName("Red"))
+echo("Status: " + toString(Status.Pending))

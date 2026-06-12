@@ -1,0 +1,27 @@
+// Actor - Concurrent actors communicating via channels
+
+fn createActor(name) {
+    let inbox = channel()
+    spawn fn() {
+        let msg = <-inbox
+        while (msg != null) {
+            print(name + " received: " + toString(msg))
+            if (msg == "die") {
+                close(inbox)
+            }
+            msg = <-inbox
+        }
+    }
+    return {
+        "send": fn(self, msg) { inbox <- msg },
+        "tell": fn(self, msg) { inbox <- msg }
+    }
+}
+
+let alice = createActor("Alice")
+let bob = createActor("Bob")
+
+alice.send("Hello from main")
+bob.tell("Hi from main")
+alice.send("die")
+bob.send("die")

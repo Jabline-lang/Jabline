@@ -1,0 +1,26 @@
+// health_check.jb - demonstrates health check endpoint
+
+import health
+import http
+
+fn live_handler(req) {
+    return {"status": 200, "body": "OK"}
+}
+
+fn ready_handler(req) {
+    let db_ok = health.check_db()
+    let cache_ok = health.check_cache()
+
+    if db_ok && cache_ok {
+        return {"status": 200, "body": "Ready"}
+    }
+
+    return {"status": 503, "body": "Not Ready"}
+}
+
+fn main() {
+    http.handle("/health/live", live_handler)
+    http.handle("/health/ready", ready_handler)
+    http.serve(":8080")
+    println("Health endpoints on :8080/health/*")
+}

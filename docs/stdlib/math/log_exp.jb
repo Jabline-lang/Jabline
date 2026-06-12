@@ -1,0 +1,12 @@
+// log_exp.jb - demonstrates log, log10, exp, hypot
+
+import math
+
+fn main() {
+    println("log(1) = " + math.log(1))
+    println("log(e) = " + math.log(math.e))
+    println("log10(100) = " + math.log10(100))
+    println("exp(1) = " + math.exp(1))
+    println("exp(0) = " + math.exp(0))
+    println("hypot(3, 4) = " + math.hypot(3, 4))
+}

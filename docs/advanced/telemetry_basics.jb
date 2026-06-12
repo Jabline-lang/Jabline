@@ -1,0 +1,14 @@
+// Telemetry - meter counters and trace spans for observability
+
+meter "requests_total"++
+meter "active_connections"++
+
+trace "request_handler" {
+    let data = "processing"
+    trace "db_query" {
+        let result = "query_result"
+    }
+    meter "db_queries"++
+}
+
+print("Telemetry recording done")

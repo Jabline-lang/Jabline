@@ -91,89 +91,248 @@ func (vm *VM) opCall(ins code.Instructions, ip *int) error {
 	numArgs := int(ins[*ip+1])
 	*ip += 1
 
-	err := vm.executeCall(numArgs)
-	if err != nil {
-		return err
-	}
-
-	// For builtins: executeCall pops args and func, pushes result. vm.sp is OK.
-	// For closures: opReturnValue pushes result AFTER func. Stack [func, res].
-	// We need to distinguish builtins vs closures?
-	// But executeCall doesn't return info.
-
-	// Wait! Builtins behavior.
-	// executeCall for builtin: vm.sp = vm.sp - numArgs - 1. vm.push(result).
-	// This overwrites func_obj position with result.
-	// So stack is [result].
-
-	// If opReturnValue for closure: vm.push(returnValue).
-	// Stack is [func_obj, result].
-
-	// So builtins and closures behave differently regarding stack!
-	// This is the root cause.
-
-	// I should make builtins behave like closures: push result after func_obj.
-	// Or make closures behave like builtins: overwrite func_obj.
-
-	// I already tried making closures behave like builtins (overwrite).
-	// And it caused stack underflow.
-
-	// If I use the current opReturnValue (push after), I must make builtins do the same.
-	// Or check the type of callee? But callee is gone.
-
-	// Let's modify executeCall for builtins to NOT overwrite func_obj, but push after.
-	// vm.sp = vm.sp - numArgs. (points to func_obj + 1).
-	// vm.push(result).
-
-	// Then opCall can always do vm.stack[vm.sp-2] = vm.stack[vm.sp-1]; vm.sp--.
-
-	// Let's modify executeCall for builtins in pkg/vm/executor.go.
-	return nil
+	return vm.executeCall(numArgs)
 }
 
 func (vm *VM) opReturnValue() error {
-
 	frame := vm.popFrame()
-
-	// If this was the last (top-level) frame, leave the return value where it is on the stack.
+	returnValue := vm.pop()
 	if vm.framesIndex == 0 {
+		vm.sp = 0
+		vm.stack[0] = returnValue
+		vm.sp++
 		ReleaseFrame(frame)
 		return nil
 	}
-
-	returnValue := vm.pop()
-
 	vm.sp = frame.basePointer - 1
-
 	vm.stack[vm.sp] = returnValue
-
 	vm.sp++
-
 	ReleaseFrame(frame)
-
 	return nil
-
 }
 
 func (vm *VM) opReturn() error {
-
 	frame := vm.popFrame()
-
 	if vm.framesIndex == 0 {
+		vm.sp = 0
+		vm.stack[0] = Null
+		vm.sp++
+		ReleaseFrame(frame)
+		return nil
+	}
+	vm.sp = frame.basePointer - 1
+	vm.stack[vm.sp] = Null
+	vm.sp++
+	ReleaseFrame(frame)
+	return nil
+}
+
+// opReturnValueDefer handles OpReturnValue with deferred call support.
+func (vm *VM) opReturnValueDefer() error {
+	frame := vm.currentFrame()
+
+	// If we're in a deferred continuation, a deferred call just returned.
+	if frame.deferIndex >= 0 {
+		// Pop the deferred call's return value (discard it)
+		vm.pop()
+
+		frame.deferIndex--
+		if frame.deferIndex >= 0 {
+			// Execute next deferred call (LIFO)
+			call := frame.deferred[frame.deferIndex]
+			vm.push(call.Fn)
+			for _, arg := range call.Args {
+				vm.push(arg)
+			}
+			frame.ip -= 1 // Re-dispatch OpReturnValue after call returns
+			return vm.executeCall(len(call.Args))
+		}
+
+		// All deferred calls done, complete the original return
+		retVal := frame.savedReturn
+		frame.deferred = nil
+		frame.deferIndex = -1
+		frame.savedReturn = nil
+
+		vm.popFrame() // Pop this frame
+		if vm.framesIndex == 0 {
+			vm.sp = 0
+			vm.stack[0] = retVal
+			vm.sp++
+			ReleaseFrame(frame)
+			return nil
+		}
+		vm.sp = frame.basePointer - 1
+		vm.stack[vm.sp] = retVal
+		vm.sp++
 		ReleaseFrame(frame)
 		return nil
 	}
 
-	vm.sp = frame.basePointer - 1
+	// Normal case: check if this frame has deferred calls
+	if len(frame.deferred) > 0 {
+		returnValue := vm.pop()
+		frame.savedReturn = returnValue
+		frame.deferIndex = len(frame.deferred)
 
-	vm.stack[vm.sp] = Null
+		// Execute the first deferred call (from end = LIFO)
+		frame.deferIndex = len(frame.deferred) - 1
+		call := frame.deferred[frame.deferIndex]
+		vm.push(call.Fn)
+		for _, arg := range call.Args {
+			vm.push(arg)
+		}
+		frame.ip -= 1 // After the deferred call returns, re-dispatch OpReturnValue
+		return vm.executeCall(len(call.Args))
+	}
 
-	vm.sp++
+	return vm.opReturnValue()
+}
 
-	ReleaseFrame(frame)
+// opReturnDefer handles OpReturn with deferred call support (same as opReturnValueDefer but with Null return).
+func (vm *VM) opReturnDefer() error {
+	frame := vm.currentFrame()
 
-	return nil
+	if frame.deferIndex >= 0 {
+		vm.pop()
+		frame.deferIndex--
+		if frame.deferIndex >= 0 {
+			call := frame.deferred[frame.deferIndex]
+			vm.push(call.Fn)
+			for _, arg := range call.Args {
+				vm.push(arg)
+			}
+			frame.ip -= 1
+			return vm.executeCall(len(call.Args))
+		}
 
+		retVal := frame.savedReturn
+		frame.deferred = nil
+		frame.deferIndex = -1
+		frame.savedReturn = nil
+
+		vm.popFrame()
+		if vm.framesIndex == 0 {
+			vm.sp = 0
+			vm.stack[0] = retVal
+			vm.sp++
+			ReleaseFrame(frame)
+			return nil
+		}
+		vm.sp = frame.basePointer - 1
+		vm.stack[vm.sp] = retVal
+		vm.sp++
+		ReleaseFrame(frame)
+		return nil
+	}
+
+	if len(frame.deferred) > 0 {
+		frame.savedReturn = Null
+		frame.deferIndex = len(frame.deferred) - 1
+		call := frame.deferred[frame.deferIndex]
+		vm.push(call.Fn)
+		for _, arg := range call.Args {
+			vm.push(arg)
+		}
+		frame.ip -= 1
+		return vm.executeCall(len(call.Args))
+	}
+
+	return vm.opReturn()
+}
+
+func (vm *VM) opSlice() error {
+	highObj := vm.pop()
+	lowObj := vm.pop()
+	left := vm.pop()
+
+	arr, ok := left.(*object.Array)
+	if !ok {
+		return fmt.Errorf("slice operator requires array, got %s", left.Type())
+	}
+
+	length := int64(len(arr.Elements))
+
+	var low int64
+	if _, isNull := lowObj.(*object.Null); isNull {
+		low = 0
+	} else if lowInt, ok := lowObj.(*object.Integer); ok {
+		low = lowInt.Value
+	} else {
+		return fmt.Errorf("slice lower bound must be integer or null, got %s", lowObj.Type())
+	}
+
+	var high int64
+	if _, isNull := highObj.(*object.Null); isNull {
+		high = length
+	} else if highInt, ok := highObj.(*object.Integer); ok {
+		high = highInt.Value
+	} else {
+		return fmt.Errorf("slice upper bound must be integer or null, got %s", highObj.Type())
+	}
+
+	if low < 0 {
+		low = 0
+	}
+	if high > length {
+		high = length
+	}
+	if low >= high {
+		return vm.push(&object.Array{Elements: []object.Object{}})
+	}
+
+	elements := make([]object.Object, high-low)
+	copy(elements, arr.Elements[low:high])
+	return vm.push(&object.Array{Elements: elements})
+}
+
+func (vm *VM) opBuildArrayWithSpread(ins code.Instructions, ip *int) error {
+	numSlots := int(ins[*ip+1])
+	*ip++
+	spreadMask := code.ReadUint16(ins[*ip+1:])
+	*ip += 2
+
+	slots := make([]object.Object, numSlots)
+	for i := numSlots - 1; i >= 0; i-- {
+		slots[i] = vm.pop()
+	}
+
+	var elements []object.Object
+	for i, slot := range slots {
+		if spreadMask&(1<<i) != 0 {
+			arr, ok := slot.(*object.Array)
+			if !ok {
+				return fmt.Errorf("spread: expected array, got %s", slot.Type())
+			}
+			elements = append(elements, arr.Elements...)
+		} else {
+			elements = append(elements, slot)
+		}
+	}
+	return vm.push(&object.Array{Elements: elements})
+}
+
+func (vm *VM) opCallSpread(numArgs int, spreadMask uint16) error {
+	slots := make([]object.Object, numArgs)
+	for i := numArgs - 1; i >= 0; i-- {
+		slots[i] = vm.pop()
+	}
+
+	var args []object.Object
+	for i, slot := range slots {
+		if spreadMask&(1<<i) != 0 {
+			arr, ok := slot.(*object.Array)
+			if !ok {
+				return fmt.Errorf("spread argument: expected array, got %s", slot.Type())
+			}
+			args = append(args, arr.Elements...)
+		} else {
+			args = append(args, slot)
+		}
+	}
+
+	fn := vm.pop()
+	return vm.executeCallFn(fn, args)
 }
 
 func (vm *VM) opInstance(ins code.Instructions, ip *int) error {
@@ -205,4 +364,17 @@ func (vm *VM) opInstance(ins code.Instructions, ip *int) error {
 		Fields:     fields,
 	}
 	return vm.push(instance)
+}
+
+func (vm *VM) opDefer(numArgs int) error {
+	fn := vm.stack[vm.sp-numArgs-1]
+	args := make([]object.Object, numArgs)
+	for i := 0; i < numArgs; i++ {
+		args[i] = vm.stack[vm.sp-numArgs+i]
+	}
+	vm.sp = vm.sp - numArgs - 1
+
+	frame := vm.currentFrame()
+	frame.deferred = append(frame.deferred, DeferredCall{Fn: fn, Args: args})
+	return nil
 }

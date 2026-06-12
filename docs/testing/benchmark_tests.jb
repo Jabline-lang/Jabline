@@ -1,0 +1,21 @@
+// Benchmark Tests - Measuring performance
+// Run: jabline test --benchmark benchmark_tests.jb
+
+fn sumRange(n) {
+    let total = 0
+    let i = 0
+    while (i < n) {
+        total = total + i
+        i = i + 1
+    }
+    return total
+}
+
+describe("Benchmarks", fn() {
+    it("sum 1000 items [benchmark]", fn() {
+        let start = time()
+        let result = sumRange(1000)
+        let elapsed = time() - start
+        print("  sumRange(1000) = " + toString(result) + " in " + toString(elapsed) + "ms")
+    })
+})

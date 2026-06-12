@@ -1,0 +1,20 @@
+// bulkhead.jb - demonstrates bulkhead pattern
+
+import resilience
+import time
+
+let bh = resilience.bulkhead("worker", {"max_concurrent": 2, "queue_size": 5})
+
+fn task(id) {
+    println("Task " + id + " starting")
+    time.sleep(1.0)
+    println("Task " + id + " done")
+}
+
+fn main() {
+    for i in 1..6 {
+        bh.run(fn() { task(i) })
+    }
+
+    println("All tasks submitted")
+}

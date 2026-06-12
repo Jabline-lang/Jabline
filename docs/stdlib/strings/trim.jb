@@ -1,0 +1,12 @@
+// trim.jb - demonstrates trim, trim_left, trim_right
+
+import strings
+
+let padded = "   Jabline   "
+
+fn main() {
+    println("original: '" + padded + "'")
+    println("trim: '" + strings.trim(padded) + "'")
+    println("trim_left: '" + strings.trim_left(padded) + "'")
+    println("trim_right: '" + strings.trim_right(padded) + "'")
+}

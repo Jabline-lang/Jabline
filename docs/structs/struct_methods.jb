@@ -1,0 +1,22 @@
+// Methods on structs
+// Defined as: fn (receiver Type) methodName() { ... }
+
+struct Vec2 {
+    x: int,
+    y: int
+}
+
+fn (v Vec2) mag() {
+    return sqrt(v.x * v.x + v.y * v.y)
+}
+
+fn (v Vec2) add(other: Vec2) {
+    return Vec2 { x: v.x + other.x, y: v.y + other.y }
+}
+
+let a = Vec2 { x: 3, y: 4 }
+let b = Vec2 { x: 1, y: 2 }
+
+echo("|a| = " + toString(a.mag()))
+let c = a.add(b)
+echo("a+b = (" + toString(c.x) + ", " + toString(c.y) + ")")

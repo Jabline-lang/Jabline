@@ -1,0 +1,25 @@
+// try/catch/finally - finally block always executes
+// Run with: jabline run try_finally.jb
+
+fn riskyOperation(shouldFail) {
+    if (shouldFail) {
+        throw "operation failed"
+    }
+    return "success"
+}
+
+try {
+    echo("result: " + riskyOperation(false))
+} catch (e) {
+    echo("caught: " + toString(e))
+} finally {
+    echo("finally: cleanup always runs here")
+}
+
+try {
+    echo("result: " + riskyOperation(true))
+} catch (e) {
+    echo("caught: " + toString(e))
+} finally {
+    echo("finally: cleanup runs even after error")
+}

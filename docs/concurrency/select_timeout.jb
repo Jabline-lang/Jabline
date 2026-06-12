@@ -1,0 +1,22 @@
+// select with timeout - wait with a deadline using time channels
+// Run with: jabline run select_timeout.jb
+
+let ch = channel()
+
+spawn fn() {
+    sleep(500)
+    ch <- "slow result"
+}()
+
+let timeout = channel()
+spawn fn() {
+    sleep(100)
+    close(timeout)
+}()
+
+select {
+    case <-ch:
+        echo("got result before timeout")
+    case <-timeout:
+        echo("timeout - no result in time")
+}

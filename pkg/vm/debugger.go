@@ -16,6 +16,12 @@ type DebugSession struct {
 	scanner     *bufio.Scanner
 	stepping    bool // if true, pause on every new line
 	lastLine    int  // last source line seen, to avoid re-pausing on same line
+
+	// DAP integration fields (set by DAP server, nil in REPL mode)
+	OnPause func(line int)        // called when debugger pauses
+	PauseCh chan struct{}         // nil in REPL mode; when set, OnInstruction waits here for resume
+	ResumeCh chan DebugAction     // channel to signal resume action
+	PauseRequested bool           // set to true to pause on next instruction
 }
 
 func NewDebugSession(vm *VM, source string) *DebugSession {
@@ -32,6 +38,10 @@ func NewDebugSession(vm *VM, source string) *DebugSession {
 
 // OnInstruction is called by the VM on every instruction cycle.
 // It checks if we should pause (step or breakpoint) and launches the REPL.
+func (ds *DebugSession) SetStepping(v bool) {
+	ds.stepping = v
+}
+
 func (ds *DebugSession) OnInstruction(vm *VM) {
 	currentLine := ds.CurrentLine()
 	if currentLine == 0 {
@@ -45,18 +55,41 @@ func (ds *DebugSession) OnInstruction(vm *VM) {
 	if ds.Breakpoints[currentLine] {
 		shouldPause = true
 	}
+	if ds.PauseRequested {
+		shouldPause = true
+		ds.PauseRequested = false
+	}
 
 	if !shouldPause {
 		return
 	}
 
 	ds.lastLine = currentLine
-	action := ds.REPL(ds.scanner)
-	switch action {
-	case ActionStep:
-		ds.stepping = true
-	case ActionContinue:
-		ds.stepping = false
+
+	if ds.PauseCh != nil && ds.ResumeCh != nil {
+		// DAP mode: notify and wait for client action
+		if ds.OnPause != nil {
+			ds.OnPause(currentLine)
+		}
+		// Signal that we paused
+		ds.PauseCh <- struct{}{}
+		// Wait for resume action
+		action := <-ds.ResumeCh
+		switch action {
+		case ActionStep:
+			ds.stepping = true
+		case ActionContinue:
+			ds.stepping = false
+		}
+	} else {
+		// REPL mode
+		action := ds.REPL(ds.scanner)
+		switch action {
+		case ActionStep:
+			ds.stepping = true
+		case ActionContinue:
+			ds.stepping = false
+		}
 	}
 }
 

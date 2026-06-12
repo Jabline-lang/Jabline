@@ -1,0 +1,13 @@
+// Number Types - Sized integer and float types
+
+let small: int8 = 127
+let medium: int16 = 32000
+let big: int64 = 9999999999
+
+let precise: float32 = 3.14159
+let veryPrecise: float64 = 3.14159265358979
+
+print("int8: " + toString(small))
+print("int16: " + toString(medium))
+print("int64: " + toString(big))
+print("float64: " + toString(veryPrecise))

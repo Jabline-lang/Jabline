@@ -1,0 +1,18 @@
+// variables.jb - demonstrates template variables
+
+import template
+
+let tpl = "User: {{ user.name }}\nAge: {{ user.age }}\nActive: {{ user.active }}"
+
+let data = {
+    "user": {
+        "name": "Bob",
+        "age": 28,
+        "active": true
+    }
+}
+
+fn main() {
+    let result = template.render(tpl, data)
+    println(result)
+}

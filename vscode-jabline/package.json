@@ -1,0 +1,192 @@
+{
+  "name": "vscode-jabline",
+  "displayName": "Jabline",
+  "description": "Jabline language support — debugging, syntax highlighting, code completion, and more",
+  "version": "0.2.0",
+  "publisher": "jabline-lang",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jabline-lang/vscode-jabline"
+  },
+  "bugs": {
+    "url": "https://github.com/jabline-lang/vscode-jabline/issues"
+  },
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Debuggers",
+    "Language Packs"
+  ],
+  "activationEvents": [
+    "onLanguage:jabline",
+    "onDebug"
+  ],
+  "main": "./out/extension",
+  "contributes": {
+    "languages": [
+      {
+        "id": "jabline",
+        "aliases": [
+          "Jabline",
+          "jabline"
+        ],
+        "extensions": [
+          ".jb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "jabline",
+        "scopeName": "source.jabline",
+        "path": "./syntaxes/jabline.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "jabline",
+        "path": "./snippets/jabline.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "jabline.runFile",
+        "title": "Jabline: Run File"
+      },
+      {
+        "command": "jabline.buildFile",
+        "title": "Jabline: Build File"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "jabline.runFile",
+        "key": "ctrl+alt+r",
+        "when": "editorLangId == jabline"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "jabline.runFile",
+          "group": "jabline",
+          "when": "editorLangId == jabline"
+        },
+        {
+          "command": "jabline.buildFile",
+          "group": "jabline",
+          "when": "editorLangId == jabline"
+        }
+      ]
+    },
+    "debuggers": [
+      {
+        "type": "jabline",
+        "label": "Jabline Debugger",
+        "languages": [
+          "jabline"
+        ],
+        "program": "jabline",
+        "args": ["dap"],
+        "runtime": "exec",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the .jb file to debug",
+                "default": "${command:AskForProgramName}"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Command-line arguments passed to the program"
+              },
+              "sandbox": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "basic",
+                  "restrictive",
+                  "isolated"
+                ],
+                "description": "Sandbox security level",
+                "default": "none"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "jabline",
+            "request": "launch",
+            "name": "Run Jabline file",
+            "program": "${workspaceFolder}/${command:AskForProgramName}",
+            "sandbox": "none"
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Jabline",
+      "properties": {
+        "jabline.executablePath": {
+          "type": "string",
+          "default": "jabline",
+          "description": "Path to the jabline executable (used for LSP, run, and build commands)"
+        },
+        "jabline.sandboxLevel": {
+          "type": "string",
+          "enum": [
+            "none",
+            "basic",
+            "restrictive",
+            "isolated"
+          ],
+          "default": "none",
+          "description": "Default sandbox security level for running Jabline programs"
+        },
+        "jabline.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Jabline Language Server for code intelligence"
+        },
+        "jabline.lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the Jabline LSP server"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.82.0",
+    "@vscode/vsce": "^3.9.1",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+// Accessing array elements by index (0-based)
+
+let arr = [10, 20, 30, 40, 50]
+
+let first = arr[0]
+let third = arr[2]
+let last = arr[len(arr) - 1]
+
+echo("first:     " + toString(first))
+echo("third:     " + toString(third))
+echo("last:      " + toString(last))
+
+// Out of bounds returns null
+let outOfBounds = arr[99]
+echo("out of bounds: " + toString(outOfBounds))

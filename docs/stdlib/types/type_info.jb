@@ -1,0 +1,12 @@
+// type_info.jb - demonstrates type information
+
+import types
+
+let items = [42, "hello", 3.14, [1, 2], {"a": 1}]
+
+fn main() {
+    for item in items {
+        let info = types.type_of(item)
+        println(info.name + " - " + info.kind)
+    }
+}

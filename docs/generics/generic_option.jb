@@ -1,0 +1,31 @@
+// Option[T] pattern for nullable values
+
+struct Option<T> {
+    value: T,
+    hasValue: boolean
+}
+
+fn some<T>(val: T) {
+    return Option<T> { value: val, hasValue: true }
+}
+
+fn none<T>() {
+    return Option<T> { value: null, hasValue: false }
+}
+
+fn (o Option<T>) isSome(): boolean {
+    return o.hasValue
+}
+
+fn (o Option<T>) unwrapOr(fallback: T): T {
+    if (o.hasValue) { return o.value }
+    return fallback
+}
+
+let a = some<int>(42)
+let b = none<int>()
+
+echo("a has value: " + toString(a.isSome()))
+echo("a unwrap:    " + toString(a.unwrapOr(0)))
+echo("b has value: " + toString(b.isSome()))
+echo("b fallback:  " + toString(b.unwrapOr(-1)))

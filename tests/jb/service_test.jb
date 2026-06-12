@@ -1,0 +1,131 @@
+describe(
+    "Service",
+    fn() {
+        it(
+            "can define a service with config fields",
+            fn() {
+                service MyService {
+                    host: "localhost"
+                    port: 8080
+                }
+
+                assertNotNull(MyService, "service object exists");
+                assertEqual(MyService.host, "localhost", "service config host");
+                assertEqual(MyService.port, 8080, "service config port");
+            }
+        )
+
+        it(
+            "can define a service with methods",
+            fn() {
+                service Greeter {
+                    greeting: "Hello"
+                    fn greet(name): string {
+                        return this.greeting + " " + name;
+                    }
+                }
+
+                assertEqual(Greeter.greet("World"), "Hello World", "service method call");
+            }
+        )
+
+        it(
+            "supports service with multiple fields and methods",
+            fn() {
+                service Calculator {
+                    name: "calc"
+                    version: 1
+                    fn add(a, b): int {
+                        return a + b;
+                    }
+                    fn multiply(a, b): int {
+                        return a * b;
+                    }
+                }
+
+                assertEqual(Calculator.add(2, 3), 5, "service add method");
+                assertEqual(Calculator.multiply(4, 5), 20, "service multiply method");
+                assertEqual(Calculator.name, "calc", "service field name");
+                assertEqual(Calculator.version, 1, "service field version");
+            }
+        )
+    }
+)
+
+describe(
+    "Retry",
+    fn() {
+        it(
+            "retry block executes successfully on first try",
+            fn() {
+                let attempts = 0;
+
+                retry (3) {
+                    attempts = attempts + 1;
+                }
+
+                assertEqual(attempts, 1, "executed once on success");
+            }
+        )
+
+        it(
+            "retry re-executes on failure",
+            fn() {
+                let count = 0;
+
+                retry (3) {
+                    count = count + 1;
+
+                                        if (count < 3) {
+                        throw "not yet";
+                    }
+                } catch (e) {
+                }
+
+                assertEqual(count, 3, "retried 3 times");
+            }
+        )
+    }
+)
+
+describe(
+    "Meter",
+    fn() {
+        it(
+            "can increment a metric counter",
+            fn() {
+                meter "test_counter"++;
+                assertTrue(true, "meter increment executed without error");
+            }
+        )
+    }
+)
+
+describe(
+    "Trace",
+    fn() {
+        it(
+            "can trace a block of code",
+            fn() {
+                trace "test_span" {
+                    let x = 1 + 1;
+                }
+
+                assertTrue(true, "trace span executed without error");
+            }
+        )
+
+        it(
+            "supports nested traces",
+            fn() {
+                trace "outer" {
+                    trace "inner" {
+                        let x = 42;
+                    }
+                }
+
+                assertTrue(true, "nested trace executed without error");
+            }
+        )
+    }
+)

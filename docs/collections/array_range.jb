@@ -1,0 +1,13 @@
+// range() generates sequential integer arrays
+// range(n) -> [0, 1, ..., n-1]
+// range(start, end) -> [start, ..., end-1]
+
+let zeroToFive = range(5)
+echo("range(5):       " + toString(zeroToFive))
+
+let threeToSeven = range(3, 8)
+echo("range(3, 8):    " + toString(threeToSeven))
+
+// Empty range when start >= end
+let empty = range(10, 5)
+echo("range(10, 5):   " + toString(empty))

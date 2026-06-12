@@ -1,0 +1,17 @@
+// A .jb file structure:
+// 1. Optional shebang (#!) line
+// 2. Import statements (if any)
+// 3. Global variable declarations
+// 4. Function declarations
+// 5. Main program code
+
+// Example structure:
+let appName = "Demo"
+
+fn greet(name) {
+    return "Hi, " + name
+}
+
+let user = "Alice"
+print(greet(user))
+print("Running: " + appName)

@@ -18,6 +18,21 @@ var WebsocketBuiltins = []struct {
 	{"wsClose", &object.Builtin{Fn: wsClose}},
 }
 
+func init() {
+	NativeModuleRegistry["_websocket"] = WebsocketBuiltins
+
+	// modules.go init() already ran (w > m alphabetically), so add to GlobalModules/Registry directly
+	if GlobalModules != nil {
+		if modHash := GetNativeModule("_websocket"); modHash != nil {
+			GlobalModules["websocket"] = modHash
+			Registry = append(Registry, struct {
+				Name   string
+				Object object.Object
+			}{"websocket", modHash})
+		}
+	}
+}
+
 func wsConnect(args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments for wsConnect. got=%d, want=1 (url)", len(args))

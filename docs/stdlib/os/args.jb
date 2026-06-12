@@ -1,0 +1,12 @@
+// args.jb - demonstrates command line arguments
+
+import os
+
+fn main() {
+    let args = os.args()
+    println("Number of args: " + len(args))
+
+    for i in 0..len(args) {
+        println("arg[" + i + "] = " + args[i])
+    }
+}

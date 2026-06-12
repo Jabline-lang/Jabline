@@ -1,0 +1,12 @@
+// Structs and methods
+struct Point {
+    x: int,
+    y: int
+}
+
+fn (p Point) distance() {
+    return sqrt(p.x * p.x + p.y * p.y);
+}
+
+let p = Point { x: 3, y: 4 };
+echo(p.distance());

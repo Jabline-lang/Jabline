@@ -1,0 +1,31 @@
+// Common enum usage patterns
+
+enum OrderStatus {
+    Created,
+    Paid,
+    Shipped,
+    Delivered,
+    Cancelled
+}
+
+fn canCancel(status) {
+    return status == OrderStatus.Created || status == OrderStatus.Paid
+}
+
+fn nextStatus(status) {
+    match (status) {
+        case OrderStatus.Created:
+            return OrderStatus.Paid
+        case OrderStatus.Paid:
+            return OrderStatus.Shipped
+        case OrderStatus.Shipped:
+            return OrderStatus.Delivered
+        default:
+            return status
+    }
+}
+
+let order = OrderStatus.Created
+echo("can cancel?  " + toString(canCancel(order)))
+echo("next:        " + toString(nextStatus(order)))
+echo("can cancel after pay? " + toString(canCancel(OrderStatus.Shipped)))

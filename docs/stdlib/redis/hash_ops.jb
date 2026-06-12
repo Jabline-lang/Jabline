@@ -1,0 +1,19 @@
+// hash_ops.jb - demonstrates Redis hash operations
+
+import redis
+
+let r = redis.connect("localhost", 6379)
+
+fn main() {
+    r.hset("user:1001", "name", "Alice")
+    r.hset("user:1001", "age", 30)
+    r.hset("user:1001", "city", "Paris")
+
+    let name = r.hget("user:1001", "name")
+    println("Name: " + name)
+
+    let all = r.hgetall("user:1001")
+    for key in all {
+        println(key + ": " + all[key])
+    }
+}

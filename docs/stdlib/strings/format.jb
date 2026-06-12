@@ -1,0 +1,15 @@
+// format.jb - demonstrates string formatting
+
+import strings
+
+let name = "Jabline"
+let version = "1.0"
+let year = 2026
+
+fn main() {
+    let msg = strings.format("{0} version {1} released in {2}", name, version, year)
+    println(msg)
+
+    let table = strings.format("| {0,-10} | {1,5} |", "Item", 42)
+    println(table)
+}

@@ -1,0 +1,22 @@
+// The new() constructor pattern
+
+struct Database {
+    host: string,
+    port: int,
+    connected: boolean
+}
+
+fn new(host, port) {
+    let db = Database {
+        host: host,
+        port: port,
+        connected: false
+    }
+    echo("connecting to " + host + ":" + toString(port) + "...")
+    db.connected = true
+    return db
+}
+
+let db = new("db.example.com", 5432)
+echo("connected: " + toString(db.connected))
+echo("host: " + db.host)

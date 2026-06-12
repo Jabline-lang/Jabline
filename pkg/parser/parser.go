@@ -78,6 +78,9 @@ func (p *Parser) registerPrefixFunctions() {
 	p.registerPrefix(token.INT_TYPE, p.parseTypeKeywordExpression)
 	p.registerPrefix(token.STRING_TYPE, p.parseTypeKeywordExpression)
 	p.registerPrefix(token.BOOL_TYPE, p.parseTypeKeywordExpression)
+
+	// Spread operator
+	p.registerPrefix(token.ELLIPSIS, p.parseSpreadExpression)
 }
 
 func (p *Parser) registerInfixFunctions() {

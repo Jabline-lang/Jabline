@@ -1,0 +1,19 @@
+// Set difference using hash-based sets
+
+fn difference(setA, setB) {
+    let result = {}
+    for (k in keys(setA)) {
+        if (setB[k] == null) {
+            result[k] = true
+        }
+    }
+    return result
+}
+
+let a = { "a": true, "b": true, "c": true, "d": true }
+let b = { "c": true, "d": true, "e": true }
+
+let diff = difference(a, b)
+echo("A:          " + toString(keys(a)))
+echo("B:          " + toString(keys(b)))
+echo("difference:  " + toString(keys(diff)))

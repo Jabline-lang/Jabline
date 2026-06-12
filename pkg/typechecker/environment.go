@@ -33,18 +33,22 @@ const (
 // Environment holds the type information for variables in a specific scope.
 type Environment struct {
 	store          map[string]TypeType
+	consts         map[string]bool // Track const-declared variables
 	outer          *Environment
 	expectedReturn TypeType // Set when inside a function body
 	loopDepth      int      // Track loop nesting for break/continue validation
+	typeAliases    map[string]TypeType // User-defined type aliases
 }
 
 // NewEnvironment creates a new root type environment.
 func NewEnvironment() *Environment {
 	return &Environment{
 		store:          make(map[string]TypeType),
+		consts:         make(map[string]bool),
 		outer:          nil,
 		expectedReturn: TypeAny,
 		loopDepth:      0,
+		typeAliases:    make(map[string]TypeType),
 	}
 }
 
@@ -55,6 +59,28 @@ func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env.expectedReturn = outer.expectedReturn
 	env.loopDepth = outer.loopDepth
 	return env
+}
+
+// IsConst returns whether a variable was declared with const.
+func (e *Environment) IsConst(name string) bool {
+	if val, ok := e.consts[name]; ok {
+		return val
+	}
+	if e.outer != nil {
+		return e.outer.IsConst(name)
+	}
+	return false
+}
+
+// MarkConst marks a variable as const-declared.
+func (e *Environment) MarkConst(name string) {
+	e.consts[name] = true
+}
+
+// ExistsInCurrentScope returns true if the variable is defined directly in this scope (not outer).
+func (e *Environment) ExistsInCurrentScope(name string) bool {
+	_, ok := e.store[name]
+	return ok
 }
 
 // Get retrieves the type of a variable by name.
@@ -72,8 +98,27 @@ func (e *Environment) Set(name string, val TypeType) TypeType {
 	return val
 }
 
+// DefineAlias registers a type alias (e.g., `type MyInt = int`).
+func (e *Environment) DefineAlias(name string, target TypeType) {
+	e.typeAliases[name] = target
+}
+
+// ResolveAlias resolves a type alias to its underlying type. Returns the type and true if found.
+func (e *Environment) ResolveAlias(name string) (TypeType, bool) {
+	t, ok := e.typeAliases[name]
+	if ok {
+		// Allow transitive aliases (A -> B -> int)
+		if inner, ok := e.typeAliases[string(t)]; ok {
+			return inner, true
+		}
+	}
+	return t, ok
+}
+
 // ParseASTType converts an ast.TypeExpression into an internal TypeType.
-func ParseASTType(typeExpr *ast.TypeExpression) TypeType {
+// When called on a Checker, it also checks user-defined type aliases.
+// If env is nil, only built-in types are recognized.
+func ParseASTType(typeExpr *ast.TypeExpression, env *Environment) TypeType {
 	if typeExpr == nil {
 		return TypeAny
 	}
@@ -118,6 +163,11 @@ func ParseASTType(typeExpr *ast.TypeExpression) TypeType {
 	case "null":
 		return TypeNull
 	default:
+		if env != nil {
+			if resolved, ok := env.ResolveAlias(typeExpr.Value); ok {
+				return resolved
+			}
+		}
 		return TypeType(typeExpr.Value)
 	}
 }

@@ -1,0 +1,15 @@
+// send_email.jb - demonstrates sending emails
+
+import smtp
+
+fn main() {
+    let msg = {
+        "from": "sender@example.com",
+        "to": ["alice@example.com", "bob@example.com"],
+        "subject": "Hello from Jabline",
+        "body": "This is a test email sent from Jabline."
+    }
+
+    let result = smtp.send("smtp.example.com", 587, msg)
+    println("Email sent: " + result)
+}

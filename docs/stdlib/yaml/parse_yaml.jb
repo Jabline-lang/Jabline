@@ -1,0 +1,19 @@
+// parse_yaml.jb - demonstrates parsing YAML
+
+import yaml
+
+let raw = "
+name: Jabline
+version: 1.0
+features:
+  - strong typing
+  - concurrency
+  - metaprogramming
+"
+
+fn main() {
+    let data = yaml.parse(raw)
+    println("Name: " + data["name"])
+    println("Version: " + data["version"])
+    println("Features: " + data["features"])
+}

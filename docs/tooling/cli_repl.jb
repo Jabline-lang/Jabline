@@ -1,0 +1,10 @@
+// CLI REPL - Interactive Jabline shell
+// Run with: jabline repl
+// Commands: .help .exit .load .clear .history
+
+fn greet(name) {
+    return "Hello, " + name
+}
+
+print(greet("REPL User"))
+print("Type .help for available commands")

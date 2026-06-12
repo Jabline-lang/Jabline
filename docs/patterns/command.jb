@@ -1,0 +1,28 @@
+// Command - Encapsulates request as an object
+
+fn createCommand(name, executeFn) {
+    return {
+        "name": name,
+        "execute": fn(self) {
+            print("Executing: " + self["name"])
+            executeFn()
+        }
+    }
+}
+
+let commands = []
+commands = push(commands, createCommand("print_hello", fn() {
+    print("  Hello!")
+}))
+commands = push(commands, createCommand("print_world", fn() {
+    print("  World!")
+}))
+commands = push(commands, createCommand("print_sum", fn() {
+    print("  Sum: " + toString(2 + 3))
+}))
+
+let i = 0
+while (i < len(commands)) {
+    commands[i].execute()
+    i = i + 1
+}

@@ -1,0 +1,12 @@
+// REPL Basics - Interactive mode usage
+// Start REPL: jabline repl
+// Then type expressions directly:
+//   > print("hello")
+//   > 2 + 2
+// This file shows what you can try in the REPL.
+
+print("In the REPL you can:")
+print("  - Type expressions: 1 + 2")
+print("  - Call functions:   print('hi')")
+print("  - Define variables: let x = 10")
+print("  - Exit with:        :exit or Ctrl+D")

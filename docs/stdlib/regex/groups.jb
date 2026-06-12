@@ -1,0 +1,17 @@
+// groups.jb - demonstrates regex capture groups
+
+import regex
+
+let log_line = "2026-06-10 INFO User 'alice' logged in"
+
+fn main() {
+    let pattern = regex.compile(r"(\d{4}-\d{2}-\d{2}) (\w+) User '(\w+)'")
+
+    let matches = pattern.capture(log_line)
+    if matches != [] {
+        println("Full: " + matches[0])
+        println("Date: " + matches[1])
+        println("Level: " + matches[2])
+        println("User: " + matches[3])
+    }
+}

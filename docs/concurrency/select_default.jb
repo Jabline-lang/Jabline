@@ -1,0 +1,28 @@
+// select default case - non-blocking channel operations
+// Run with: jabline run select_default.jb
+
+fn trySend(ch, val) {
+    select {
+        case ch <- val:
+            return true
+        default:
+            return false
+    }
+}
+
+fn tryRecv(ch) {
+    select {
+        case <-ch:
+            return "received"
+        default:
+            return "nothing available"
+    }
+}
+
+let ch = channel(1)
+
+echo(trySend(ch, "first"))
+echo(trySend(ch, "second"))
+echo(tryRecv(ch))
+echo(tryRecv(ch))
+echo(tryRecv(ch))

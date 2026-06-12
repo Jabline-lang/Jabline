@@ -1,0 +1,29 @@
+// Pub/Sub - Publish/subscribe messaging pattern
+
+fn createBus() {
+    let subscribers = {}
+    return {
+        "subscribe": fn(self, topic, handler) {
+            if (subscribers[topic] == null) {
+                subscribers[topic] = []
+            }
+            subscribers[topic] = push(subscribers[topic], handler)
+        },
+        "publish": fn(self, topic, data) {
+            let handlers = subscribers[topic]
+            if (handlers != null) {
+                let i = 0
+                while (i < len(handlers)) {
+                    handlers[i](data)
+                    i = i + 1
+                }
+            }
+        }
+    }
+}
+
+let bus = createBus()
+bus.subscribe("user.login", fn(data) { print("Login: " + data["user"]) })
+bus.subscribe("user.logout", fn(data) { print("Logout: " + data["user"]) })
+bus.publish("user.login", {"user": "Alice"})
+bus.publish("user.logout", {"user": "Alice"})

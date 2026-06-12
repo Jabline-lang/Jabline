@@ -1,0 +1,15 @@
+// CLI LSP - Language Server Protocol integration
+// Usage: jabline lsp --stdio
+// Editors: VS Code, Neovim, Emacs, JetBrains
+
+fn demo() {
+    let message = "LSP provides:"
+    print(message)
+    print("- Autocomplete")
+    print("- Go to definition")
+    print("- Hover type info")
+    print("- Diagnostics")
+    print("- Code actions")
+}
+
+demo()

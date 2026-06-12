@@ -1,0 +1,29 @@
+// Early Return - Multiple return points in a function
+
+fn classify(n) {
+    if n < 0 {
+        return "negative"
+    }
+    if n == 0 {
+        return "zero"
+    }
+    if n > 100 {
+        return "large"
+    }
+    return "positive"
+}
+
+fn divideSafe(a, b) {
+    if b == 0 {
+        print("Cannot divide by zero")
+        return null
+    }
+    return a / b
+}
+
+print(classify(-5))
+print(classify(0))
+print(classify(50))
+print(classify(200))
+print(divideSafe(10, 2))
+print(divideSafe(5, 0))

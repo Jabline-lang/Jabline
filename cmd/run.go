@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"jabline/pkg/compiler"
@@ -16,16 +15,17 @@ import (
 )
 
 var (
-	hot      bool
-	evalCode string
-	astDump  bool
-	bcDump   bool
+	hot           bool
+	evalCode      string
+	astDump       bool
+	bcDump        bool
+	sandboxLevel  string
 )
 
 var runCmd = &cobra.Command{
 	Use:   "run [file]",
 	Short: "Execute a Jabline program",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		var code string
 		var filename string
 
@@ -34,15 +34,12 @@ var runCmd = &cobra.Command{
 			filename = "<inline>"
 		} else {
 			if len(args) == 0 {
-				fmt.Println("Error: requires at least 1 arg(s) or -e flag")
-				cmd.Help()
-				os.Exit(1)
+				return fmt.Errorf("requires at least 1 arg(s) or -e flag")
 			}
 			filename = args[0]
-			bytes, err := ioutil.ReadFile(filename)
+			bytes, err := os.ReadFile(filename)
 			if err != nil {
-				fmt.Printf("Error reading file: %s\n", err)
-				os.Exit(1)
+				return fmt.Errorf("error reading file: %s", err)
 			}
 			code = string(bytes)
 		}
@@ -52,21 +49,19 @@ var runCmd = &cobra.Command{
 		program := p.ParseProgram()
 
 		if len(p.Errors()) > 0 {
-			fmt.Println("Parser errors:")
 			for _, msg := range p.Errors() {
-				fmt.Printf("\t%s\n", msg)
+				fmt.Printf("Parser error: %s\n", msg)
 			}
-			os.Exit(1)
+			return fmt.Errorf("parse failed")
 		}
 
 		checker := typechecker.New()
 		typeErrors := checker.Check(program)
 		if len(typeErrors) > 0 {
-			fmt.Println("Type errors:")
 			for _, msg := range typeErrors {
-				fmt.Printf("\t%s\n", msg)
+				fmt.Printf("Type error: %s\n", msg)
 			}
-			os.Exit(1)
+			return fmt.Errorf("type check failed")
 		}
 
 		if astDump {
@@ -75,10 +70,8 @@ var runCmd = &cobra.Command{
 		}
 
 		comp := compiler.New()
-		err := comp.Compile(program)
-		if err != nil {
-			fmt.Printf("Compiler error: %s\n", err)
-			os.Exit(1)
+		if err := comp.Compile(program); err != nil {
+			return fmt.Errorf("compiler error: %s", err)
 		}
 
 		bytecode := comp.Bytecode()
@@ -93,21 +86,26 @@ var runCmd = &cobra.Command{
 		}
 
 		machine := vm.New(bytecode.Instructions, bytecode.Constants, filename)
-		vm.GlobalVM = machine // Registrar para forks nativos (HTTP, async, spawn)
+		vm.GlobalVM = machine
+
+		if sandboxLevel != "" {
+			if err := machine.SetSandboxLevel(sandboxLevel); err != nil {
+				return fmt.Errorf("invalid sandbox level %q: %s", sandboxLevel, err)
+			}
+		}
 
 		if hot {
 			go watchFile(filename, machine)
 		}
 
-		err = machine.Run()
-
-		// Print telemetry if any was collected
-		machine.PrintTelemetry()
-
-		if err != nil {
-			fmt.Printf("VM runtime error: %s\n", err)
-			os.Exit(1)
+		if err := machine.Run(); err != nil {
+			machine.Cleanup()
+			return fmt.Errorf("VM runtime error: %s", err)
 		}
+
+		machine.PrintTelemetry()
+		machine.Cleanup()
+		return nil
 	},
 }
 
@@ -116,6 +114,7 @@ func init() {
 	runCmd.Flags().StringVarP(&evalCode, "eval", "e", "", "Evaluate string as Jabline code")
 	runCmd.Flags().BoolVarP(&astDump, "ast", "a", false, "Print AST after parsing")
 	runCmd.Flags().BoolVarP(&bcDump, "bytecode", "b", false, "Print bytecode instructions before executing")
+	runCmd.Flags().StringVarP(&sandboxLevel, "sandbox", "s", "", "Sandbox level (none, secure, restrictive, isolated)")
 	rootCmd.AddCommand(runCmd)
 }
 
@@ -157,7 +156,7 @@ func watchFile(filename string, machine *vm.VM) {
 }
 
 func reload(filename string, machine *vm.VM) {
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("Error reading file during reload: %s\n", err)
 		return

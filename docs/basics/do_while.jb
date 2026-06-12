@@ -1,0 +1,14 @@
+// Do/While - Execute body at least once
+
+let x = 0
+
+do {
+    print("x = " + toString(x))
+    x = x + 1
+} while x < 5
+
+// Even if condition is false, body runs once
+let y = 100
+do {
+    print("This runs once, y = " + toString(y))
+} while y < 50

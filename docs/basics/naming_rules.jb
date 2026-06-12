@@ -1,0 +1,15 @@
+// Naming Rules - Valid identifiers and conventions
+
+// Valid: letters, digits, underscore (digit cannot start)
+let name = "Alice"
+let user_name = "Bob"
+let _private = "underscore"
+let count2 = 3
+let camelCase = "preferred"
+
+// Conventions:
+let kConstant = "UPPER_SNAKE for constants"
+let snake_case = "snake_case for variables"
+
+print(camelCase)
+print(snake_case)

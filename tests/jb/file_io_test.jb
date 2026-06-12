@@ -1,0 +1,83 @@
+describe(
+    "File I/O",
+    fn() {
+        let testFile = "test_io_tmp.txt";
+        let copyPath = "test_io_copy.txt";
+
+        it(
+            "writeFile creates a file with content",
+            fn() {
+                let result = fs.writeFile(testFile, "hello world");
+                assertTrue(result, "writeFile returned true");
+                assertTrue(fs.fileExists(testFile), "file exists after write");
+            }
+        )
+
+        it(
+            "readFile reads file content",
+            fn() {
+                let content = fs.readFile(testFile);
+                assertEqual(content, "hello world", "readFile content matches");
+            }
+        )
+
+        it(
+            "appendFile appends to existing file",
+            fn() {
+                let result = fs.appendFile(testFile, " appended");
+                assertTrue(result, "appendFile returned true");
+                let content = fs.readFile(testFile);
+                assertEqual(content, "hello world appended", "appended content correct");
+            }
+        )
+
+        it(
+            "readLines reads lines from file",
+            fn() {
+                fs.writeFile(testFile, "line1\nline2\nline3");
+                let lines = fs.readLines(testFile);
+                assertEqual(len(lines), 3, "three lines");
+                assertEqual(lines[0], "line1", "first line");
+                assertEqual(lines[1], "line2", "second line");
+                assertEqual(lines[2], "line3", "third line");
+            }
+        )
+
+        it(
+            "copyFile copies a file",
+            fn() {
+                fs.writeFile(testFile, "copy test content");
+                let result = fs.copyFile(testFile, copyPath);
+                assertTrue(result, "copyFile returned true");
+                assertTrue(fs.fileExists(copyPath), "copy file exists");
+
+                let original = fs.readFile(testFile);
+                let copied = fs.readFile(copyPath);
+                assertEqual(original, copied, "copied content matches original");
+            }
+        )
+
+        it(
+            "fileExists returns false for non-existent file",
+            fn() {
+                let exists = fs.fileExists("xyzzy_nonexistent_12345.tmp");
+                assertFalse(exists, "non-existent file returns false");
+            }
+        )
+
+        it(
+            "readDir lists directory contents",
+            fn() {
+                let entries = fs.readDir("tests/jb");
+                assertTrue(len(entries) > 0, "tests/jb directory has entries");
+                let found = false;
+                for (entry in entries) {
+                    if (entry == "file_io_test.jb") {
+                        found = true;
+                    }
+                }
+                assertTrue(found, "found file_io_test.jb in directory listing");
+            }
+        )
+    }
+)

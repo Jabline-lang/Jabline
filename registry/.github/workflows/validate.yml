@@ -1,0 +1,48 @@
+name: Validate Registry
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Validate JSON
+        run: |
+          python3 -c "
+import json, sys
+
+with open('index.json') as f:
+    data = json.load(f)
+
+required = ['name', 'description', 'url', 'version', 'author']
+errors = []
+
+for name, entry in data.items():
+    for field in required:
+        if field not in entry:
+            errors.append(f'{name}: missing required field \"{field}\"')
+    if 'version' in entry:
+        parts = entry['version'].split('.')
+        if len(parts) != 3 or not all(p.isdigit() for p in parts):
+            errors.append(f'{name}: invalid version \"{entry[\"version\"]}\"')
+    if 'url' in entry and not entry['url'].endswith('.git'):
+        errors.append(f'{name}: url should end with .git')
+
+if errors:
+    for e in errors:
+        print(f'ERROR: {e}', file=sys.stderr)
+    sys.exit(1)
+else:
+    print('✅ Registry JSON is valid')
+    print(f'📦 {len(data)} packages registered')
+"

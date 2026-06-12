@@ -1,0 +1,10 @@
+// Operator Precedence - Which operators bind first
+// Highest:  ()  then  * / %  then  + -  then  comparisons  then  &&  then  ||
+
+let result1 = 2 + 3 * 4         // 2 + 12 = 14
+let result2 = (2 + 3) * 4       // 5 * 4 = 20
+let result3 = 10 > 5 && 3 < 4   // true && true = true
+
+print("2 + 3 * 4 = " + toString(result1))
+print("(2 + 3) * 4 = " + toString(result2))
+print("10 > 5 && 3 < 4 = " + toString(result3))

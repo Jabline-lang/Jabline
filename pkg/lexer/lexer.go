@@ -186,6 +186,20 @@ func (l *Lexer) NextToken() token.Token {
 	case ':':
 		tok = l.newToken(token.COLON, string(l.ch))
 	case '.':
+		if l.peekChar() == '.' {
+			// Look ahead two characters to see if this is ...
+			nextNext := byte(0)
+			if l.readPosition+1 < len(l.input) {
+				nextNext = l.input[l.readPosition+1]
+			}
+			if nextNext == '.' {
+				// Three dots: ... → ELLIPSIS
+				tok = l.newToken(token.ELLIPSIS, "...")
+				l.readChar() // consume second dot
+				l.readChar() // consume third dot
+				break
+			}
+		}
 		tok = l.newToken(token.DOT, string(l.ch))
 	case '?':
 		if l.peekChar() == '?' {

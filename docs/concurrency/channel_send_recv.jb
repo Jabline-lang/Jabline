@@ -1,0 +1,19 @@
+// send() and recv() builtins - explicit channel operations
+// Run with: jabline run channel_send_recv.jb
+
+let ch = channel()
+
+spawn fn() {
+    send(ch, "first")
+    send(ch, "second")
+    send(ch, "third")
+    close(ch)
+}()
+
+let val = recv(ch)
+while (val != null) {
+    echo("recv: " + toString(val))
+    val = recv(ch)
+}
+
+echo("channel closed, got null")

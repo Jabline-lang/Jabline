@@ -1,0 +1,31 @@
+// Custom error types - use structs and Error() for rich errors
+// Run with: jabline run custom_errors.jb
+
+struct ValidationError {
+    field: string,
+    message: string,
+    code: int
+}
+
+fn makeValidationError(field, msg, code) {
+    let err = ValidationError {
+        field: field,
+        message: msg,
+        code: code
+    }
+    return Error(toString(err))
+}
+
+fn validateUser(name, age) {
+    if (len(name) == 0) {
+        return makeValidationError("name", "name is required", 1001)
+    }
+    if (age < 0 || age > 150) {
+        return makeValidationError("age", "invalid age range", 1002)
+    }
+    return "user " + name + " is valid"
+}
+
+let result = validateUser("", 25)
+echo("result: " + toString(result))
+echo("is error: " + toString(is_error(result)))

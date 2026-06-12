@@ -1,0 +1,13 @@
+// Reflection - Inspect types and values at runtime
+
+let x = 42
+let y = "hello"
+let z = [1, 2, 3]
+let w = { "key": "value" }
+
+print("type(42) = " + type(x))
+print("type('hello') = " + type(y))
+print("type([1,2,3]) = " + type(z))
+print("type({...}) = " + type(w))
+print("len([1,2,3]) = " + toString(len(z)))
+print("len({...}) = " + toString(len(w)))

@@ -1,0 +1,12 @@
+import * as csv from "csv"
+
+let raw = "name,age,city\nAlice,30,Madrid\nBob,25,Barcelona\nCharlie,35,Valencia"
+let rows = csv.parse(raw)
+
+echo("row count: " + toString(len(rows)))
+echo("row 0:     " + toString(rows[0]))
+echo("row 1:     " + toString(rows[1]))
+echo("row 2:     " + toString(rows[2]))
+
+let encoded = csv.encode(rows)
+echo("re-encoded:\n" + encoded)

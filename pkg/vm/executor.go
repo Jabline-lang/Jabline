@@ -4,8 +4,17 @@ import (
 	"fmt"
 	"jabline/pkg/code"
 	"jabline/pkg/object"
+	"jabline/pkg/sandbox"
 	"strings"
 )
+
+func (vm *VM) executeCallFn(fn object.Object, args []object.Object) error {
+	vm.push(fn)
+	for _, a := range args {
+		vm.push(a)
+	}
+	return vm.executeCall(len(args))
+}
 
 func (vm *VM) executeCall(numArgs int) error {
 	calleePos := vm.sp - numArgs - 1
@@ -34,6 +43,46 @@ func (vm *VM) executeCall(numArgs int) error {
 	}
 }
 
+// builtinPermissions maps builtin names to required sandbox permissions.
+var builtinPermissions = map[string]sandbox.Permission{
+	// File I/O
+	"readFile":   sandbox.PermFileRead,
+	"writeFile":  sandbox.PermFileWrite,
+	"appendFile": sandbox.PermFileWrite,
+	"copyFile":   sandbox.PermFileWrite,
+	"fileExists": sandbox.PermFileRead,
+	"readDir":    sandbox.PermFileRead,
+	"readLines":  sandbox.PermFileRead,
+	// FFI
+	"__native_ffi_load":      sandbox.PermFFI,
+	"__native_ffi_call":      sandbox.PermFFI,
+	"__native_ffi_call_array": sandbox.PermFFI,
+	// Exec
+	"osExec": sandbox.PermExec,
+	// Network connect
+	"httpGet":      sandbox.PermNetworkConnect,
+	"httpPost":     sandbox.PermNetworkConnect,
+	"connect":      sandbox.PermNetworkConnect,
+	"redisConnect": sandbox.PermNetworkConnect,
+	"sshConnect":   sandbox.PermNetworkConnect,
+	"tlsConnect":   sandbox.PermNetworkConnect,
+	"tlsDial":      sandbox.PermNetworkConnect,
+	"wsConnect":    sandbox.PermNetworkConnect,
+	// Network listen
+	"httpServe": sandbox.PermNetworkListen,
+	"listen":    sandbox.PermNetworkListen,
+	// Stdlib advanced
+	"dbExec": sandbox.PermStdlibAdvanced,
+}
+
+func (vm *VM) checkBuiltinPermission(name string) error {
+	perm, ok := builtinPermissions[name]
+	if !ok {
+		return nil
+	}
+	return vm.CheckPermission(perm, name)
+}
+
 func (vm *VM) executeCallBuiltin(callee *object.Builtin, numArgs int) error {
 	args := vm.stack[vm.sp-numArgs : vm.sp]
 
@@ -49,11 +98,16 @@ func (vm *VM) executeCallBuiltin(callee *object.Builtin, numArgs int) error {
 		return nil
 	}
 
+	if err := vm.checkBuiltinPermission(callee.Name); err != nil {
+		vm.sp = vm.sp - numArgs - 1
+		return vm.push(&object.Error{Message: err.Error()})
+	}
+
 	result := callee.Fn(args...)
-	
-	// Error handling
-	if errObj, ok := result.(*object.Error); ok {
-		// Builtins returning explicitly Error() objects means we throw natively
+
+	// Error handling: builtins return *object.Error to signal runtime errors
+	// BUT the Error() constructor legitimately returns *object.Error as a value.
+	if errObj, ok := result.(*object.Error); ok && callee.Name != "Error" {
 		err := vm.handleNativeError(errObj.Message)
 		if err == nil {
 			return nil
@@ -86,14 +140,42 @@ func (vm *VM) executeCallClosure(cl *object.Closure, numArgs int, typeArgs map[s
 		return vm.push(resultChannel)
 	}
 
-	if numArgs != cl.Fn.NumParameters {
-		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
+	if !cl.Fn.IsVariadic && numArgs > cl.Fn.NumParameters {
+		return fmt.Errorf("too many arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
 	}
 
 	frame := NewFrame(cl, vm.sp-numArgs)
 	for k, v := range typeArgs {
 		frame.TypeArgs[k] = v
 	}
+
+	if cl.Fn.IsVariadic {
+		variadicSlot := cl.Fn.NumParameters - 1 // last parameter is variadic
+		if numArgs >= variadicSlot {
+			// Collect excess args into an array
+			excess := make([]object.Object, numArgs-variadicSlot)
+			for i := 0; i < len(excess); i++ {
+				excess[i] = vm.stack[frame.basePointer+variadicSlot+i]
+			}
+			// Move the array into the variadic slot
+			vm.stack[frame.basePointer+variadicSlot] = &object.Array{Elements: excess}
+			// Overwrite any args beyond variadicSlot that we've now consumed
+			for i := variadicSlot + 1; i < numArgs; i++ {
+				vm.stack[frame.basePointer+i] = Null
+			}
+		} else {
+			// Not enough args for variadic slot, set empty array
+			vm.stack[frame.basePointer+variadicSlot] = &object.Array{Elements: []object.Object{}}
+		}
+	}
+
+	// Initialize remaining missing parameter slots to null (for default parameter values)
+	for i := numArgs; i < cl.Fn.NumParameters; i++ {
+		if !cl.Fn.IsVariadic || i != cl.Fn.NumParameters-1 {
+			vm.stack[frame.basePointer+i] = Null
+		}
+	}
+
 	if cl.Globals != nil {
 		frame.savedGlobals = vm.globals
 		vm.globals = GlobalStoreFromSlice(cl.Globals)
@@ -141,8 +223,13 @@ func (vm *VM) executeIndexExpression(left, index object.Object) error {
 }
 
 func (vm *VM) getProperty(left, index object.Object) (object.Object, error) {
-	if left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ {
-		return vm.getArrayIndex(left, index)
+	if left.Type() == object.ARRAY_OBJ {
+		if index.Type() == object.INTEGER_OBJ {
+			return vm.getArrayIndex(left, index)
+		}
+		if index.Type() == object.STRING_OBJ {
+			return vm.getArrayMethod(left, index)
+		}
 	}
 	if left.Type() == object.HASH_OBJ {
 		return vm.getHashIndex(left, index)

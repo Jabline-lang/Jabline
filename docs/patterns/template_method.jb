@@ -1,0 +1,28 @@
+// Template Method - Defines skeleton, subclasses fill details
+
+fn makeBeverage(brew, addCondiments) {
+    print("1. Boil water")
+    brew()
+    print("3. Pour into cup")
+    addCondiments()
+}
+
+fn makeTea() {
+    makeBeverage(
+        fn() { print("2. Steep tea bag") },
+        fn() { print("4. Add lemon") }
+    )
+}
+
+fn makeCoffee() {
+    makeBeverage(
+        fn() { print("2. Brew coffee grounds") },
+        fn() { print("4. Add sugar and milk") }
+    )
+}
+
+print("Making tea:")
+makeTea()
+print("")
+print("Making coffee:")
+makeCoffee()

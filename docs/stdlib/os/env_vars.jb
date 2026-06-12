@@ -1,0 +1,14 @@
+// env_vars.jb - demonstrates environment variables
+
+import os
+
+fn main() {
+    let home = os.getenv("HOME")
+    println("HOME: " + home)
+
+    let path = os.getenv("PATH")
+    println("PATH: " + path)
+
+    os.setenv("MY_VAR", "hello")
+    println("MY_VAR: " + os.getenv("MY_VAR"))
+}

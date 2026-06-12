@@ -1,0 +1,66 @@
+describe(
+    "Select",
+    fn() {
+        it(
+            "recv case",
+            fn() {
+                let ch = channel();
+                spawn fn() {
+                    ch <- 99;
+                }();
+                select {
+                    case <-ch:
+                        assertEqual(1, 1, "recv case executed");
+                }
+            }
+        )
+
+        it(
+            "default case",
+            fn() {
+                let ch = channel();
+                select {
+                    case <-ch:
+                        assertEqual(1, 0, "recv should not execute");
+                    default:
+                        assertEqual(1, 1, "default case executed");
+                }
+            }
+        )
+
+        it(
+            "send case",
+            fn() {
+                let ch = channel();
+                select {
+                    case ch <- 42:
+                        assertEqual(1, 1, "send case executed");
+                    default:
+                        assertEqual(1, 0, "send should not block");
+                }
+            }
+        )
+
+        it(
+            "close channel",
+            fn() {
+                let ch = channel();
+                close(ch);
+                let val = <-ch;
+                assertEqual(val, null, "closed channel returns null");
+            }
+        )
+
+        it(
+            "close channel with recv in select",
+            fn() {
+                let ch = channel();
+                close(ch);
+                select {
+                    case <-ch:
+                        assertEqual(1, 1, "closed channel is always ready for recv");
+                }
+            }
+        )
+    }
+)

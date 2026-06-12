@@ -1,0 +1,18 @@
+// CI Integration - Using Jabline in CI/CD pipelines
+// GitHub Actions, GitLab CI, Jenkins example steps
+
+fn runChecks() {
+    print("Step 1: Lint check")
+    print("  jabline fmt --check .")
+    print("")
+    print("Step 2: Type check")
+    print("  jabline check .")
+    print("")
+    print("Step 3: Run tests")
+    print("  jabline test --coverage ./tests/")
+    print("")
+    print("Step 4: Build release")
+    print("  jabline build --standalone --out app")
+}
+
+runChecks()

@@ -1,0 +1,15 @@
+// split.jb - demonstrates regex split
+
+import regex
+
+let text = "apple, banana; cherry | date"
+
+fn main() {
+    let pattern = regex.compile(r"[,;|]\s*")
+
+    let parts = pattern.split(text)
+    println("Split into " + len(parts) + " parts:")
+    for p in parts {
+        println("  '" + p + "'")
+    }
+}
